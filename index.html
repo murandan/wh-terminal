@@ -52,15 +52,11 @@
     <div id="loading-status" class="loading">СИНХРОНИЗАЦИЯ...</div>
     <div class="items-container" id="terminal-list"></div>
 
+<script src="config.js?v=1"></script>
     <script>
         // === МАСКИРОВКА ССЫЛОК ===
         // ВСТАВЬТЕ СВОЙ ENCODED ТЕКСТ НИЖЕ:
-        const _0x1a8f = "aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5Y2J4S3FvQ29DZ0VZSldwdnpNMENXSGZLdTdlblNrR3llVTVWLWRBd3lsQW1CZEVFaTVYaWZDaDVyQ1JjOGlUczZvcTEvZXhlYw=="; 
-        const _0x5bc2 = "aHR0cHM6Ly9ob29rLmV1MS5tYWtlLmNvbS85dWQyeWV0dHIzbDZrdG81bmx0cXR0am9jZmI2cDZvZw==";
-
-        const APPS_SCRIPT_URL = window.atob(_0x1a8f);
-        const MAKE_WEBHOOK_URL = window.atob(_0x5bc2);
-
+        
         let itemsDb = [];
 
         async function loadItems(isSilent = false) {
