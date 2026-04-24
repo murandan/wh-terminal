@@ -3,19 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warehouse Terminal v1.7.1</title>
+    <title>Warehouse Terminal v1.7.2</title>
     <style>
         * { box-sizing: border-box !important; margin: 0; padding: 0; font-family: "Courier New", Courier, monospace; }
         body, html { background-color: #0a0a0a; color: #ffffff; width: 100%; max-width: 100vw; overflow-x: hidden; }
         .header { padding: 20px; font-size: 14px; font-weight: bold; border-bottom: 2px solid #f1c40f; margin: 0 15px; color: #fff; text-align: center; }
         
-        /* Блок поиска (закреплен сверху) */
+        /* Блок поиска с кастомным крестиком */
         .search-container { position: sticky; top: 0; background-color: #0a0a0a; padding: 15px; z-index: 100; border-bottom: 1px solid #333; }
-        
-        /* Стилизация type="search" для появления крестика очистки */
-        .search-input { width: 100%; background-color: #141414; color: #fff; border: 1px solid #f1c40f; border-radius: 8px; padding: 15px; font-size: 18px; outline: none; }
+        .search-wrapper { position: relative; width: 100%; }
+        .search-input { width: 100%; background-color: #141414; color: #fff; border: 1px solid #f1c40f; border-radius: 8px; padding: 15px; padding-right: 45px; font-size: 18px; outline: none; }
         .search-input::placeholder { color: #666; }
-        .search-input::-webkit-search-cancel-button { -webkit-appearance: searchfield-cancel-button; cursor: pointer; filter: invert(1); }
+        
+        /* Наш собственный крестик */
+        .clear-btn { 
+            position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
+            color: #f1c40f; font-size: 20px; cursor: pointer; display: none; padding: 5px;
+        }
 
         .items-container { display: flex; flex-direction: column; gap: 15px; padding: 15px 15px 50px 15px; width: 100%; }
         .item-card { background-color: #141414; border: 1px solid #2a2a2a; border-radius: 8px; padding: 16px; position: relative; transition: background-color 0.3s; }
@@ -36,10 +40,13 @@
     </style>
 </head>
 <body>
-    <div class="header">TERMINAL_ID: WH_MAIN (v1.7.1)</div>
+    <div class="header">TERMINAL_ID: WH_MAIN (v1.7.2)</div>
     
     <div class="search-container">
-        <input type="search" id="search-box" class="search-input" placeholder="🔍 Поиск товара..." onkeyup="filterItems()">
+        <div class="search-wrapper">
+            <input type="text" id="search-box" class="search-input" placeholder="🔍 Поиск товара..." onkeyup="filterItems()">
+            <div id="clear-search" class="clear-btn" onclick="clearSearch()">✖</div>
+        </div>
     </div>
 
     <div id="loading-status" class="loading">СИНХРОНИЗАЦИЯ...</div>
@@ -63,7 +70,7 @@
                 itemsDb = await response.json();
                 document.getElementById('loading-status').style.display = 'none';
                 render();
-                filterItems(); // Применяем фильтр после обновления данных
+                filterItems(); 
             } catch (e) { document.getElementById('loading-status').innerText = "ОШИБКА СВЯЗИ"; }
         }
 
@@ -94,8 +101,14 @@
             `).join('');
         }
 
+        // Логика фильтрации и показа крестика
         function filterItems() {
             const query = document.getElementById('search-box').value.toLowerCase();
+            const clearBtn = document.getElementById('clear-search');
+            
+            // Показываем крестик, если есть текст, и прячем, если пусто
+            clearBtn.style.display = query.length > 0 ? 'block' : 'none';
+
             const cards = document.querySelectorAll('.item-card');
             cards.forEach(card => {
                 const name = card.getAttribute('data-name');
@@ -105,6 +118,14 @@
                     card.style.display = 'none';
                 }
             });
+        }
+
+        // Функция очистки при нажатии на крестик
+        function clearSearch() {
+            const searchBox = document.getElementById('search-box');
+            searchBox.value = '';
+            filterItems(); // Это вернет все товары и скроет крестик
+            searchBox.focus(); // Возвращаем курсор в поле поиска
         }
 
         async function sendData(id, btnElement) {
@@ -127,7 +148,7 @@
                 price: type === 'sale' ? (item.price || 0) : 0,
                 cost_price: item.cost || 0,
                 tx_type: type,
-                source: "terminal_v1.7.1"
+                source: "terminal_v1.7.2"
             };
 
             try {
@@ -146,11 +167,11 @@
                         btnElement.classList.remove('success');
                         btnElement.innerText = "ВВОД";
                         
-                        // АВТО-ОЧИСТКА ПОИСКА
+                        // АВТО-ОЧИСТКА ПОИСКА (работает вместе с нашим крестиком)
                         const searchBox = document.getElementById('search-box');
                         if (searchBox.value !== '') {
                             searchBox.value = '';
-                            filterItems(); // Сбрасываем фильтр, чтобы показать все товары
+                            filterItems(); 
                         }
                         
                         loadItems(true); 
