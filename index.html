@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warehouse Terminal v1.6.8</title>
+    <title>Warehouse Terminal v1.6.9</title>
     <style>
         * { box-sizing: border-box !important; margin: 0; padding: 0; font-family: "Courier New", Courier, monospace; }
         body, html { background-color: #0a0a0a; color: #ffffff; width: 100%; max-width: 100vw; overflow-x: hidden; }
@@ -23,19 +23,16 @@
     </style>
 </head>
 <body>
-    <div class="header">TERMINAL_ID: STANDALONE_WH (v1.6.8)</div>
+    <div class="header">TERMINAL_ID: STANDALONE_WH (v1.6.9)</div>
     <div id="loading-status" class="loading">СИНХРОНИЗАЦИЯ...</div>
     <div class="items-container" id="terminal-list"></div>
 
     <script>
         // === МАСКИРОВКА ССЫЛОК ===
-        // 1. Вставьте вашу зашифрованную ссылку Google сюда:
+        // ВСТАВЬТЕ СВОЙ ENCODED ТЕКСТ НИЖЕ:
         const _0x1a8f = "aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5Y2J4S3FvQ29DZ0VZSldwdnpNMENXSGZLdTdlblNrR3llVTVWLWRBd3lsQW1CZEVFaTVYaWZDaDVyQ1JjOGlUczZvcTEvZXhlYw=="; 
-        
-        // 2. Ссылка на Make уже зашифрована ниже:
         const _0x5bc2 = "aHR0cHM6Ly9ob29rLmV1MS5tYWtlLmNvbS85dWQyeWV0dHIzbDZrdG81bmx0cXR0am9jZmI2cDZvZw==";
 
-        // Декодирование на лету
         const APPS_SCRIPT_URL = window.atob(_0x1a8f);
         const MAKE_WEBHOOK_URL = window.atob(_0x5bc2);
 
@@ -67,7 +64,7 @@
                             <option value="sale">Расход (Sale)</option>
                             <option value="restock">Приход (Restock)</option>
                             <option value="return">Возврат (Return)</option>
-                            <option value="write-off">Списание (Write-off)</option>
+                            <option value="writeoff">Списание (Writeoff)</option>
                         </select>
                         <input type="number" id="qty-${item.id}" value="0" 
                                onfocus="if(this.value==='0')this.value=''" 
@@ -98,7 +95,7 @@
                 price: type === 'sale' ? (item.price || 0) : 0,
                 cost_price: item.cost || 0,
                 tx_type: type,
-                source: "terminal_v1.6.8"
+                source: "terminal_v1.6.9"
             };
 
             try {
