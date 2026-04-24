@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>POS Terminal v2.1</title>
+    <title>POS Terminal v2.2 - UX Update</title>
     <style>
         * { box-sizing: border-box !important; margin: 0; padding: 0; font-family: "Courier New", Courier, monospace; }
         body, html { background-color: #0a0a0a; color: #ffffff; width: 100%; height: 100%; overflow: hidden; }
@@ -12,45 +12,54 @@
 
         .search-section { padding: 10px 15px; border-bottom: 1px solid #333; }
         .search-wrapper { position: relative; width: 100%; }
-        .search-input { width: 100%; background: #141414; color: #fff; border: 1px solid #f1c40f; border-radius: 6px; padding: 12px; font-size: 16px; outline: none; }
-        .clear-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #f1c40f; cursor: pointer; display: none; padding: 5px; }
+        .search-input { width: 100%; background: #141414; color: #fff; border: 1px solid #f1c40f; border-radius: 6px; padding: 15px; font-size: 16px; outline: none; }
+        .clear-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #f1c40f; cursor: pointer; display: none; padding: 10px; font-size: 20px;}
 
-        .catalog-container { height: calc(100vh - 350px); overflow-y: auto; padding: 10px 15px; }
+        .catalog-container { height: calc(100vh - 410px); overflow-y: auto; padding: 10px 15px; }
         .catalog-item { 
-            background: #141414; border: 1px solid #222; border-radius: 6px; 
-            padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
+            background: #141414; border: 1px solid #222; border-radius: 8px; 
+            padding: 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
         }
         .catalog-item:active { background: #1a1a1a; border-color: #f1c40f; }
         .item-info { flex-grow: 1; }
-        .item-name { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
-        .item-price-label { font-size: 12px; color: #f1c40f; }
+        .item-name { font-size: 18px; font-weight: bold; margin-bottom: 6px; }
+        .item-price-label { font-size: 14px; color: #f1c40f; }
+        .add-icon { font-size: 28px; color: #f1c40f; padding-left: 15px; }
 
         .cart-section { 
             position: absolute; bottom: 0; width: 100%; background: #111; 
-            border-top: 2px solid #f1c40f; padding: 15px; box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+            border-top: 2px solid #f1c40f; padding: 15px; box-shadow: 0 -10px 30px rgba(0,0,0,0.8);
         }
-        .cart-items { max-height: 140px; overflow-y: auto; margin-bottom: 10px; }
+        .cart-items { max-height: 200px; overflow-y: auto; margin-bottom: 10px; padding-right: 5px; }
         
-        /* Улучшенный дизайн строки корзины */
-        .cart-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 14px; background: #1a1a1a; padding: 8px; border-radius: 6px; }
-        .cart-row-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 5px;}
+        /* НОВЫЙ ДИЗАЙН СТРОКИ КОРЗИНЫ */
+        .cart-row { 
+            display: flex; flex-direction: column; margin-bottom: 12px; 
+            background: #1a1a1a; padding: 12px; border-radius: 8px; border: 1px solid #333; 
+        }
+        .cart-row-name { font-weight: bold; font-size: 16px; color: #eee; margin-bottom: 12px; }
         
-        /* Кнопки + и - */
-        .qty-controls { display: flex; align-items: center; background: #000; border-radius: 4px; border: 1px solid #333; margin-right: 8px;}
-        .qty-btn { background: none; border: none; color: #f1c40f; font-size: 18px; width: 28px; height: 28px; display: flex; justify-content: center; align-items: center; cursor: pointer; }
-        .qty-btn:active { background: #333; }
-        .qty-val { width: 20px; text-align: center; font-weight: bold; }
+        .cart-controls { display: flex; justify-content: space-between; align-items: center; width: 100%; }
 
+        /* ОГРОМНЫЕ КНОПКИ УПРАВЛЕНИЯ */
+        .qty-controls { display: flex; align-items: center; background: #000; border-radius: 6px; border: 1px solid #444; }
+        .qty-btn { background: #222; border: none; color: #f1c40f; font-size: 24px; width: 45px; height: 45px; display: flex; justify-content: center; align-items: center; cursor: pointer; border-radius: 6px; }
+        .qty-btn:active { background: #444; }
+        .qty-val { width: 35px; text-align: center; font-weight: bold; font-size: 18px; }
+
+        /* УМНОЕ ПОЛЕ ЦЕНЫ */
         .price-edit { 
-            width: 70px; background: #000; color: #f1c40f; border: 1px solid #333; 
-            text-align: right; padding: 6px 4px; border-radius: 4px; margin-right: 8px; font-size: 14px;
+            width: 100px; background: #000; color: #f1c40f; border: 1px solid #444; 
+            text-align: right; padding: 12px 10px; border-radius: 6px; font-size: 18px; font-weight: bold; outline: none;
         }
-        .del-btn { color: #e74c3c; font-size: 18px; padding: 0 5px; }
+        .price-edit:focus { border-color: #f1c40f; background: #0a0a0a; }
 
-        .total-row { display: flex; justify-content: space-between; font-size: 20px; font-weight: bold; margin: 10px 0; border-top: 1px solid #333; padding-top: 10px; }
+        .del-btn { color: #e74c3c; font-size: 24px; padding: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;}
 
-        .pay-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .btn-pay { height: 45px; border: none; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; text-transform: uppercase; }
+        .total-row { display: flex; justify-content: space-between; font-size: 22px; font-weight: bold; margin: 10px 0; border-top: 1px solid #333; padding-top: 15px; }
+
+        .pay-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn-pay { height: 55px; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; text-transform: uppercase; }
         .btn-cash { background: #27ae60; color: #fff; }
         .btn-qr { background: #e74c3c; color: #fff; }
         .btn-card { background: #2980b9; color: #fff; }
@@ -61,7 +70,7 @@
 </head>
 <body>
 
-    <div class="header">POS_TERMINAL_v2.1_BETA</div>
+    <div class="header">POS_TERMINAL_v2.2_UX</div>
 
     <div class="search-section">
         <div class="search-wrapper">
@@ -98,7 +107,6 @@
 
         async function loadCatalog() {
             try {
-                // APPS_SCRIPT_URL берется из config.js
                 const response = await fetch(APPS_SCRIPT_URL + "?t=" + Date.now());
                 itemsDb = await response.json();
                 renderCatalog();
@@ -113,7 +121,7 @@
                         <div class="item-name">${item.name}</div>
                         <div class="item-price-label">${item.price} ₸</div>
                     </div>
-                    <div style="font-size: 20px; color: #f1c40f;">+</div>
+                    <div class="add-icon">+</div>
                 </div>
             `).join('');
         }
@@ -143,9 +151,12 @@
                 cart.push({ id: product.id, name: product.name, qty: 1, price: product.price, cost: product.cost });
             }
             renderCart();
+            
+            // Автоматическая прокрутка корзины вниз при добавлении
+            const cartList = document.getElementById('cart-list');
+            cartList.scrollTop = cartList.scrollHeight;
         }
 
-        // Новая функция управления количеством
         function changeQty(id, delta) {
             const item = cart.find(c => c.id === id);
             if (item) {
@@ -169,15 +180,19 @@
             list.innerHTML = cart.map(item => `
                 <div class="cart-row">
                     <div class="cart-row-name">${item.name}</div>
-                    
-                    <div class="qty-controls">
-                        <button class="qty-btn" onclick="changeQty('${item.id}', -1)">-</button>
-                        <div class="qty-val">${item.qty}</div>
-                        <button class="qty-btn" onclick="changeQty('${item.id}', 1)">+</button>
+                    <div class="cart-controls">
+                        <div class="qty-controls">
+                            <button class="qty-btn" onclick="changeQty('${item.id}', -1)">-</button>
+                            <div class="qty-val">${item.qty}</div>
+                            <button class="qty-btn" onclick="changeQty('${item.id}', 1)">+</button>
+                        </div>
+                        
+                        <input type="number" class="price-edit" value="${item.price}" 
+                               onfocus="this.select()" 
+                               onchange="updatePrice('${item.id}', this.value)">
+                        
+                        <div class="del-btn" onclick="removeFromCart('${item.id}')">✕</div>
                     </div>
-
-                    <input type="number" class="price-edit" value="${item.price}" onchange="updatePrice('${item.id}', this.value)">
-                    <div class="del-btn" onclick="removeFromCart('${item.id}')">✕</div>
                 </div>
             `).join('');
             updateTotal();
@@ -202,7 +217,6 @@
             const tx_id = "SALE-" + Math.random().toString(36).substring(2, 7).toUpperCase();
 
             for (let item of cart) {
-                // ОБНОВЛЕННЫЙ ПАКЕТ ДАННЫХ
                 const payload = {
                     tx_id: tx_id,
                     item_id: item.id,
@@ -210,13 +224,12 @@
                     qty: item.qty,
                     price: item.price, 
                     cost_price: item.cost,
-                    tx_type: "sale",               // Теперь всегда 'sale'
-                    payment_method: paymentMethod, // Новое поле для колонки L
-                    source: "pos_v2.1"
+                    tx_type: "sale",               
+                    payment_method: paymentMethod, 
+                    source: "pos_v2.2"
                 };
 
                 try {
-                    // MAKE_WEBHOOK_URL берется из config.js
                     await fetch(MAKE_WEBHOOK_URL, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
@@ -225,7 +238,6 @@
                 } catch (e) { alert("Ошибка связи"); }
             }
 
-            // Визуальный эффект успешной продажи
             document.getElementById('total-amount').innerText = "ОПЛАЧЕНО";
             setTimeout(() => {
                 cart = [];
