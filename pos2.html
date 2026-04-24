@@ -3,21 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>POS Terminal v2.0 - Search & Discount</title>
+    <title>POS Terminal v2.1</title>
     <style>
         * { box-sizing: border-box !important; margin: 0; padding: 0; font-family: "Courier New", Courier, monospace; }
         body, html { background-color: #0a0a0a; color: #ffffff; width: 100%; height: 100%; overflow: hidden; }
         
-        /* Заголовок */
         .header { padding: 15px; font-size: 12px; border-bottom: 1px solid #333; text-align: center; color: #666; }
 
-        /* ЗОНА 1: ПОИСК И ВИТРИНА */
         .search-section { padding: 10px 15px; border-bottom: 1px solid #333; }
         .search-wrapper { position: relative; width: 100%; }
         .search-input { width: 100%; background: #141414; color: #fff; border: 1px solid #f1c40f; border-radius: 6px; padding: 12px; font-size: 16px; outline: none; }
-        .clear-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #f1c40f; cursor: pointer; display: none; }
+        .clear-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #f1c40f; cursor: pointer; display: none; padding: 5px; }
 
-        .catalog-container { height: calc(100vh - 320px); overflow-y: auto; padding: 10px 15px; }
+        .catalog-container { height: calc(100vh - 350px); overflow-y: auto; padding: 10px 15px; }
         .catalog-item { 
             background: #141414; border: 1px solid #222; border-radius: 6px; 
             padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
@@ -27,27 +25,34 @@
         .item-name { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
         .item-price-label { font-size: 12px; color: #f1c40f; }
 
-        /* ЗОНА 2: КОРЗИНА (ФИКСИРОВАННАЯ СНИЗУ) */
         .cart-section { 
             position: absolute; bottom: 0; width: 100%; background: #111; 
             border-top: 2px solid #f1c40f; padding: 15px; box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
         }
-        .cart-items { max-height: 120px; overflow-y: auto; margin-bottom: 10px; }
-        .cart-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 14px; }
-        .cart-row-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .cart-items { max-height: 140px; overflow-y: auto; margin-bottom: 10px; }
         
-        /* Поле ввода цены в корзине */
+        /* Улучшенный дизайн строки корзины */
+        .cart-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 14px; background: #1a1a1a; padding: 8px; border-radius: 6px; }
+        .cart-row-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 5px;}
+        
+        /* Кнопки + и - */
+        .qty-controls { display: flex; align-items: center; background: #000; border-radius: 4px; border: 1px solid #333; margin-right: 8px;}
+        .qty-btn { background: none; border: none; color: #f1c40f; font-size: 18px; width: 28px; height: 28px; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+        .qty-btn:active { background: #333; }
+        .qty-val { width: 20px; text-align: center; font-weight: bold; }
+
         .price-edit { 
-            width: 80px; background: #000; color: #f1c40f; border: 1px solid #333; 
-            text-align: right; padding: 4px; border-radius: 4px; margin: 0 10px; font-size: 14px;
+            width: 70px; background: #000; color: #f1c40f; border: 1px solid #333; 
+            text-align: right; padding: 6px 4px; border-radius: 4px; margin-right: 8px; font-size: 14px;
         }
+        .del-btn { color: #e74c3c; font-size: 18px; padding: 0 5px; }
 
         .total-row { display: flex; justify-content: space-between; font-size: 20px; font-weight: bold; margin: 10px 0; border-top: 1px solid #333; padding-top: 10px; }
 
-        /* Кнопки оплаты */
-        .pay-buttons { display: flex; gap: 8px; }
-        .btn-pay { flex: 1; height: 50px; border: none; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; text-transform: uppercase; }
+        .pay-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .btn-pay { height: 45px; border: none; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; text-transform: uppercase; }
         .btn-cash { background: #27ae60; color: #fff; }
+        .btn-qr { background: #e74c3c; color: #fff; }
         .btn-card { background: #2980b9; color: #fff; }
         .btn-transfer { background: #f39c12; color: #000; }
 
@@ -56,11 +61,11 @@
 </head>
 <body>
 
-    <div class="header">POS_TERMINAL_v2.0_BETA</div>
+    <div class="header">POS_TERMINAL_v2.1_BETA</div>
 
     <div class="search-section">
         <div class="search-wrapper">
-            <input type="text" id="search-box" class="search-input" placeholder="Поиск товара для продажи..." onkeyup="filterItems()">
+            <input type="text" id="search-box" class="search-input" placeholder="Поиск товара..." onkeyup="filterItems()">
             <div id="clear-search" class="clear-btn" onclick="clearSearch()">✖</div>
         </div>
     </div>
@@ -70,8 +75,7 @@
     </div>
 
     <div class="cart-section">
-        <div id="cart-list" class="cart-items">
-            </div>
+        <div id="cart-list" class="cart-items"></div>
 
         <div class="total-row">
             <span>ИТОГО:</span>
@@ -79,21 +83,22 @@
         </div>
 
         <div class="pay-buttons">
-            <button class="btn-pay btn-cash" onclick="processSale('sale_cash')">Наличные</button>
-            <button class="btn-pay btn-card" onclick="processSale('sale_card')">Карта</button>
-            <button class="btn-pay btn-transfer" onclick="processSale('sale_transfer')">QR/Перевод</button>
+            <button class="btn-pay btn-cash" onclick="processSale('cash')">Наличные</button>
+            <button class="btn-pay btn-qr" onclick="processSale('qr_kaspi')">Kaspi QR</button>
+            <button class="btn-pay btn-card" onclick="processSale('pos_terminal')">Карта</button>
+            <button class="btn-pay btn-transfer" onclick="processSale('transfer')">Перевод</button>
         </div>
     </div>
 
-<script src="config.js"></script>
+    <script src="config.js?v=1"></script>
+
     <script>
-        
         let itemsDb = [];
         let cart = [];
 
-        // Загрузка товаров из Google Таблицы
         async function loadCatalog() {
             try {
+                // APPS_SCRIPT_URL берется из config.js
                 const response = await fetch(APPS_SCRIPT_URL + "?t=" + Date.now());
                 itemsDb = await response.json();
                 renderCatalog();
@@ -128,7 +133,6 @@
             filterItems();
         }
 
-        // Логика корзины
         function addToCart(id) {
             const product = itemsDb.find(p => p.id === id);
             const inCart = cart.find(c => c.id === id);
@@ -136,15 +140,22 @@
             if (inCart) {
                 inCart.qty += 1;
             } else {
-                cart.push({
-                    id: product.id,
-                    name: product.name,
-                    qty: 1,
-                    price: product.price, // Цена, которую можно менять
-                    cost: product.cost // Себестоимость (скрыта)
-                });
+                cart.push({ id: product.id, name: product.name, qty: 1, price: product.price, cost: product.cost });
             }
             renderCart();
+        }
+
+        // Новая функция управления количеством
+        function changeQty(id, delta) {
+            const item = cart.find(c => c.id === id);
+            if (item) {
+                item.qty += delta;
+                if (item.qty <= 0) {
+                    removeFromCart(id);
+                } else {
+                    renderCart();
+                }
+            }
         }
 
         function updatePrice(id, newPrice) {
@@ -157,10 +168,16 @@
             const list = document.getElementById('cart-list');
             list.innerHTML = cart.map(item => `
                 <div class="cart-row">
-                    <span class="cart-row-name">${item.name} (x${item.qty})</span>
-                    <input type="number" class="price-edit" value="${item.price}" 
-                           onchange="updatePrice('${item.id}', this.value)">
-                    <span style="color: #666; font-size: 18px;" onclick="removeFromCart('${item.id}')">✕</span>
+                    <div class="cart-row-name">${item.name}</div>
+                    
+                    <div class="qty-controls">
+                        <button class="qty-btn" onclick="changeQty('${item.id}', -1)">-</button>
+                        <div class="qty-val">${item.qty}</div>
+                        <button class="qty-btn" onclick="changeQty('${item.id}', 1)">+</button>
+                    </div>
+
+                    <input type="number" class="price-edit" value="${item.price}" onchange="updatePrice('${item.id}', this.value)">
+                    <div class="del-btn" onclick="removeFromCart('${item.id}')">✕</div>
                 </div>
             `).join('');
             updateTotal();
@@ -176,8 +193,7 @@
             document.getElementById('total-amount').innerText = total.toLocaleString();
         }
 
-        // Отправка продажи
-        async function processSale(method) {
+        async function processSale(paymentMethod) {
             if (cart.length === 0) return alert("Корзина пуста");
 
             const section = document.querySelector('.cart-section');
@@ -185,20 +201,22 @@
 
             const tx_id = "SALE-" + Math.random().toString(36).substring(2, 7).toUpperCase();
 
-            // Отправляем каждый товар из корзины как отдельную строку в лог транзакций
             for (let item of cart) {
+                // ОБНОВЛЕННЫЙ ПАКЕТ ДАННЫХ
                 const payload = {
                     tx_id: tx_id,
                     item_id: item.id,
                     item_name: item.name,
                     qty: item.qty,
-                    price: item.price, // Отправляем измененную цену!
+                    price: item.price, 
                     cost_price: item.cost,
-                    tx_type: method, // sale_cash, sale_card или sale_transfer
-                    source: "pos_v2.0"
+                    tx_type: "sale",               // Теперь всегда 'sale'
+                    payment_method: paymentMethod, // Новое поле для колонки L
+                    source: "pos_v2.1"
                 };
 
                 try {
+                    // MAKE_WEBHOOK_URL берется из config.js
                     await fetch(MAKE_WEBHOOK_URL, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
@@ -207,11 +225,14 @@
                 } catch (e) { alert("Ошибка связи"); }
             }
 
-            alert("ПРОДАЖА ОФОРМЛЕНА!");
-            cart = [];
-            renderCart();
-            clearSearch();
-            section.classList.remove('syncing');
+            // Визуальный эффект успешной продажи
+            document.getElementById('total-amount').innerText = "ОПЛАЧЕНО";
+            setTimeout(() => {
+                cart = [];
+                renderCart();
+                clearSearch();
+                section.classList.remove('syncing');
+            }, 1500);
         }
 
         loadCatalog();
