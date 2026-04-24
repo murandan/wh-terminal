@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Warehouse Terminal v1.6.7</title>
+    <title>Warehouse Terminal v1.6.8</title>
     <style>
         * { box-sizing: border-box !important; margin: 0; padding: 0; font-family: "Courier New", Courier, monospace; }
         body, html { background-color: #0a0a0a; color: #ffffff; width: 100%; max-width: 100vw; overflow-x: hidden; }
         .header { padding: 20px; font-size: 14px; font-weight: bold; border-bottom: 2px solid #f1c40f; margin: 0 15px 20px 15px; color: #fff; }
         .items-container { display: flex; flex-direction: column; gap: 15px; padding: 0 15px 50px 15px; width: 100%; }
-        .item-card { background-color: #141414; border: 1px solid #2a2a2a; border-radius: 8px; padding: 16px; width: 100%; position: relative; }
+        .item-card { background-color: #141414; border: 1px solid #2a2a2a; border-radius: 8px; padding: 16px; position: relative; }
         .card-top { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 18px; }
         .item-name { font-size: 22px; font-weight: bold; line-height: 1; color: #fff; }
         .stock-value { font-size: 26px; font-weight: bold; color: #fff; line-height: 0.8; }
@@ -19,24 +19,32 @@
         input[type="number"] { width: 75px !important; flex: 0 0 75px !important; background-color: #000; color: #fff; border: 1px solid #333; border-radius: 4px; text-align: center; height: 50px; font-size: 20px; outline: none; }
         button { flex: 0 0 auto; background-color: #f1c40f; color: #000; font-weight: bold; border: none; border-radius: 4px; padding: 0 15px; height: 50px; cursor: pointer; }
         .loading { text-align: center; padding: 40px; color: #f1c40f; font-weight: bold; }
-        .syncing { opacity: 0.5; pointer-events: none; }
+        .syncing { opacity: 0.4; pointer-events: none; }
     </style>
 </head>
 <body>
-    <div class="header">TERMINAL_ID: STANDALONE_WH (v1.6.7)</div>
-    <div id="loading-status" class="loading">СИНХРОНИЗАЦИЯ С ТАБЛИЦЕЙ...</div>
+    <div class="header">TERMINAL_ID: STANDALONE_WH (v1.6.8)</div>
+    <div id="loading-status" class="loading">СИНХРОНИЗАЦИЯ...</div>
     <div class="items-container" id="terminal-list"></div>
 
     <script>
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxKqoCoCgEYJWpvzM0CWHfKu7enSkGyeU5V-dAwylAmBdEEi5XifCh5rCRc8iTs6oq1/exec"; 
-        const MAKE_WEBHOOK_URL = "https://hook.eu1.make.com/9ud2yettr3l6kto5nltqttjocfb6p6og"; 
+        // === МАСКИРОВКА ССЫЛОК ===
+        // 1. Вставьте вашу зашифрованную ссылку Google сюда:
+        const _0x1a8f = "aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5Y2J4S3FvQ29DZ0VZSldwdnpNMENXSGZLdTdlblNrR3llVTVWLWRBd3lsQW1CZEVFaTVYaWZDaDVyQ1JjOGlUczZvcTEvZXhlYw=="; 
+        
+        // 2. Ссылка на Make уже зашифрована ниже:
+        const _0x5bc2 = "aHR0cHM6Ly9ob29rLmV1MS5tYWtlLmNvbS85dWQyeWV0dHIzbDZrdG81bmx0cXR0am9jZmI2cDZvZw==";
+
+        // Декодирование на лету
+        const APPS_SCRIPT_URL = window.atob(_0x1a8f);
+        const MAKE_WEBHOOK_URL = window.atob(_0x5bc2);
 
         let itemsDb = [];
 
         async function loadItems(isSilent = false) {
             if (!isSilent) document.getElementById('loading-status').style.display = 'block';
             try {
-                const response = await fetch(APPS_SCRIPT_URL + "?t=" + Date.now()); // t= нужен чтобы обмануть кэш
+                const response = await fetch(APPS_SCRIPT_URL + "?t=" + Date.now());
                 itemsDb = await response.json();
                 document.getElementById('loading-status').style.display = 'none';
                 render();
@@ -90,7 +98,7 @@
                 price: type === 'sale' ? (item.price || 0) : 0,
                 cost_price: item.cost || 0,
                 tx_type: type,
-                source: "terminal_v1.6.7"
+                source: "terminal_v1.6.8"
             };
 
             try {
@@ -101,7 +109,6 @@
                 });
                 
                 if (res.ok) {
-                    // Ждем 2 секунды, чтобы Google успел пересчитать формулы, и качаем данные
                     setTimeout(() => loadItems(true), 2000); 
                 }
             } catch (e) { alert("ОШИБКА"); }
