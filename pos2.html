@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>POS Terminal v2.0 - Search & Discount</title>
+    <style>
+        * { box-sizing: border-box !important; margin: 0; padding: 0; font-family: "Courier New", Courier, monospace; }
+        body, html { background-color: #0a0a0a; color: #ffffff; width: 100%; height: 100%; overflow: hidden; }
+        
+        /* Заголовок */
+        .header { padding: 15px; font-size: 12px; border-bottom: 1px solid #333; text-align: center; color: #666; }
+
+        /* ЗОНА 1: ПОИСК И ВИТРИНА */
+        .search-section { padding: 10px 15px; border-bottom: 1px solid #333; }
+        .search-wrapper { position: relative; width: 100%; }
+        .search-input { width: 100%; background: #141414; color: #fff; border: 1px solid #f1c40f; border-radius: 6px; padding: 12px; font-size: 16px; outline: none; }
+        .clear-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #f1c40f; cursor: pointer; display: none; }
+
+        .catalog-container { height: calc(100vh - 320px); overflow-y: auto; padding: 10px 15px; }
+        .catalog-item { 
+            background: #141414; border: 1px solid #222; border-radius: 6px; 
+            padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .catalog-item:active { background: #1a1a1a; border-color: #f1c40f; }
+        .item-info { flex-grow: 1; }
+        .item-name { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
+        .item-price-label { font-size: 12px; color: #f1c40f; }
+
+        /* ЗОНА 2: КОРЗИНА (ФИКСИРОВАННАЯ СНИЗУ) */
+        .cart-section { 
+            position: absolute; bottom: 0; width: 100%; background: #111; 
+            border-top: 2px solid #f1c40f; padding: 15px; box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+        }
+        .cart-items { max-height: 120px; overflow-y: auto; margin-bottom: 10px; }
+        .cart-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 14px; }
+        .cart-row-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        
+        /* Поле ввода цены в корзине */
+        .price-edit { 
+            width: 80px; background: #000; color: #f1c40f; border: 1px solid #333; 
+            text-align: right; padding: 4px; border-radius: 4px; margin: 0 10px; font-size: 14px;
+        }
+
+        .total-row { display: flex; justify-content: space-between; font-size: 20px; font-weight: bold; margin: 10px 0; border-top: 1px solid #333; padding-top: 10px; }
+
+        /* Кнопки оплаты */
+        .pay-buttons { display: flex; gap: 8px; }
+        .btn-pay { flex: 1; height: 50px; border: none; border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; text-transform: uppercase; }
+        .btn-cash { background: #27ae60; color: #fff; }
+        .btn-card { background: #2980b9; color: #fff; }
+        .btn-transfer { background: #f39c12; color: #000; }
+
+        .syncing { opacity: 0.5; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div class="header">POS_TERMINAL_v2.0_BETA</div>
+
+    <div class="search-section">
+        <div class="search-wrapper">
+            <input type="text" id="search-box" class="search-input" placeholder="Поиск товара для продажи..." onkeyup="filterItems()">
+            <div id="clear-search" class="clear-btn" onclick="clearSearch()">✖</div>
+        </div>
+    </div>
+
+    <div id="catalog" class="catalog-container">
+        <div style="text-align: center; color: #666; margin-top: 20px;">Загрузка товаров...</div>
+    </div>
+
+    <div class="cart-section">
+        <div id="cart-list" class="cart-items">
+            </div>
+
+        <div class="total-row">
+            <span>ИТОГО:</span>
+            <span id="total-amount">0</span>
+        </div>
+
+        <div class="pay-buttons">
+            <button class="btn-pay btn-cash" onclick="processSale('sale_cash')">Наличные</button>
+            <button class="btn-pay btn-card" onclick="processSale('sale_card')">Карта</button>
+            <button class="btn-pay btn-transfer" onclick="processSale('sale_transfer')">QR/Перевод</button>
+        </div>
+    </div>
+
+<script src="config.js"></script>
+    <script>
+        
+        let itemsDb = [];
+        let cart = [];
+
+        // Загрузка товаров из Google Таблицы
+        async function loadCatalog() {
+            try {
+                const response = await fetch(APPS_SCRIPT_URL + "?t=" + Date.now());
+                itemsDb = await response.json();
+                renderCatalog();
+            } catch (e) { console.error("Ошибка загрузки"); }
+        }
+
+        function renderCatalog() {
+            const container = document.getElementById('catalog');
+            container.innerHTML = itemsDb.map(item => `
+                <div class="catalog-item" onclick="addToCart('${item.id}')">
+                    <div class="item-info">
+                        <div class="item-name">${item.name}</div>
+                        <div class="item-price-label">${item.price} ₸</div>
+                    </div>
+                    <div style="font-size: 20px; color: #f1c40f;">+</div>
+                </div>
+            `).join('');
+        }
+
+        function filterItems() {
+            const q = document.getElementById('search-box').value.toLowerCase();
+            document.getElementById('clear-search').style.display = q ? 'block' : 'none';
+            const items = document.querySelectorAll('.catalog-item');
+            items.forEach(el => {
+                const name = el.querySelector('.item-name').innerText.toLowerCase();
+                el.style.display = name.includes(q) ? 'flex' : 'none';
+            });
+        }
+
+        function clearSearch() {
+            document.getElementById('search-box').value = '';
+            filterItems();
+        }
+
+        // Логика корзины
+        function addToCart(id) {
+            const product = itemsDb.find(p => p.id === id);
+            const inCart = cart.find(c => c.id === id);
+
+            if (inCart) {
+                inCart.qty += 1;
+            } else {
+                cart.push({
+                    id: product.id,
+                    name: product.name,
+                    qty: 1,
+                    price: product.price, // Цена, которую можно менять
+                    cost: product.cost // Себестоимость (скрыта)
+                });
+            }
+            renderCart();
+        }
+
+        function updatePrice(id, newPrice) {
+            const item = cart.find(c => c.id === id);
+            if (item) item.price = parseFloat(newPrice) || 0;
+            updateTotal();
+        }
+
+        function renderCart() {
+            const list = document.getElementById('cart-list');
+            list.innerHTML = cart.map(item => `
+                <div class="cart-row">
+                    <span class="cart-row-name">${item.name} (x${item.qty})</span>
+                    <input type="number" class="price-edit" value="${item.price}" 
+                           onchange="updatePrice('${item.id}', this.value)">
+                    <span style="color: #666; font-size: 18px;" onclick="removeFromCart('${item.id}')">✕</span>
+                </div>
+            `).join('');
+            updateTotal();
+        }
+
+        function removeFromCart(id) {
+            cart = cart.filter(c => c.id !== id);
+            renderCart();
+        }
+
+        function updateTotal() {
+            const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            document.getElementById('total-amount').innerText = total.toLocaleString();
+        }
+
+        // Отправка продажи
+        async function processSale(method) {
+            if (cart.length === 0) return alert("Корзина пуста");
+
+            const section = document.querySelector('.cart-section');
+            section.classList.add('syncing');
+
+            const tx_id = "SALE-" + Math.random().toString(36).substring(2, 7).toUpperCase();
+
+            // Отправляем каждый товар из корзины как отдельную строку в лог транзакций
+            for (let item of cart) {
+                const payload = {
+                    tx_id: tx_id,
+                    item_id: item.id,
+                    item_name: item.name,
+                    qty: item.qty,
+                    price: item.price, // Отправляем измененную цену!
+                    cost_price: item.cost,
+                    tx_type: method, // sale_cash, sale_card или sale_transfer
+                    source: "pos_v2.0"
+                };
+
+                try {
+                    await fetch(MAKE_WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload)
+                    });
+                } catch (e) { alert("Ошибка связи"); }
+            }
+
+            alert("ПРОДАЖА ОФОРМЛЕНА!");
+            cart = [];
+            renderCart();
+            clearSearch();
+            section.classList.remove('syncing');
+        }
+
+        loadCatalog();
+    </script>
+</body>
+</html>
