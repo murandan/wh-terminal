@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>POS Terminal v2.4 - Sale & Return Modes</title>
+    <title>POS Terminal v2.5 - Fixes</title>
     <style>
         * { box-sizing: border-box !important; margin: 0; padding: 0; font-family: "Courier New", Courier, monospace; }
         
@@ -16,7 +16,6 @@
         
         .header { flex-shrink: 0; padding: 15px; font-size: 12px; border-bottom: 1px solid #333; text-align: center; color: #666; }
 
-        /* ПЕРЕКЛЮЧАТЕЛЬ РЕЖИМОВ */
         .mode-selector { display: flex; padding: 10px 15px; gap: 10px; border-bottom: 1px solid #333; }
         .mode-btn { flex: 1; padding: 12px; border: 1px solid #333; background: #111; color: #666; font-weight: bold; border-radius: 6px; cursor: pointer; transition: 0.2s; }
         .mode-btn.active-sale { background: #1a3a20; color: #2ecc71; border-color: #2ecc71; }
@@ -40,7 +39,6 @@
         .item-price-label { font-size: 14px; color: #f1c40f; }
         .add-icon { font-size: 28px; color: #f1c40f; padding-left: 15px; }
 
-        /* КОРЗИНА И ТЕМА ВОЗВРАТА */
         .cart-section { 
             flex-shrink: 0; background: #111; 
             border-top: 2px solid #2ecc71; padding: 15px; box-shadow: 0 -10px 30px rgba(0,0,0,0.8);
@@ -72,7 +70,7 @@
         .del-btn { color: #e74c3c; font-size: 24px; padding: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center;}
 
         .total-row { display: flex; justify-content: space-between; font-size: 22px; font-weight: bold; margin: 10px 0; border-top: 1px solid #333; padding-top: 15px; }
-        .return-theme .total-row { color: #e74c3c; } /* Красный итог при возврате */
+        .return-theme .total-row { color: #e74c3c; }
 
         .pay-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .btn-pay { height: 55px; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; text-transform: uppercase; }
@@ -86,7 +84,7 @@
 </head>
 <body>
 
-    <div class="header">POS_TERMINAL_v2.4_SECURE</div>
+    <div class="header">POS_TERMINAL_v2.5_FIXED</div>
 
     <div class="mode-selector">
         <button id="btn-mode-sale" class="mode-btn active-sale" onclick="setMode('sale')">🟢 ПРОДАЖА</button>
@@ -125,9 +123,8 @@
     <script>
         let itemsDb = [];
         let cart = [];
-        let currentMode = 'sale'; // Глобальная переменная режима
+        let currentMode = 'sale';
 
-        // Функция переключения режимов
         function setMode(mode) {
             currentMode = mode;
             document.getElementById('btn-mode-sale').classList.toggle('active-sale', mode === 'sale');
@@ -201,19 +198,23 @@
             if (item) {
                 item.qty += delta;
                 if (item.qty <= 0) {
-                    removeFromCart(id); // Удаляем, если счетчик дошел до 0 (минус невозможен)
+                    removeFromCart(id);
                 } else {
                     renderCart();
                 }
             }
         }
 
-        function updatePriceLive(id, newPrice) {
+        // Обновленная функция: исправляет визуал и данные
+        function updatePriceLive(id, inputElem) {
             const item = cart.find(c => c.id === id);
             if (item) {
-                // ЖЕСТКАЯ БЛОКИРОВКА ОТРИЦАТЕЛЬНЫХ ЦИФР
-                let parsedPrice = parseFloat(newPrice) || 0;
-                item.price = Math.abs(parsedPrice); 
+                let parsedPrice = parseFloat(inputElem.value) || 0;
+                if (parsedPrice < 0) {
+                    parsedPrice = Math.abs(parsedPrice);
+                    inputElem.value = parsedPrice; // Принудительно убираем минус с экрана
+                }
+                item.price = parsedPrice; 
             }
             updateTotal();
         }
@@ -232,7 +233,8 @@
                         
                         <input type="number" class="price-edit" min="0" value="${item.price}" 
                                onfocus="this.select(); setTimeout(() => this.scrollIntoView({behavior: 'smooth', block: 'center'}), 200);" 
-                               oninput="updatePriceLive('${item.id}', this.value)">
+                               onkeydown="if(event.key === '-' || event.key === 'e') event.preventDefault();"
+                               oninput="updatePriceLive('${item.id}', this)">
                         
                         <div class="del-btn" onclick="removeFromCart('${item.id}')">✕</div>
                     </div>
@@ -257,7 +259,6 @@
             const section = document.getElementById('cart-section');
             section.classList.add('syncing');
 
-            // Префикс транзакции меняется в зависимости от режима
             const prefix = currentMode === 'sale' ? "SALE-" : "REF-";
             const tx_id = prefix + Math.random().toString(36).substring(2, 7).toUpperCase();
 
@@ -269,9 +270,9 @@
                     qty: item.qty,
                     price: item.price, 
                     cost_price: item.cost,
-                    tx_type: currentMode === 'sale' ? "sale" : "refund", // Отправляем корректный тип в Make.com              
+                    tx_type: currentMode === 'sale' ? "sale" : "return", // ИСПРАВЛЕНО НА return
                     payment_method: paymentMethod, 
-                    source: "pos_v2.4"
+                    source: "pos_v2.5"
                 };
 
                 try {
@@ -286,7 +287,7 @@
             document.getElementById('total-amount').innerText = currentMode === 'sale' ? "ОПЛАЧЕНО" : "ВОЗВРАТ ПРОВЕДЕН";
             setTimeout(() => {
                 cart = [];
-                setMode('sale'); // Автоматически возвращаем в режим продаж после завершения операции
+                setMode('sale');
                 renderCart();
                 clearSearch();
                 section.classList.remove('syncing');
