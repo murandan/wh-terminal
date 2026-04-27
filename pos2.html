@@ -3,82 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>POS Pro V5.2</title>
+    <title>POS Terminal v5.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { height: 100dvh; display: flex; flex-direction: column; background: #f8fafc; font-family: sans-serif; }
-        .scroll-area { flex: 1; overflow-y: auto; }
-        .btn-pay { min-height: 55px; border-radius: 14px; font-weight: 800; text-transform: uppercase; font-size: 12px; transition: all 0.1s; }
-        .btn-pay:active { transform: scale(0.95); }
-        input[type="number"] { -moz-appearance: textfield; }
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; }
+        body { height: 100dvh; overflow: hidden; background: #f1f5f9; display: flex; flex-direction: column; font-family: system-ui; }
+        .main-container { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+        .catalog-grid { display: grid; grid-template-cols: 1fr 1fr; gap: 10px; padding: 12px; }
+        .btn-qty { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: white; border: 1px solid #e2e8f0; border-radius: 12px; font-weight: bold; font-size: 20px; }
+        .cart-item { background: white; border-radius: 16px; padding: 12px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .price-input { width: 85px; border-bottom: 2px solid #3b82f6; text-align: right; font-weight: 800; color: #1d4ed8; outline: none; background: transparent; }
+        /* Анимация статуса */
+        #status-bar { position: fixed; top: -100px; left: 0; right: 0; padding: 15px; text-align: center; color: white; transition: 0.3s; z-index: 100; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <header class="bg-white border-b p-4">
-        <input type="text" id="search" placeholder="Поиск товара..." oninput="filter()" class="w-full p-4 bg-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500">
+    <div id="status-bar" class="bg-green-500">Успешно сохранено!</div>
+
+    <header class="bg-white p-4 shadow-sm z-10">
+        <div class="flex justify-between items-center mb-3">
+            <h1 class="text-xl font-bold tracking-tight">Терминал МБ</h1>
+            <label class="flex items-center gap-2 bg-gray-100 px-3 py-2 rounded-full cursor-pointer">
+                <input type="checkbox" id="return-mode" class="w-4 h-4 text-red-600">
+                <span class="text-xs font-bold text-red-600">ВОЗВРАТ</span>
+            </label>
+        </div>
+        <input type="text" id="search" placeholder="Поиск по названию..." oninput="filterCatalog()" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 border border-gray-200">
     </header>
 
-    <main class="scroll-area p-4 grid grid-cols-2 gap-3" id="catalog"></main>
+    <div class="main-container">
+        <div id="catalog" class="catalog-grid"></div>
+    </div>
 
-    <section class="bg-white border-t p-4 shadow-2xl">
-        <div id="cart-list" class="max-h-40 overflow-y-auto mb-4 space-y-2"></div>
-        <div class="flex justify-between items-center mb-4">
-            <span class="text-gray-500 font-bold">ИТОГО:</span>
-            <span id="total" class="text-3xl font-black text-blue-600">0 ₸</span>
+    <section class="bg-white border-t rounded-t-[32px] p-5 shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.1)]">
+        <div id="cart" class="max-h-[30vh] overflow-y-auto mb-4">
+            <p class="text-center text-gray-400 py-4 text-sm">Корзина пуста</p>
         </div>
-        <div class="grid grid-cols-3 gap-2">
-            <button onclick="send('cash')" class="btn-pay bg-emerald-500 text-white">Наличные</button>
-            <button onclick="send('qr_kaspi')" class="btn-pay bg-red-500 text-white">Kaspi QR</button>
-            <button onclick="send('pos_terminal')" class="btn-pay bg-blue-500 text-white">Карта</button>
-            <button onclick="send('transfer')" class="btn-pay bg-orange-400 text-white">Перевод</button>
-            <button onclick="send('installment')" class="btn-pay bg-purple-500 text-white">Рассрочка</button>
-            <button onclick="toggleCart()" class="btn-pay bg-gray-200 text-gray-700">Корзина</button>
+        
+        <div class="flex justify-between items-center mb-5 px-1">
+            <span class="text-gray-400 font-bold">ИТОГО К ОПЛАТЕ:</span>
+            <span id="total" class="text-3xl font-black text-blue-700">0 ₸</span>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+            <button onclick="submitOrder('cash')" class="h-14 bg-green-500 text-white rounded-2xl font-bold shadow-lg shadow-green-100 active:scale-95 transition-all">НАЛИЧНЫЕ</button>
+            <button onclick="submitOrder('qr_kaspi')" class="h-14 bg-red-500 text-white rounded-2xl font-bold shadow-lg shadow-red-100 active:scale-95 transition-all text-xs">KASPI QR</button>
+            <button onclick="submitOrder('pos_terminal')" class="h-14 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-100 active:scale-95 transition-all">КАРТА</button>
+            <button onclick="submitOrder('transfer')" class="h-14 bg-orange-400 text-white rounded-2xl font-bold active:scale-95 transition-all text-xs">ПЕРЕВОД</button>
+            <button onclick="submitOrder('installment')" class="h-14 bg-purple-500 text-white rounded-2xl font-bold active:scale-95 transition-all text-[10px]">РАССРОЧКА</button>
+            <button onclick="clearCart()" class="h-14 bg-gray-100 text-gray-400 rounded-2xl font-bold active:scale-95 transition-all">СБРОС</button>
         </div>
     </section>
 
 <script>
-    let db = [], cart = [];
+    let itemsDb = [], cart = [];
 
-    async function load() {
-        const res = await fetch(`${APPS_SCRIPT_URL}?action=getItems&t=${Date.now()}`);
-        db = await res.json();
-        render(db);
+    async function loadData() {
+        const url = `${APPS_SCRIPT_URL}?action=getItems&t=${Date.now()}`;
+        const res = await fetch(url);
+        itemsDb = await res.json();
+        renderCatalog(itemsDb);
     }
 
-    function render(data) {
-        document.getElementById('catalog').innerHTML = data.map(item => `
-            <div onclick="add('${item.id}')" class="bg-white p-4 rounded-2xl shadow-sm border active:bg-blue-50">
-                <div class="text-[10px] text-gray-400">ID: ${item.id}</div>
-                <div class="font-bold text-sm h-10 overflow-hidden leading-tight">${item.name}</div>
-                <div class="mt-2 text-blue-600 font-black">${item.price} ₸</div>
+    function renderCatalog(list) {
+        document.getElementById('catalog').innerHTML = list.map(item => `
+            <div onclick="addToCart('${item.id}')" class="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm active:bg-blue-50 transition-colors">
+                <div class="text-[10px] text-gray-400 font-mono">#${item.id}</div>
+                <div class="font-bold text-sm h-10 overflow-hidden leading-tight my-1 text-gray-700">${item.name}</div>
+                <div class="flex justify-between items-end mt-2">
+                    <span class="text-blue-600 font-black">${item.price} ₸</span>
+                    <span class="text-[10px] bg-gray-100 px-2 py-1 rounded-lg text-gray-500">🛒 ${item.stock}</span>
+                </div>
             </div>
         `).join('');
     }
 
-    function add(id) {
-        const item = db.find(i => i.id === id);
+    function addToCart(id) {
+        const product = itemsDb.find(i => i.id === id);
         const exists = cart.find(c => c.id === id);
         if (exists) exists.quantity++;
-        else cart.push({...item, quantity: 1});
-        update();
+        else cart.push({...product, quantity: 1});
+        updateCart();
     }
 
-    function update() {
-        const list = document.getElementById('cart-list');
-        list.innerHTML = cart.map((c, idx) => `
-            <div class="flex items-center gap-2 bg-gray-50 p-2 rounded-xl">
-                <div class="flex-1 text-xs font-bold">${c.name}</div>
-                <input type="number" value="${c.price}" onfocus="this.select()" oninput="cart[${idx}].price=Number(this.value);updateTotal()" class="w-16 p-1 text-center border rounded-lg text-blue-600 font-bold">
-                <div class="flex items-center bg-white border rounded-lg">
-                    <button onclick="cart[${idx}].quantity--;clean();update()" class="px-2 py-1">-</button>
-                    <span class="px-2 font-bold">${c.quantity}</span>
-                    <button onclick="cart[${idx}].quantity++;update()" class="px-2 py-1">+</button>
+    function updateCart() {
+        const container = document.getElementById('cart');
+        if (cart.length === 0) {
+            container.innerHTML = '<p class="text-center text-gray-400 py-4 text-sm">Корзина пуста</p>';
+            updateTotal();
+            return;
+        }
+
+        container.innerHTML = cart.map((c, idx) => `
+            <div class="cart-item">
+                <div class="flex justify-between items-start mb-3">
+                    <span class="text-xs font-bold text-gray-700 flex-1 pr-4">${c.name}</span>
+                    <input type="number" value="${c.price}" 
+                           onfocus="this.select()" 
+                           oninput="cart[${idx}].price=Number(this.value);updateTotal()"
+                           class="price-input">
+                </div>
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <button onclick="changeQty(${idx}, -1)" class="btn-qty text-red-500">-</button>
+                        <span class="text-lg font-black w-6 text-center">${c.quantity}</span>
+                        <button onclick="changeQty(${idx}, 1)" class="btn-qty text-green-600">+</button>
+                    </div>
+                    <span class="font-bold text-gray-400 text-sm">${(c.price * c.quantity).toLocaleString()} ₸</span>
                 </div>
             </div>
         `).join('');
         updateTotal();
+    }
+
+    function changeQty(idx, delta) {
+        cart[idx].quantity += delta;
+        if (cart[idx].quantity <= 0) cart.splice(idx, 1);
+        updateCart();
     }
 
     function updateTotal() {
@@ -86,39 +127,60 @@
         document.getElementById('total').innerText = sum.toLocaleString() + ' ₸';
     }
 
-    function clean() { cart = cart.filter(c => c.quantity > 0); }
-
-    async function send(method) {
+    async function submitOrder(method) {
         if (!cart.length) return;
+        const total = cart.reduce((a, b) => a + (b.price * b.quantity), 0);
+        const isReturn = document.getElementById('return-mode').checked;
+        const msg = isReturn ? `ОФОРМИТЬ ВОЗВРАТ на ${total} ₸?` : `Продать на ${total} ₸?`;
         
-        // Убрали двойное подтверждение. Оставили одно простое.
-        const sum = cart.reduce((a, b) => a + (b.price * b.quantity), 0);
-        if (!confirm(`Продать за ${sum} ₸?`)) return;
+        if (!confirm(msg)) return;
 
         const btn = event.target;
         btn.disabled = true;
-        btn.innerText = "Ждите...";
+        const oldColor = btn.style.backgroundColor;
+        btn.style.opacity = '0.5';
 
         try {
-            const data = { paymentMethod: method, cart: cart };
-            await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(data) });
-            fetch(MAKE_WEBHOOK_URL, { method: 'POST', body: JSON.stringify(data) }); // Фоновая отправка в Make
+            const data = { 
+                paymentMethod: method, 
+                cart: cart, 
+                isReturn: isReturn 
+            };
             
-            alert("Готово!");
+            // Одновременная отправка в Google и Make
+            await Promise.all([
+                fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(data) }),
+                fetch(MAKE_WEBHOOK_URL, { method: 'POST', body: JSON.stringify(data), headers: {'Content-Type': 'application/json'} })
+            ]);
+
+            showStatus(); // Показываем плашку вместо модального окна alert
             cart = [];
-            update();
-            load();
-        } catch (e) { alert("Ошибка!"); } 
-        finally { btn.disabled = false; btn.innerText = method.toUpperCase(); }
+            document.getElementById('return-mode').checked = false;
+            updateCart();
+            loadData();
+        } catch (e) {
+            alert("Ошибка сети. Проверьте соединение.");
+        } finally {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+        }
     }
 
-    function filter() {
+    function showStatus() {
+        const bar = document.getElementById('status-bar');
+        bar.style.top = '0px';
+        setTimeout(() => { bar.style.top = '-100px'; }, 2000);
+    }
+
+    function clearCart() { if(confirm('Очистить корзину?')) { cart = []; updateCart(); } }
+
+    function filterCatalog() {
         const q = document.getElementById('search').value.toLowerCase();
-        render(db.filter(i => i.name.toLowerCase().includes(q)));
+        renderCatalog(itemsDb.filter(i => i.name.toLowerCase().includes(q)));
     }
 
-    window.onload = load;
+    window.onload = loadData;
 </script>
-<script src="config.js?v=5.2"></script>
+<script src="config.js?v=5.3"></script>
 </body>
 </html>
