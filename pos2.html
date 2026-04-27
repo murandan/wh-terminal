@@ -3,64 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>POS Noir V3.1</title>
+    <title>POS Noir V3.3</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Courier New", Courier, monospace; }
         body { background: #0a0a0a; color: #fff; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
-        
         .modes { display: flex; padding: 8px; gap: 6px; flex-shrink: 0; }
-        .m-btn { flex: 1; padding: 10px; border: 1px solid #333; background: #111; color: #555; font-weight: 900; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        .m-btn { flex: 1; padding: 12px; border: 1px solid #333; background: #111; color: #555; font-weight: 900; border-radius: 4px; }
         .m-btn.active-s { background: #1a3a20; color: #2ecc71; border-color: #2ecc71; }
         .m-btn.active-r { background: #3a1a1a; color: #e74c3c; border-color: #e74c3c; }
-
         .search-area { padding: 0 8px 8px; flex-shrink: 0; }
-        .s-input { width: 100%; background: #141414; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 10px; font-size: 16px; outline: none; }
-
+        .s-input { width: 100%; background: #141414; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 12px; font-size: 16px; outline: none; }
         #catalog { flex-grow: 1; overflow-y: auto; padding: 0 8px; }
-        .c-item { background: #141414; border: 1px solid #222; border-radius: 6px; padding: 10px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
-        .i-name { font-size: 15px; font-weight: bold; }
-        .i-meta { font-size: 12px; color: #f1c40f; margin-top: 2px; }
-
-        .cart-sec { background: #111; border-top: 2px solid #2ecc71; display: flex; flex-direction: column; max-height: 45%; }
+        .c-item { background: #141414; border: 1px solid #222; border-radius: 8px; padding: 12px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+        .cart-sec { background: #111; border-top: 2px solid #2ecc71; max-height: 45%; display: flex; flex-direction: column; }
         .cart-sec.r-theme { border-top-color: #e74c3c; }
-        #cart-list { overflow-y: auto; padding: 8px; flex-grow: 1; }
-        
-        .cart-row { background: #1a1a1a; padding: 6px 10px; border-radius: 6px; margin-bottom: 5px; border: 1px solid #333; }
-        .row-top { font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #ccc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        /* ЗАПАС ПОД КЛАВИАТУРУ */
+        #cart-list { overflow-y: auto; padding: 8px; flex-grow: 1; padding-bottom: 200px; }
+        .cart-row { background: #1a1a1a; padding: 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid #333; }
         .row-ctrl { display: flex; justify-content: space-between; align-items: center; }
-        
         .qty-box { display: flex; align-items: center; background: #000; border-radius: 4px; border: 1px solid #444; }
-        .q-btn { background: #222; color: #f1c40f; width: 34px; height: 34px; border: none; font-size: 18px; }
-        .q-val { width: 28px; text-align: center; font-size: 14px; font-weight: bold; }
-        
-        .p-input { width: 85px; background: #000; color: #f1c40f; border: 1px solid #444; text-align: right; padding: 6px; border-radius: 4px; font-size: 16px; font-weight: bold; outline: none; }
-        
-        .footer { padding: 8px 10px; background: #111; border-top: 1px solid #222; flex-shrink: 0; }
-        .total-box { display: flex; justify-content: space-between; font-size: 18px; font-weight: 900; margin-bottom: 8px; }
-        .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-        .pay { height: 44px; border: none; border-radius: 4px; font-weight: bold; font-size: 10px; color: #fff; text-transform: uppercase; }
+        .q-btn { background: #222; color: #f1c40f; width: 42px; height: 42px; border: none; font-size: 24px; }
+        .p-input { width: 100px; background: #000; color: #f1c40f; border: 1px solid #444; text-align: right; padding: 12px; border-radius: 4px; font-size: 18px; font-weight: bold; outline: none; }
+        .footer { padding: 10px; background: #111; border-top: 1px solid #222; }
+        .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .pay { height: 50px; border: none; border-radius: 4px; font-weight: bold; font-size: 11px; color: #fff; text-transform: uppercase; }
         .sync { opacity: 0.2; pointer-events: none; }
     </style>
 </head>
 <body>
-
     <div class="modes">
         <button id="ms" class="m-btn active-s" onclick="sm('sale')">ПРОДАЖА</button>
         <button id="mr" class="m-btn" onclick="sm('return')">ВОЗВРАТ</button>
     </div>
-
-    <div class="search-area">
-        <input type="text" id="sb" class="s-input" placeholder="ПОИСК..." onkeyup="filter()">
-    </div>
-
+    <div class="search-area"><input type="text" id="sb" class="s-input" placeholder="ПОИСК..." onkeyup="filter()"></div>
     <div id="catalog"></div>
-
     <div id="cs" class="cart-sec">
         <div id="cart-list"></div>
         <div class="footer">
-            <div class="total-box">
-                <span id="tl">ИТОГО:</span>
-                <span id="ta">0</span>
+            <div style="display:flex; justify-content:space-between; font-size:22px; font-weight:900; margin-bottom:10px;">
+                <span id="tl">ИТОГО:</span><span id="ta">0</span>
             </div>
             <div class="btns">
                 <button class="pay" style="background:#27ae60" onclick="pay('cash')">Наличные</button>
@@ -71,10 +52,9 @@
         </div>
     </div>
 
-    <script src="config.js?v=3.1"></script>
+    <script src="config.js?v=3.3"></script>
     <script>
         let db = [], cart = [], mode = 'sale';
-
         function sm(m) {
             mode = m;
             document.getElementById('ms').classList.toggle('active-s', m==='sale');
@@ -82,97 +62,72 @@
             document.getElementById('cs').classList.toggle('r-theme', m==='return');
             document.getElementById('tl').innerText = m==='return'?'ВОЗВРАТ:':'ИТОГО:';
         }
-
         async function load() {
-            try {
-                const res = await fetch(APPS_SCRIPT_URL + "?action=getItems&t=" + Date.now());
-                db = await res.json();
-                render();
-            } catch (e) { console.error("Load Error"); }
+            const res = await fetch(APPS_SCRIPT_URL + "?action=getItems&t=" + Date.now());
+            db = await res.json();
+            render();
         }
-
         function render() {
             document.getElementById('catalog').innerHTML = db.map(i => `
                 <div class="c-item" onclick="add('${i.id}')">
-                    <div>
-                        <div class="i-name">${i.name}</div>
-                        <div class="i-meta">${i.price} ₸ <span style="color:#666;margin-left:10px">[ОСТ: ${i.stock||0}]</span></div>
-                    </div>
-                    <div style="font-size:20px;color:#f1c40f">+</div>
+                    <div><div style="font-size:16px;font-weight:bold">${i.name}</div>
+                    <div style="font-size:12px;color:#f1c40f">${i.price} ₸ <span style="color:#666;margin-left:10px">[ОСТ: ${i.stock||0}]</span></div></div>
+                    <div style="font-size:24px;color:#f1c40f">+</div>
                 </div>
             `).join('');
         }
-
         function filter() {
             let q = document.getElementById('sb').value.toLowerCase();
             document.querySelectorAll('.c-item').forEach(el => {
                 el.style.display = el.innerText.toLowerCase().includes(q)?'flex':'none';
             });
         }
-
         function add(id) {
             const p = db.find(x => x.id === id);
             const inC = cart.find(x => x.id === id);
             if (inC) inC.qty++;
             else cart.push({id:p.id, name:p.name, qty:1, price:p.price, cost:p.cost});
             update();
-            const list = document.getElementById('cart-list');
-            list.scrollTop = list.scrollHeight;
         }
-
         function update() {
-            const list = document.getElementById('cart-list');
-            list.innerHTML = cart.map((item, idx) => `
+            document.getElementById('cart-list').innerHTML = cart.map((item, idx) => `
                 <div class="cart-row" id="r-${item.id}">
-                    <div class="row-top">${item.name}</div>
+                    <div style="font-size:13px;color:#aaa;margin-bottom:8px">${item.name}</div>
                     <div class="row-ctrl">
                         <div class="qty-box">
                             <button class="q-btn" onclick="qty('${item.id}',-1)">-</button>
-                            <div class="q-val">${item.qty}</div>
+                            <div style="width:30px;text-align:center;font-weight:bold">${item.qty}</div>
                             <button class="q-btn" onclick="qty('${item.id}',1)">+</button>
                         </div>
                         <input type="number" class="p-input" value="${item.price}" 
-                               onfocus="this.select();setTimeout(()=>document.getElementById('r-${item.id}').scrollIntoView({behavior:'smooth',block:'center'}),350)" 
+                               onfocus="this.select();setTimeout(()=>document.getElementById('r-${item.id}').scrollIntoView({behavior:'smooth',block:'center'}),400)" 
                                oninput="cart[${idx}].price=parseFloat(this.value)||0;total()">
-                        <div onclick="rm('${item.id}')" style="color:#e74c3c;padding:5px;font-size:18px">✕</div>
+                        <div onclick="rm('${item.id}')" style="color:#e74c3c;padding:5px;font-size:20px">✕</div>
                     </div>
                 </div>
             `).join('');
             total();
         }
-
         function qty(id, d) {
             const i = cart.find(x => x.id === id);
             if(i) { i.qty += d; if(i.qty <= 0) rm(id); else update(); }
         }
-
         function rm(id) { cart = cart.filter(x => x.id !== id); update(); }
-
         function total() {
             const s = cart.reduce((a, b) => a + (b.price * b.qty), 0);
             document.getElementById('ta').innerText = s.toLocaleString();
         }
-
         async function pay(m) {
             if (!cart.length) return;
             document.getElementById('cs').classList.add('sync');
             const tid = (mode==='sale'?'SL-':'RT-') + Math.random().toString(36).substring(7).toUpperCase();
-            
-            const p = {
-                tx_id: tid, tx_type: mode, payment_method: m, source: "pos_v3.1_noir",
-                cart: cart.map(c => ({item_id:c.id, item_name:c.name, qty:c.qty, price:c.price, cost_price:c.cost}))
-            };
-
+            const p = { tx_id: tid, tx_type: mode, payment_method: m, source: "pos_v3.3_noir", cart: cart.map(c => ({item_id:c.id, item_name:c.name, qty:c.qty, price:c.price, cost_price:c.cost})) };
             try {
-                await Promise.all([
-                    fetch(APPS_SCRIPT_URL, {method:'POST', body:JSON.stringify(p)}),
-                    fetch(MAKE_WEBHOOK_URL, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(p)})
-                ]);
+                await Promise.all([ fetch(APPS_SCRIPT_URL, {method:'POST', body:JSON.stringify(p)}), fetch(MAKE_WEBHOOK_URL, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(p)}) ]);
                 document.getElementById('ta').innerText = "DONE";
-                setTimeout(() => { cart=[]; update(); document.getElementById('cs').classList.remove('sync'); load(); }, 700);
-            } catch (e) { alert("FAIL"); document.getElementById('cs').classList.remove('sync'); }
+                setTimeout(() => { cart=[]; update(); document.getElementById('cs').classList.remove('sync'); load(); }, 800);
+            } catch (e) { alert("ERROR"); document.getElementById('cs').classList.remove('sync'); }
         }
-
         load();
     </script>
 </body>
