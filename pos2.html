@@ -3,206 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>POS-Терминал МБ V5.1</title>
+    <title>POS Pro V5.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Соответствие Mobile UX стандартам: исключаем прокрутку всей страницы */
-        body { height: 100dvh; overflow: hidden; background: #f3f4f6; }
-        .safe-area { height: 100%; display: flex; flex-direction: column; }
-        
-        /* Проблема "толстых пальцев": кнопки минимум 45px */
-        .btn-touch { min-height: 48px; display: flex; align-items: center; justify-content: center; }
-        
-        /* Контейнер каталога с прокруткой */
-        #catalog-container { flex: 1; overflow-y: auto; padding-bottom: 20px; }
-        
-        /* Сетка товаров */
-        .item-card { background: white; border-radius: 12px; padding: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        
-        /* Анимация загрузки */
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        body { height: 100dvh; display: flex; flex-direction: column; background: #f8fafc; font-family: sans-serif; }
+        .scroll-area { flex: 1; overflow-y: auto; }
+        .btn-pay { min-height: 55px; border-radius: 14px; font-weight: 800; text-transform: uppercase; font-size: 12px; transition: all 0.1s; }
+        .btn-pay:active { transform: scale(0.95); }
+        input[type="number"] { -moz-appearance: textfield; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; }
     </style>
 </head>
 <body>
 
-<div class="safe-area">
-    <header class="bg-white p-4 shadow-sm">
-        <div class="flex justify-between items-center mb-3">
-            <h1 class="text-xl font-bold text-gray-800">Касса МБ</h1>
-            <div id="cart-counter" class="bg-blue-600 text-white px-3 py-1 rounded-full text-sm">Корзина: 0</div>
-        </div>
-        <input type="text" id="search-input" placeholder="Поиск товара..." 
-               class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-               oninput="filterCatalog()">
+    <header class="bg-white border-b p-4">
+        <input type="text" id="search" placeholder="Поиск товара..." oninput="filter()" class="w-full p-4 bg-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500">
     </header>
 
-    <main id="catalog-container" class="p-4 grid grid-cols-2 gap-4">
-        <div id="loading-state" class="col-span-2 flex flex-col items-center justify-center py-20">
-            <div class="loader mb-4"></div>
-            <p class="text-gray-500 font-medium">Загрузка товаров...</p>
-        </div>
-    </main>
+    <main class="scroll-area p-4 grid grid-cols-2 gap-3" id="catalog"></main>
 
-    <footer class="bg-white p-4 border-t shadow-lg">
+    <section class="bg-white border-t p-4 shadow-2xl">
+        <div id="cart-list" class="max-h-40 overflow-y-auto mb-4 space-y-2"></div>
         <div class="flex justify-between items-center mb-4">
-            <span class="text-gray-600">Итого к оплате:</span>
-            <span id="total-price" class="text-2xl font-black text-blue-700">0 ₸</span>
+            <span class="text-gray-500 font-bold">ИТОГО:</span>
+            <span id="total" class="text-3xl font-black text-blue-600">0 ₸</span>
         </div>
-        <div class="grid grid-cols-2 gap-3">
-            <button onclick="processOrder('cash')" class="btn-touch bg-green-600 text-white rounded-xl font-bold active:scale-95 transition-transform">Наличные</button>
-            <button onclick="processOrder('qr_kaspi')" class="btn-touch bg-blue-600 text-white rounded-xl font-bold active:scale-95 transition-transform">Kaspi QR</button>
+        <div class="grid grid-cols-3 gap-2">
+            <button onclick="send('cash')" class="btn-pay bg-emerald-500 text-white">Наличные</button>
+            <button onclick="send('qr_kaspi')" class="btn-pay bg-red-500 text-white">Kaspi QR</button>
+            <button onclick="send('pos_terminal')" class="btn-pay bg-blue-500 text-white">Карта</button>
+            <button onclick="send('transfer')" class="btn-pay bg-orange-400 text-white">Перевод</button>
+            <button onclick="send('installment')" class="btn-pay bg-purple-500 text-white">Рассрочка</button>
+            <button onclick="toggleCart()" class="btn-pay bg-gray-200 text-gray-700">Корзина</button>
         </div>
-    </footer>
-</div>
-
-<div id="cart-modal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-end">
-    <div class="bg-white w-full rounded-t-3xl p-6 max-h-[80vh] overflow-y-auto">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-xl font-bold">Ваш заказ</h2>
-            <button onclick="toggleCart()" class="text-gray-400 text-2xl">&times;</button>
-        </div>
-        <div id="cart-items-list" class="space-y-4 mb-6">
-            </div>
-        <button onclick="toggleCart()" class="w-full btn-touch bg-gray-200 rounded-xl font-bold">Продолжить покупки</button>
-    </div>
-</div>
+    </section>
 
 <script>
-    let itemsDb = [];
-    let cart = [];
+    let db = [], cart = [];
 
-    // 1. ЗАГРУЗКА ДАННЫХ (Критический узел)
-    async function loadCatalog() {
-        try {
-            // Проверяем наличие URL в конфиге
-            if (typeof APPS_SCRIPT_URL === 'undefined') {
-                throw new Error("Конфигурация не загружена");
-            }
-
-            // Формируем запрос согласно стандарту V5.1
-            const requestUrl = `${APPS_SCRIPT_URL}?action=getItems&t=${Date.now()}`;
-            
-            const response = await fetch(requestUrl);
-            if (!response.ok) throw new Error("Ошибка сервера Google");
-            
-            itemsDb = await response.json();
-            console.log("База данных получена:", itemsDb);
-            
-            renderCatalog(itemsDb);
-        } catch (e) {
-            console.error("Ошибка:", e);
-            document.getElementById('catalog-container').innerHTML = 
-                `<div class="col-span-2 text-red-500 text-center py-10">
-                    Ошибка подключения к базе. <br>
-                    Проверьте config.js и доступ в Apps Script.
-                </div>`;
-        }
+    async function load() {
+        const res = await fetch(`${APPS_SCRIPT_URL}?action=getItems&t=${Date.now()}`);
+        db = await res.json();
+        render(db);
     }
 
-    // 2. ОТРИСОВКА КАРТОЧЕК
-    function renderCatalog(list) {
-        const container = document.getElementById('catalog-container');
-        container.innerHTML = '';
-        
-        list.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'item-card flex flex-col justify-between';
-            card.innerHTML = `
-                <div>
-                    <div class="text-xs text-gray-400 mb-1">${item.id}</div>
-                    <div class="font-bold text-gray-800 leading-tight mb-2">${item.name}</div>
+    function render(data) {
+        document.getElementById('catalog').innerHTML = data.map(item => `
+            <div onclick="add('${item.id}')" class="bg-white p-4 rounded-2xl shadow-sm border active:bg-blue-50">
+                <div class="text-[10px] text-gray-400">ID: ${item.id}</div>
+                <div class="font-bold text-sm h-10 overflow-hidden leading-tight">${item.name}</div>
+                <div class="mt-2 text-blue-600 font-black">${item.price} ₸</div>
+            </div>
+        `).join('');
+    }
+
+    function add(id) {
+        const item = db.find(i => i.id === id);
+        const exists = cart.find(c => c.id === id);
+        if (exists) exists.quantity++;
+        else cart.push({...item, quantity: 1});
+        update();
+    }
+
+    function update() {
+        const list = document.getElementById('cart-list');
+        list.innerHTML = cart.map((c, idx) => `
+            <div class="flex items-center gap-2 bg-gray-50 p-2 rounded-xl">
+                <div class="flex-1 text-xs font-bold">${c.name}</div>
+                <input type="number" value="${c.price}" onfocus="this.select()" oninput="cart[${idx}].price=Number(this.value);updateTotal()" class="w-16 p-1 text-center border rounded-lg text-blue-600 font-bold">
+                <div class="flex items-center bg-white border rounded-lg">
+                    <button onclick="cart[${idx}].quantity--;clean();update()" class="px-2 py-1">-</button>
+                    <span class="px-2 font-bold">${c.quantity}</span>
+                    <button onclick="cart[${idx}].quantity++;update()" class="px-2 py-1">+</button>
                 </div>
-                <div class="flex items-center justify-between mt-2">
-                    <div class="text-blue-700 font-black">${item.price} ₸</div>
-                    <button onclick="addToCart('${item.id}')" 
-                            class="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-bold border border-blue-100 active:bg-blue-600 active:text-white">
-                        +
-                    </button>
-                </div>
-                <div class="text-[10px] text-gray-400 mt-1 text-right">Остаток: ${item.stock}</div>
-            `;
-            container.appendChild(card);
-        });
+            </div>
+        `).join('');
+        updateTotal();
     }
 
-    // 3. ЛОГИКА КОРЗИНЫ
-    function addToCart(id) {
-        const product = itemsDb.find(i => i.id === id);
-        const inCart = cart.find(c => c.id === id);
+    function updateTotal() {
+        const sum = cart.reduce((a, b) => a + (b.price * b.quantity), 0);
+        document.getElementById('total').innerText = sum.toLocaleString() + ' ₸';
+    }
+
+    function clean() { cart = cart.filter(c => c.quantity > 0); }
+
+    async function send(method) {
+        if (!cart.length) return;
         
-        if (inCart) {
-            inCart.quantity++;
-        } else {
-            cart.push({ ...product, quantity: 1 });
-        }
-        updateUI();
-    }
+        // Убрали двойное подтверждение. Оставили одно простое.
+        const sum = cart.reduce((a, b) => a + (b.price * b.quantity), 0);
+        if (!confirm(`Продать за ${sum} ₸?`)) return;
 
-    function updateUI() {
-        const total = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-        document.getElementById('total-price').innerText = `${total.toLocaleString()} ₸`;
-        document.getElementById('cart-counter').innerText = `Корзина: ${cart.length}`;
-    }
-
-    function filterCatalog() {
-        const query = document.getElementById('search-input').value.toLowerCase();
-        const filtered = itemsDb.filter(i => i.name.toLowerCase().includes(query));
-        renderCatalog(filtered);
-    }
-
-    // 4. ФИНАЛИЗАЦИЯ ЗАКАЗА (Отправка в Make.com)
-    async function processOrder(method) {
-        if (cart.length === 0) return alert("Корзина пуста!");
-        
-        const total = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-        const confirmOrder = confirm(`Продать на сумму ${total} ₸?`);
-        if (!confirmOrder) return;
-
-        // Показываем индикатор ожидания
         const btn = event.target;
-        const originalText = btn.innerText;
-        btn.innerText = "Отправка...";
         btn.disabled = true;
+        btn.innerText = "Ждите...";
 
         try {
-            // Данные для отправки
-            const orderData = {
-                paymentMethod: method,
-                cart: cart,
-                timestamp: new Date().toISOString()
-            };
-
-            // 1. Отправка в Google (для мгновенной записи в Transactions)
-            await fetch(APPS_SCRIPT_URL, {
-                method: "POST",
-                body: JSON.stringify(orderData)
-            });
-
-            // 2. Отправка в Make.com (для уведомлений и аналитики)
-            await fetch(MAKE_WEBHOOK_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(orderData)
-            });
-
-            alert("Продажа успешно зафиксирована!");
+            const data = { paymentMethod: method, cart: cart };
+            await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(data) });
+            fetch(MAKE_WEBHOOK_URL, { method: 'POST', body: JSON.stringify(data) }); // Фоновая отправка в Make
+            
+            alert("Готово!");
             cart = [];
-            updateUI();
-            loadCatalog(); // Обновляем остатки
-        } catch (err) {
-            alert("Ошибка при сохранении: " + err.message);
-        } finally {
-            btn.innerText = originalText;
-            btn.disabled = false;
-        }
+            update();
+            load();
+        } catch (e) { alert("Ошибка!"); } 
+        finally { btn.disabled = false; btn.innerText = method.toUpperCase(); }
     }
 
-    // Инициализация при загрузке
-    window.onload = loadCatalog;
+    function filter() {
+        const q = document.getElementById('search').value.toLowerCase();
+        render(db.filter(i => i.name.toLowerCase().includes(q)));
+    }
+
+    window.onload = load;
 </script>
-
-<script src="config.js?v=5.1"></script>
-
+<script src="config.js?v=5.2"></script>
 </body>
 </html>
