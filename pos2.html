@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>POS Noir V4.2.2</title>
+    <title>POS Noir V4.2.3</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Courier New", Courier, monospace; }
         body { background: #0a0a0a; color: #fff; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; transition: background-color 0.3s; }
@@ -123,7 +123,7 @@
         </div>
     </div>
 
-    <script src="config.js?v=4.2.2"></script>
+    <script src="config.js?v=4.2.3"></script>
     <script>
         let db = [], cart = [], mode = 'sale';
         let pendingMethod = null; 
@@ -180,12 +180,12 @@
                     <div class="row-top">${item.name}</div>
                     <div class="row-ctrl">
                         <div class="qty-box">
-                            <button class="q-btn" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" onclick="qty('${item.id}',-1)">-</button>
+                            <button class="q-btn" onclick="qty('${item.id}',-1)">-</button>
                             <input type="text" inputmode="numeric" pattern="[0-9]*" class="q-val" value="${item.qty}" 
                                    onfocus="handleFocus(this, 'r-${item.id}')" 
                                    oninput="cart[${idx}].qty=parseInt(this.value)||0; total()"
                                    onblur="if(cart[${idx}].qty<=0) rm('${item.id}')">
-                            <button class="q-btn" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" onclick="qty('${item.id}',1)">+</button>
+                            <button class="q-btn" onclick="qty('${item.id}',1)">+</button>
                         </div>
                         <input type="text" inputmode="numeric" pattern="[0-9]*" class="p-input" value="${item.price}" 
                                onfocus="handleFocus(this, 'r-${item.id}')" 
@@ -209,7 +209,7 @@
                 if(i.qty <= 0) {
                     rm(id); 
                 } else {
-                    // ТОЧЕЧНОЕ ОБНОВЛЕНИЕ: меняем цифру без перерисовки всей корзины
+                    // Точечное обновление без перерисовки всей корзины
                     const row = document.getElementById('r-' + id);
                     if (row) {
                         row.querySelector('.q-val').value = i.qty;
@@ -267,7 +267,7 @@
 
             const tid = (mode==='sale'?'SL-':'RT-') + Math.random().toString(36).substring(7).toUpperCase();
             const p = {
-                tx_id: tid, tx_type: mode, payment_method: pendingMethod, source: "pos_v4.2.2",
+                tx_id: tid, tx_type: mode, payment_method: pendingMethod, source: "pos_v4.2.3",
                 cart: cart.map(c => ({item_id:c.id, item_name:c.name, qty:c.qty, price:c.price, cost_price:c.cost}))
             };
             
