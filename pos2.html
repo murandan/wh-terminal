@@ -174,31 +174,49 @@
         }
 
         function update() {
-            const list = document.getElementById('cart-list');
-            list.innerHTML = cart.map((item, idx) => `
-                <div class="cart-row" id="r-${item.id}">
-                    <div class="row-top">${item.name}</div>
-                    <div class="row-ctrl">
-                        <div class="qty-box">
-                            <button class="q-btn" onclick="qty('${item.id}',-1)">-</button>
-                            <div class="q-val">${item.qty}</div>
-                            <button class="q-btn" onclick="qty('${item.id}',1)">+</button>
-                        </div>
-                        <input type="number" inputmode="numeric" pattern="[0-9]*" class="p-input" value="${item.price}" 
-                               onfocus="handleFocus(this, 'r-${item.id}')" 
-                               oninput="cart[${idx}].price=parseFloat(this.value)||0;total()"
-                               onkeydown="if(event.key==='Enter') this.blur()">
-                        <div onclick="rm('${item.id}')" style="color:#e74c3c;padding:3px;font-size:18px;cursor:pointer;">✕</div>
-                    </div>
+    const list = document.getElementById('cart-list');
+    list.innerHTML = cart.map((item, idx) => `
+        <div class="cart-row" id="r-${item.id}">
+            <div class="row-top">${item.name}</div>
+            <div class="row-ctrl">
+                <div class="qty-box">
+                    <button class="q-btn" onclick="qty('${item.id}',-1)">-</button>
+                    <input type="text" 
+                           inputmode="numeric" 
+                           pattern="[0-9]*" 
+                           class="q-val" 
+                           style="background:transparent; color:#fff; border:none; outline:none;"
+                           value="${item.qty}" 
+                           onfocus="handleFocus(this, 'r-${item.id}')"
+                           oninput="cart[${idx}].qty=parseInt(this.value)||0; total()">
+                    <button class="q-btn" onclick="qty('${item.id}',1)">+</button>
                 </div>
-            `).join('');
-            total();
-        }
+                
+                <input type="text" 
+                       inputmode="numeric" 
+                       pattern="[0-9]*" 
+                       class="p-input" 
+                       value="${item.price}" 
+                       onfocus="handleFocus(this, 'r-${item.id}')" 
+                       oninput="cart[${idx}].price=parseFloat(this.value)||0; total()">
+                
+                <div onclick="rm('${item.id}')" style="color:#e74c3c; padding:3px; font-size:16px; cursor:pointer;">✕</div>
+            </div>
+        </div>
+    `).join('');
+    total();
+}
 
         function handleFocus(elem, rowId) {
-            elem.select();
-            setTimeout(() => { document.getElementById(rowId).scrollIntoView({behavior: "smooth", block: "center"}); }, 350);
+    elem.select(); // Выделяем текст, чтобы сразу начать вводить новое число
+    setTimeout(() => {
+        // Находим всю строку товара по ID и плавно ставим её в центр экрана
+        const row = document.getElementById(rowId);
+        if (row) {
+            row.scrollIntoView({behavior: "smooth", block: "center"});
         }
+    }, 350); // Ждем 350мс, пока iPhone выкатит клавиатуру
+}
 
         function qty(id, d) {
             const i = cart.find(x => x.id === id);
