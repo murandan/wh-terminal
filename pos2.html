@@ -80,7 +80,9 @@
             <button id="mr" class="m-btn" onclick="sm('return')">ВОЗВРАТ</button>
         </div>
         <div class="search-area">
-            <input type="text" id="sb" class="s-input" placeholder="ПОИСК..." onkeyup="filter()">
+            <input type="text" inputmode="numeric" pattern="[0-9]*" class="p-input" value="${item.price}" 
+       onfocus="handleFocus(this, 'r-${item.id}')" 
+       oninput="cart[${idx}].price=parseFloat(this.value)||0;total()">
         </div>
         <div class="list-header">
             <div class="lh-name">НАИМЕНОВАНИЕ</div>
