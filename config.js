@@ -1,7 +1,7 @@
 // Файл глобальных настроек (config.js)
 
 // 1. Вставьте сюда ваш актуальный ENCODED текст для Google Apps Script
-const _0x1a8f = "aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5Y2J4S3FvQ29DZ0VZSldwdnpNMENXSGZLdTdlblNrR3llVTVWLWRBd3lsQW1CZEVFaTVYaWZDaDVyQ1JjOGlUczZvcTEvZXhlYw=="; 
+const _0x1a8f = "aHR0cHM6Ly9zY3JpcHQuZ29vZ2xlLmNvbS9tYWNyb3Mvcy9BS2Z5Y2J6ZWFVUWFtdUdPaWgtci0tblN2RUVraWROUkVubGxaZGJMMjdvY19jMERUR0VoSFpKZTQtTDIyWHcyLUdkOUhDOUsvZXhlYw=="; 
 
 // 2. Ссылка на вебхук Make.com
 const _0x5bc2 = "aHR0cHM6Ly9ob29rLmV1MS5tYWtlLmNvbS85dWQyeWV0dHIzbDZrdG81bmx0cXR0am9jZmI2cDZvZw==";
