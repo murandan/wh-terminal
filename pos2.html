@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>POS Noir V4.0</title>
+    <title>POS Noir V4.1</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Courier New", Courier, monospace; }
-        /* Добавлен transition для плавного изменения цвета фона */
         body { background: #0a0a0a; color: #fff; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; transition: background-color 0.3s; }
         
         .header-area { flex-shrink: 0; border-bottom: 1px solid #222; }
@@ -18,7 +17,6 @@
         .search-area { padding: 0 4px 4px; }
         .s-input { width: 100%; background: #141414; color: #fff; border: 1px solid #333; border-radius: 4px; padding: 10px; font-size: 14px; outline: none; }
 
-        /* Шапка таблицы каталога */
         .list-header { display: flex; padding: 4px 10px; font-size: 10px; color: #666; font-weight: bold; border-bottom: 1px solid #222; }
         .lh-name { flex-grow: 1; }
         .lh-price { width: 85px; text-align: right; }
@@ -26,12 +24,10 @@
 
         #catalog { flex-grow: 1; overflow-y: auto; padding: 4px; border-bottom: 1px solid #222; }
         .c-item { background: #141414; border: 1px solid #222; border-radius: 4px; padding: 8px 10px; margin-bottom: 3px; display: flex; align-items: center; gap: 8px; }
-        
         .i-name { flex-grow: 1; font-size: 12px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .i-price { width: 85px; font-size: 13px; font-weight: bold; text-align: right; color: #fff; }
         .i-stock { width: 45px; font-size: 14px; font-weight: bold; text-align: center; color: #00ffff; background: #003333; border: 1px solid #008888; border-radius: 3px; padding: 2px 0; }
 
-        /* Корзина */
         .cart-sec { flex-shrink: 0; background: rgba(0,0,0,0.5); border-top: 2px solid #2ecc71; display: flex; flex-direction: column; max-height: 40dvh; }
         .cart-sec.r-theme { border-top-color: #e74c3c; }
         #cart-list { overflow-y: auto; padding: 4px; }
@@ -43,19 +39,16 @@
         .qty-box { display: flex; align-items: center; background: #000; border: 1px solid #333; border-radius: 4px; }
         .q-btn { background: #1a1a1a; color: #f1c40f; width: 38px; height: 38px; border: none; font-size: 20px; }
         .q-val { width: 28px; text-align: center; font-size: 14px; font-weight: bold; }
-        
         .p-input { width: 85px; background: #000; color: #f1c40f; border: 1px solid #333; text-align: right; padding: 8px; border-radius: 4px; font-size: 15px; font-weight: bold; outline: none; }
         
         .footer { flex-shrink: 0; padding: 6px 8px; border-top: 1px solid #222; }
         .total-box { display: flex; justify-content: space-between; font-size: 18px; font-weight: 900; margin-bottom: 6px; }
         
-        /* Кнопки оплаты (в 2 строки) */
         .btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
         .pay { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 46px; border: none; border-radius: 4px; color: #fff; cursor: pointer; }
         .pay-title { font-weight: bold; font-size: 9px; text-transform: uppercase; margin-bottom: 2px; }
-        .pay-sum { font-size: 11px; font-weight: 900; opacity: 0.85; } /* Место для суммы за день */
+        .pay-sum { font-size: 11px; font-weight: 900; opacity: 0.85; }
         
-        /* Цвета кнопок */
         .p-cash { background: #27ae60; }
         .p-qr { background: #c0392b; }
         .p-card { background: #2980b9; }
@@ -63,6 +56,17 @@
         .p-trans .pay-sum { color: #000; }
 
         .sync { opacity: 0.1; pointer-events: none; }
+
+        /* СТИЛИ ЭКРАНА УСПЕХА (ЧЕКА) */
+        .modal-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); z-index: 100; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        .receipt-box { width: 100%; max-width: 400px; border: 2px dashed #444; background: #111; padding: 20px; border-radius: 8px; }
+        .r-title { text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 5px; }
+        .r-id { text-align: center; font-size: 10px; color: #666; margin-bottom: 15px; }
+        .r-item { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; border-bottom: 1px dotted #333; padding-bottom: 2px; }
+        .r-name { width: 65%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #ccc; }
+        .r-price { font-weight: bold; }
+        .r-total { text-align: right; font-size: 18px; font-weight: bold; margin-top: 15px; border-top: 1px solid #444; padding-top: 10px; }
+        .ok-btn { margin-top: 25px; width: 100%; padding: 15px; background: #f1c40f; color: #000; border: none; font-size: 16px; font-weight: bold; border-radius: 4px; cursor: pointer; text-transform: uppercase; }
     </style>
 </head>
 <body>
@@ -92,27 +96,25 @@
                 <span id="ta">0 ₸</span>
             </div>
             <div class="btns">
-                <button class="pay p-cash" onclick="pay('cash')">
-                    <span class="pay-title">Нал</span>
-                    <span class="pay-sum">0 ₸</span>
-                </button>
-                <button class="pay p-qr" onclick="pay('qr_kaspi')">
-                    <span class="pay-title">QR</span>
-                    <span class="pay-sum">0 ₸</span>
-                </button>
-                <button class="pay p-card" onclick="pay('pos_terminal')">
-                    <span class="pay-title">Карт</span>
-                    <span class="pay-sum">0 ₸</span>
-                </button>
-                <button class="pay p-trans" onclick="pay('transfer')">
-                    <span class="pay-title">Пер</span>
-                    <span class="pay-sum">0 ₸</span>
-                </button>
+                <button class="pay p-cash" onclick="pay('cash')"><span class="pay-title">Нал</span><span class="pay-sum">0 ₸</span></button>
+                <button class="pay p-qr" onclick="pay('qr_kaspi')"><span class="pay-title">QR</span><span class="pay-sum">0 ₸</span></button>
+                <button class="pay p-card" onclick="pay('pos_terminal')"><span class="pay-title">Карт</span><span class="pay-sum">0 ₸</span></button>
+                <button class="pay p-trans" onclick="pay('transfer')"><span class="pay-title">Пер</span><span class="pay-sum">0 ₸</span></button>
             </div>
         </div>
     </div>
 
-    <script src="config.js?v=4.0"></script>
+    <div id="receipt-modal" class="modal-overlay">
+        <div class="receipt-box">
+            <div id="r-title" class="r-title">ПРОДАЖА</div>
+            <div id="r-id" class="r-id">ID Транзакции</div>
+            <div id="r-items-list"></div>
+            <div id="r-total" class="r-total">ИТОГО: 0 ₸</div>
+            <button class="ok-btn" onclick="closeReceipt()">ПРОДОЛЖИТЬ (ОК)</button>
+        </div>
+    </div>
+
+    <script src="config.js?v=4.1"></script>
     <script>
         let db = [], cart = [], mode = 'sale';
 
@@ -122,8 +124,6 @@
             document.getElementById('mr').classList.toggle('active-r', m==='return');
             document.getElementById('cs').classList.toggle('r-theme', m==='return');
             document.getElementById('tl').innerText = m==='return'?'К ВОЗВРАТУ:':'ИТОГО:';
-            
-            // Изменение фона всего приложения
             document.body.style.backgroundColor = m === 'return' ? '#2c0b0b' : '#0a0a0a';
         }
 
@@ -136,7 +136,6 @@
         }
 
         function render() {
-            // Отрисовка с новыми классами выравнивания
             document.getElementById('catalog').innerHTML = db.map(i => `
                 <div class="c-item" onclick="add('${i.id}')">
                     <div class="i-name">${i.name}</div>
@@ -187,9 +186,7 @@
 
         function handleFocus(elem, rowId) {
             elem.select();
-            setTimeout(() => {
-                document.getElementById(rowId).scrollIntoView({behavior: "smooth", block: "center"});
-            }, 350);
+            setTimeout(() => { document.getElementById(rowId).scrollIntoView({behavior: "smooth", block: "center"}); }, 350);
         }
 
         function qty(id, d) {
@@ -209,15 +206,67 @@
             document.getElementById('cs').classList.add('sync');
             const tid = (mode==='sale'?'SL-':'RT-') + Math.random().toString(36).substring(7).toUpperCase();
             const p = {
-                tx_id: tid, tx_type: mode, payment_method: m, source: "pos_v4.0_noir",
+                tx_id: tid, tx_type: mode, payment_method: m, source: "pos_v4.1",
                 cart: cart.map(c => ({item_id:c.id, item_name:c.name, qty:c.qty, price:c.price, cost_price:c.cost}))
             };
+            
             try {
                 await fetch(APPS_SCRIPT_URL, {method:'POST', body:JSON.stringify(p)});
-                document.getElementById('ta').innerText = "DONE";
-                setTimeout(() => { cart=[]; update(); document.getElementById('cs').classList.remove('sync'); load(); }, 600);
-            } catch (e) { alert("FAIL"); document.getElementById('cs').classList.remove('sync'); }
+                
+                // ВМЕСТО ПРОСТОЙ ОЧИСТКИ - ПОКАЗЫВАЕМ ЧЕК
+                showReceipt(tid);
+                
+            } catch (e) { alert("ОШИБКА ЗАПИСИ"); document.getElementById('cs').classList.remove('sync'); }
         }
+
+        function showReceipt(tid) {
+            document.getElementById('cs').classList.remove('sync');
+            
+            // Заголовок и цвет (Продажа или Возврат)
+            const titleEl = document.getElementById('r-title');
+            if (mode === 'sale') {
+                titleEl.innerText = "УСПЕШНО: ПРОДАЖА";
+                titleEl.style.color = "#2ecc71";
+            } else {
+                titleEl.innerText = "УСПЕШНО: ВОЗВРАТ";
+                titleEl.style.color = "#e74c3c";
+            }
+            
+            document.getElementById('r-id').innerText = "ID: " + tid;
+            
+            // Список товаров
+            document.getElementById('r-items-list').innerHTML = cart.map(c => `
+                <div class="r-item">
+                    <div class="r-name">${c.name}</div>
+                    <div class="r-price">${c.qty} x ${c.price.toLocaleString()} ₸</div>
+                </div>
+            `).join('');
+            
+            // Итог
+            const tSum = cart.reduce((a, b) => a + (b.price * b.qty), 0);
+            document.getElementById('r-total').innerText = "СУММА: " + tSum.toLocaleString() + " ₸";
+            
+            // Показываем окно
+            document.getElementById('receipt-modal').style.display = 'flex';
+        }
+
+        function closeReceipt() {
+            // 1. Прячем окно чека
+            document.getElementById('receipt-modal').style.display = 'none';
+            
+            // 2. Очищаем поле поиска
+            const searchBox = document.getElementById('sb');
+            searchBox.value = '';
+            
+            // 3. Сбрасываем корзину и фильтр списка
+            cart = [];
+            update();
+            filter(); 
+            
+            // 4. Обновляем остатки из базы
+            load();
+        }
+
         load();
     </script>
 </body>
