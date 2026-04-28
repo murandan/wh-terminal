@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>POS Noir v4.4</title>
+    <title>POS Noir v4.5 Final</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Courier New", Courier, monospace; }
         body { background: #0a0a0a; color: #fff; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
@@ -18,36 +18,37 @@
         .s-input { width: 100%; background: #141414; color: #fff; border: 1px solid #333; border-radius: 4px; padding: 10px; font-size: 14px; outline: none; }
 
         #catalog { flex-grow: 1; overflow-y: auto; padding: 4px; border-bottom: 1px solid #222; }
-        .c-item { background: #141414; border: 1px solid #222; border-radius: 6px; padding: 8px 10px; margin-bottom: 3px; display: flex; justify-content: space-between; align-items: center; }
-        .i-name { font-size: 13px; font-weight: bold; max-width: 65%; }
-        .i-meta { font-size: 11px; color: #f1c40f; }
+        .c-item { background: #141414; border: 1px solid #222; border-radius: 6px; padding: 10px; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
+        .i-name { font-size: 14px; font-weight: bold; max-width: 60%; }
+        .i-meta { font-size: 12px; color: #f1c40f; }
 
-        .cart-sec { flex-shrink: 0; background: #0a0a0a; border-top: 2px solid #2ecc71; display: flex; flex-direction: column; max-height: 40dvh; }
+        .cart-sec { flex-shrink: 0; background: #0a0a0a; border-top: 2px solid #2ecc71; display: flex; flex-direction: column; max-height: 45dvh; }
         .cart-sec.r-theme { border-top-color: #e74c3c; background: #1a0a0a; }
         #cart-list { overflow-y: auto; padding: 4px; }
         
-        .cart-row { background: #111; padding: 6px; border-radius: 4px; margin-bottom: 3px; border: 1px solid #222; }
-        .row-top { font-size: 12px; font-weight: bold; color: #aaa; margin-bottom: 5px; }
+        .cart-row { background: #111; padding: 8px; border-radius: 4px; margin-bottom: 4px; border: 1px solid #333; }
+        .row-top { font-size: 13px; font-weight: bold; color: #ccc; margin-bottom: 6px; }
         .row-ctrl { display: flex; justify-content: space-between; align-items: center; }
         
-        /* Крупные элементы управления */
-        .qty-box-v4 { display: flex; align-items: center; border-radius: 4px; border: 1px solid #444; overflow: hidden; }
-        .q-btn-v4 { background: #1a1a1a; color: #f1c40f; width: 45px; height: 45px; border: none; font-size: 24px; }
-        .q-input-v4 { width: 50px; height: 45px; text-align: center; font-size: 18px; font-weight: bold; background: #000; border: none; color: #fff; outline: none; border-left: 1px solid #444; border-right: 1px solid #444; }
-        .p-input-v4 { width: 100px; height: 45px; background: #000; color: #f1c40f; border: 1px solid #444; text-align: right; padding: 8px; border-radius: 4px; font-size: 18px; font-weight: bold; outline: none; }
+        /* НОВЫЕ КЛАССЫ ДЛЯ ПРОВЕРКИ КЭША */
+        .q-frame-v45 { display: flex; align-items: center; border: 1px solid #555; border-radius: 4px; background: #000; height: 48px; }
+        .q-btn-v45 { background: #1a1a1a; color: #f1c40f; width: 45px; height: 100%; border: none; font-size: 24px; cursor: pointer; }
         
-        .footer { padding: 6px 8px; background: #0a0a0a; border-top: 1px solid #222; }
-        .total-box { display: flex; justify-content: space-between; font-size: 18px; font-weight: 900; margin-bottom: 6px; }
-        .btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
-        .pay { height: 42px; border: none; border-radius: 3px; font-weight: bold; font-size: 8px; color: #fff; text-transform: uppercase; }
+        /* Поля ввода с принудительной высотой */
+        .q-val-v45 { width: 55px; height: 46px !important; text-align: center; font-size: 20px; font-weight: bold; background: transparent; border: none; color: #fff; outline: none; border-left: 1px solid #555; border-right: 1px solid #555; }
+        .p-val-v45 { width: 110px; height: 48px !important; background: #000; color: #f1c40f; border: 1px solid #555; text-align: right; padding: 8px; border-radius: 4px; font-size: 20px; font-weight: bold; outline: none; }
+        
+        .footer { padding: 8px; background: #0a0a0a; border-top: 1px solid #222; }
+        .total-box { display: flex; justify-content: space-between; font-size: 20px; font-weight: 900; margin-bottom: 8px; }
+        .btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+        .pay { height: 45px; border: none; border-radius: 4px; font-weight: bold; font-size: 9px; color: #fff; text-transform: uppercase; }
 
-        /* ОКНО ПОДТВЕРЖДЕНИЯ (ЧЕК) */
-        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100; flex-direction: column; padding: 20px; }
-        #modal-content { background: #111; border: 1px solid #2ecc71; padding: 15px; border-radius: 8px; flex-grow: 0; overflow-y: auto; margin-bottom: 20px; }
-        .m-row { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; border-bottom: 1px solid #222; }
-        .m-btns { display: flex; gap: 10px; }
-        .m-ok { flex: 2; padding: 15px; background: #27ae60; color: #fff; border: none; font-weight: bold; border-radius: 4px; }
-        .m-cancel { flex: 1; padding: 15px; background: #444; color: #fff; border: none; border-radius: 4px; }
+        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; flex-direction: column; padding: 20px; }
+        #modal-content { background: #111; border: 1px solid #2ecc71; padding: 15px; border-radius: 8px; flex-grow: 1; overflow-y: auto; margin-bottom: 20px; }
+        .m-row { display: flex; justify-content: space-between; font-size: 15px; padding: 8px 0; border-bottom: 1px solid #222; }
+        .m-btns { display: flex; gap: 10px; height: 60px; }
+        .m-ok { flex: 2; background: #27ae60; color: #fff; border: none; font-weight: bold; border-radius: 6px; font-size: 18px; }
+        .m-cancel { flex: 1; background: #444; color: #fff; border: none; border-radius: 6px; font-size: 14px; }
         
         .sync { opacity: 0.1; pointer-events: none; }
     </style>
@@ -55,7 +56,7 @@
 <body>
 
     <div id="modal">
-        <h3 style="margin-bottom:15px; color:#2ecc71">ПОДТВЕРЖДЕНИЕ</h3>
+        <h2 style="margin-bottom:15px; color:#2ecc71; text-align:center;">ЧЕК ПОДТВЕРЖДЕНИЯ</h2>
         <div id="modal-content"></div>
         <div class="m-btns">
             <button class="m-cancel" onclick="closeModal()">ОТМЕНА</button>
@@ -69,7 +70,7 @@
             <button id="mr" class="m-btn" onclick="sm('return')">Возврат</button>
         </div>
         <div class="search-area">
-            <input type="text" id="sb" class="s-input" placeholder="ПОИСК..." onkeyup="filter()">
+            <input type="text" id="sb" class="s-input" placeholder="ПОИСК ТОВАРОВ..." onkeyup="filter()">
         </div>
     </div>
 
@@ -78,7 +79,7 @@
     <div id="cs" class="cart-sec">
         <div id="cart-list"></div>
         <div class="footer">
-            <div class="total-box"><span>ИТОГО:</span><span id="ta">0</span></div>
+            <div class="total-box"><span>ИТОГО:</span><span id="ta">0 ₸</span></div>
             <div class="btns">
                 <button class="pay" style="background:#27ae60" onclick="prePay('cash')">Нал</button>
                 <button class="pay" style="background:#c0392b" onclick="prePay('qr_kaspi')">QR</button>
@@ -88,7 +89,7 @@
         </div>
     </div>
 
-    <script src="config.js?v=4.4"></script>
+    <script src="config.js?v=4.5"></script>
     <script>
         let db = [], cart = [], mode = 'sale', currentMethod = '';
 
@@ -129,6 +130,8 @@
             if (inC) inC.qty++;
             else cart.push({id:p.id, name:p.name, qty:1, price:p.price, cost:p.cost});
             update();
+            const list = document.getElementById('cart-list');
+            list.scrollTop = list.scrollHeight;
         }
 
         function update() {
@@ -136,21 +139,29 @@
                 <div class="cart-row" id="r-${item.id}">
                     <div class="row-top">${item.name}</div>
                     <div class="row-ctrl">
-                        <div class="qty-box-v4">
-                            <button class="q-btn-v4" onclick="qty('${item.id}',-1)">-</button>
-                            <input type="text" inputmode="numeric" class="q-input-v4" value="${item.qty}" 
-                                   onfocus="this.select()" 
-                                   oninput="cart[${idx}].qty=parseInt(this.value)||0; total()">
-                            <button class="q-btn-v4" onclick="qty('${item.id}',1)">+</button>
+                        <div class="q-frame-v45">
+                            <button class="q-btn-v45" onclick="qty('${item.id}',-1)">-</button>
+                            <input type="text" inputmode="numeric" pattern="[0-9]*" class="q-val-v45" value="${item.qty}" 
+                                   onfocus="this.select(); scrollMe('r-${item.id}')" 
+                                   oninput="cart[${idx}].qty=parseInt(this.value)||0; total()"
+                                   onblur="if(cart[${idx}].qty<=0) rm('${item.id}')">
+                            <button class="q-btn-v45" onclick="qty('${item.id}',1)">+</button>
                         </div>
-                        <input type="text" inputmode="numeric" class="p-input-v4" value="${item.price}" 
-                               onfocus="this.select()" 
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" class="p-val-v45" value="${item.price}" 
+                               onfocus="this.select(); scrollMe('r-${item.id}')" 
                                oninput="cart[${idx}].price=parseFloat(this.value)||0; total()">
-                        <div onclick="rm('${item.id}')" style="color:#e74c3c; font-size:24px; padding:0 10px;">✕</div>
+                        <div onclick="rm('${item.id}')" style="color:#e74c3c; font-size:28px; padding:0 10px;">✕</div>
                     </div>
                 </div>
             `).join('');
             total();
+        }
+
+        function scrollMe(id) {
+            setTimeout(() => {
+                const el = document.getElementById(id);
+                if(el) el.scrollIntoView({behavior: "smooth", block: "center"});
+            }, 350);
         }
 
         function qty(id, d) {
@@ -163,14 +174,13 @@
             document.getElementById('ta').innerText = s.toLocaleString() + ' ₸';
         }
 
-        // ПРЕДПРОСМОТР (ЧЕК)
         function prePay(method) {
             if (!cart.length) return;
             currentMethod = method;
-            let html = cart.map(i => `<div class="m-row"><span>${i.name} x${i.qty}</span> <span>${(i.price*i.qty).toLocaleString()}</span></div>`).join('');
+            let html = cart.map(i => `<div class="m-row"><span>${i.name}</span> <span>${i.qty} x ${i.price.toLocaleString()}</span></div>`).join('');
             const sum = cart.reduce((a, b) => a + (b.price * b.qty), 0);
-            html += `<div class="m-row" style="border:none; margin-top:10px; font-weight:bold; font-size:18px;"><span>ИТОГО:</span><span>${sum.toLocaleString()} ₸</span></div>`;
-            html += `<div class="m-row" style="color:#f1c40f"><span>МЕТОД:</span><span>${method.toUpperCase()}</span></div>`;
+            html += `<div class="m-row" style="border:none; margin-top:20px; font-weight:bold; font-size:22px; color:#2ecc71;"><span>ИТОГО:</span><span>${sum.toLocaleString()} ₸</span></div>`;
+            html += `<div class="m-row" style="color:#f1c40f; border:none;"><span>ОПЛАТА:</span><span>${method.toUpperCase()}</span></div>`;
             
             document.getElementById('modal-content').innerHTML = html;
             document.getElementById('confirm-btn').onclick = () => sendPay();
@@ -184,7 +194,7 @@
             document.getElementById('cs').classList.add('sync');
             const tid = (mode==='sale'?'SL-':'RT-') + Math.random().toString(36).substring(7).toUpperCase();
             const p = {
-                tx_id: tid, tx_type: mode, payment_method: currentMethod, source: "pos_v4.4_noir",
+                tx_id: tid, tx_type: mode, payment_method: currentMethod, source: "pos_v4.5_noir",
                 cart: cart.map(c => ({item_id:c.id, item_name:c.name, qty:c.qty, price:c.price, cost_price:c.cost}))
             };
             try {
