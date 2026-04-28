@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>POS Noir V4.1</title>
+    <title>POS Noir V4.2</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Courier New", Courier, monospace; }
         body { background: #0a0a0a; color: #fff; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; transition: background-color 0.3s; }
@@ -55,18 +55,21 @@
         .p-trans { background: #f39c12; color: #000 !important; }
         .p-trans .pay-sum { color: #000; }
 
-        .sync { opacity: 0.1; pointer-events: none; }
-
-        /* СТИЛИ ЭКРАНА УСПЕХА (ЧЕКА) */
+        /* СТИЛИ ЭКРАНА ПОДТВЕРЖДЕНИЯ */
         .modal-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); z-index: 100; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
         .receipt-box { width: 100%; max-width: 400px; border: 2px dashed #444; background: #111; padding: 20px; border-radius: 8px; }
         .r-title { text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 5px; }
-        .r-id { text-align: center; font-size: 10px; color: #666; margin-bottom: 15px; }
+        .r-method { text-align: center; font-size: 12px; color: #f1c40f; margin-bottom: 15px; text-transform: uppercase; }
         .r-item { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; border-bottom: 1px dotted #333; padding-bottom: 2px; }
         .r-name { width: 65%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #ccc; }
         .r-price { font-weight: bold; }
         .r-total { text-align: right; font-size: 18px; font-weight: bold; margin-top: 15px; border-top: 1px solid #444; padding-top: 10px; }
-        .ok-btn { margin-top: 25px; width: 100%; padding: 15px; background: #f1c40f; color: #000; border: none; font-size: 16px; font-weight: bold; border-radius: 4px; cursor: pointer; text-transform: uppercase; }
+        
+        /* Кнопки модального окна */
+        .modal-btns { display: flex; gap: 10px; margin-top: 25px; }
+        .cancel-btn { flex: 1; padding: 15px; background: #333; color: #fff; border: 1px solid #555; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 12px; }
+        .confirm-btn { flex: 2; padding: 15px; background: #2ecc71; color: #000; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 14px; }
+        .confirm-btn:disabled { background: #777; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -96,27 +99,32 @@
                 <span id="ta">0 ₸</span>
             </div>
             <div class="btns">
-                <button class="pay p-cash" onclick="pay('cash')"><span class="pay-title">Нал</span><span class="pay-sum">0 ₸</span></button>
-                <button class="pay p-qr" onclick="pay('qr_kaspi')"><span class="pay-title">QR</span><span class="pay-sum">0 ₸</span></button>
-                <button class="pay p-card" onclick="pay('pos_terminal')"><span class="pay-title">Карт</span><span class="pay-sum">0 ₸</span></button>
-                <button class="pay p-trans" onclick="pay('transfer')"><span class="pay-title">Пер</span><span class="pay-sum">0 ₸</span></button>
+                <button class="pay p-cash" onclick="initPay('cash', 'Наличные')"><span class="pay-title">Нал</span><span class="pay-sum">0 ₸</span></button>
+                <button class="pay p-qr" onclick="initPay('qr_kaspi', 'Kaspi QR')"><span class="pay-title">QR</span><span class="pay-sum">0 ₸</span></button>
+                <button class="pay p-card" onclick="initPay('pos_terminal', 'Карта')"><span class="pay-title">Карт</span><span class="pay-sum">0 ₸</span></button>
+                <button class="pay p-trans" onclick="initPay('transfer', 'Перевод')"><span class="pay-title">Пер</span><span class="pay-sum">0 ₸</span></button>
             </div>
         </div>
     </div>
 
     <div id="receipt-modal" class="modal-overlay">
         <div class="receipt-box">
-            <div id="r-title" class="r-title">ПРОДАЖА</div>
-            <div id="r-id" class="r-id">ID Транзакции</div>
+            <div id="r-title" class="r-title">ПОДТВЕРЖДЕНИЕ</div>
+            <div id="r-method" class="r-method">Метод оплаты</div>
             <div id="r-items-list"></div>
             <div id="r-total" class="r-total">ИТОГО: 0 ₸</div>
-            <button class="ok-btn" onclick="closeReceipt()">ПРОДОЛЖИТЬ (ОК)</button>
+            
+            <div class="modal-btns">
+                <button class="cancel-btn" onclick="cancelTx()">ОТМЕНА</button>
+                <button id="btn-confirm" class="confirm-btn" onclick="confirmTx()">ПОДТВЕРДИТЬ</button>
+            </div>
         </div>
     </div>
 
-    <script src="config.js?v=4.1"></script>
+    <script src="config.js?v=4.2"></script>
     <script>
         let db = [], cart = [], mode = 'sale';
+        let pendingMethod = null; // Хранит метод оплаты до подтверждения
 
         function sm(m) {
             mode = m;
@@ -201,40 +209,25 @@
             document.getElementById('ta').innerText = s.toLocaleString() + ' ₸';
         }
 
-        async function pay(m) {
+        // ШАГ 1: Инициализация оплаты (Показ окна подтверждения)
+        function initPay(methodCode, methodName) {
             if (!cart.length) return;
-            document.getElementById('cs').classList.add('sync');
-            const tid = (mode==='sale'?'SL-':'RT-') + Math.random().toString(36).substring(7).toUpperCase();
-            const p = {
-                tx_id: tid, tx_type: mode, payment_method: m, source: "pos_v4.1",
-                cart: cart.map(c => ({item_id:c.id, item_name:c.name, qty:c.qty, price:c.price, cost_price:c.cost}))
-            };
             
-            try {
-                await fetch(APPS_SCRIPT_URL, {method:'POST', body:JSON.stringify(p)});
-                
-                // ВМЕСТО ПРОСТОЙ ОЧИСТКИ - ПОКАЗЫВАЕМ ЧЕК
-                showReceipt(tid);
-                
-            } catch (e) { alert("ОШИБКА ЗАПИСИ"); document.getElementById('cs').classList.remove('sync'); }
-        }
-
-        function showReceipt(tid) {
-            document.getElementById('cs').classList.remove('sync');
+            pendingMethod = methodCode; // Запоминаем выбранный метод
             
-            // Заголовок и цвет (Продажа или Возврат)
+            // Настройка окна подтверждения
             const titleEl = document.getElementById('r-title');
             if (mode === 'sale') {
-                titleEl.innerText = "УСПЕШНО: ПРОДАЖА";
+                titleEl.innerText = "ПОДТВЕРДИТЬ ПРОДАЖУ";
                 titleEl.style.color = "#2ecc71";
             } else {
-                titleEl.innerText = "УСПЕШНО: ВОЗВРАТ";
+                titleEl.innerText = "ПОДТВЕРДИТЬ ВОЗВРАТ";
                 titleEl.style.color = "#e74c3c";
             }
             
-            document.getElementById('r-id').innerText = "ID: " + tid;
+            document.getElementById('r-method').innerText = "Оплата: " + methodName;
             
-            // Список товаров
+            // Список товаров в чеке
             document.getElementById('r-items-list').innerHTML = cart.map(c => `
                 <div class="r-item">
                     <div class="r-name">${c.name}</div>
@@ -242,29 +235,61 @@
                 </div>
             `).join('');
             
-            // Итог
+            // Итог в чеке
             const tSum = cart.reduce((a, b) => a + (b.price * b.qty), 0);
-            document.getElementById('r-total').innerText = "СУММА: " + tSum.toLocaleString() + " ₸";
+            document.getElementById('r-total').innerText = "ИТОГО: " + tSum.toLocaleString() + " ₸";
             
             // Показываем окно
             document.getElementById('receipt-modal').style.display = 'flex';
         }
 
-        function closeReceipt() {
-            // 1. Прячем окно чека
+        // ШАГ 2 (Опция А): Отмена транзакции
+        function cancelTx() {
             document.getElementById('receipt-modal').style.display = 'none';
+            pendingMethod = null;
+        }
+
+        // ШАГ 2 (Опция Б): Подтверждение и отправка данных
+        async function confirmTx() {
+            const btn = document.getElementById('btn-confirm');
+            btn.disabled = true;
+            btn.innerText = "ЗАПИСЬ...";
+
+            const tid = (mode==='sale'?'SL-':'RT-') + Math.random().toString(36).substring(7).toUpperCase();
+            const p = {
+                tx_id: tid, tx_type: mode, payment_method: pendingMethod, source: "pos_v4.2",
+                cart: cart.map(c => ({item_id:c.id, item_name:c.name, qty:c.qty, price:c.price, cost_price:c.cost}))
+            };
             
-            // 2. Очищаем поле поиска
-            const searchBox = document.getElementById('sb');
-            searchBox.value = '';
-            
-            // 3. Сбрасываем корзину и фильтр списка
-            cart = [];
-            update();
-            filter(); 
-            
-            // 4. Обновляем остатки из базы
-            load();
+            try {
+                // Отправляем в Google Таблицу
+                await fetch(APPS_SCRIPT_URL, {method:'POST', body:JSON.stringify(p)});
+                
+                // --- УСПЕШНОЕ ЗАВЕРШЕНИЕ ---
+                // 1. Прячем окно и восстанавливаем кнопку
+                document.getElementById('receipt-modal').style.display = 'none';
+                btn.disabled = false;
+                btn.innerText = "ПОДТВЕРДИТЬ";
+                
+                // 2. Очищаем поиск и корзину
+                document.getElementById('sb').value = '';
+                cart = [];
+                update();
+                filter(); 
+                
+                // 3. АВТО-СБРОС ВОЗВРАТА (Защита от случайных возвратов)
+                if (mode === 'return') {
+                    sm('sale'); 
+                }
+                
+                // 4. Загружаем свежие остатки
+                load();
+                
+            } catch (e) { 
+                alert("ОШИБКА ЗАПИСИ. ПРОВЕРЬТЕ ИНТЕРНЕТ."); 
+                btn.disabled = false;
+                btn.innerText = "ПОДТВЕРДИТЬ";
+            }
         }
 
         load();
