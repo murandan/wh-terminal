@@ -134,21 +134,22 @@
         }
 
         async function load() {
-            try {
-                const res = await fetch(APPS_SCRIPT_URL + "?t=" + Date.now());
-                const data = await res.json();
-                
-                db = data.items || [];
-                const t = data.totals || { cash: 0, qr_kaspi: 0, pos_terminal: 0, transfer: 0, installment: 0 };
-                
-                document.getElementById('sum-cash').innerText = t.cash.toLocaleString() + ' ₸';
-                document.getElementById('sum-qr').innerText = t.qr_kaspi.toLocaleString() + ' ₸';
-                document.getElementById('sum-red').innerText = t.installment.toLocaleString() + ' ₸';
-                document.getElementById('sum-card').innerText = t.pos_terminal.toLocaleString() + ' ₸';
-                document.getElementById('sum-trans').innerText = t.transfer.toLocaleString() + ' ₸';
-                
-                render();
-            } catch (e) { console.error("Load Error"); }
+            // Имитация ответа от сервера для тестирования дизайна
+            db = [
+                {id: '101', name: 'Тактический рюкзак Noir', price: 25000, stock: 12, cost: 15000},
+                {id: '102', name: 'Карабин страховочный', price: 3500, stock: 45, cost: 1200},
+                {id: '103', name: 'Куртка Softshell (L)', price: 42000, stock: 5, cost: 28000}
+            ];
+            
+            const t = { cash: 125000, qr_kaspi: 340000, pos_terminal: 85000, transfer: 15000, installment: 210000 };
+            
+            document.getElementById('sum-cash').innerText = t.cash.toLocaleString() + ' ₸';
+            document.getElementById('sum-qr').innerText = t.qr_kaspi.toLocaleString() + ' ₸';
+            document.getElementById('sum-red').innerText = t.installment.toLocaleString() + ' ₸';
+            document.getElementById('sum-card').innerText = t.pos_terminal.toLocaleString() + ' ₸';
+            document.getElementById('sum-trans').innerText = t.transfer.toLocaleString() + ' ₸';
+            
+            render();
         }
 
         function render() {
