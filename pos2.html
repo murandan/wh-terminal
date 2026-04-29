@@ -19,11 +19,12 @@
 
         .list-header { display: flex; padding: 4px 10px; font-size: 10px; color: #666; font-weight: bold; border-bottom: 1px solid #222; }
         .lh-name { flex-grow: 1; }
-        .lh-price { width: 85px; text-align: right; }
-        .lh-stock { width: 45px; text-align: right; }
+        /* Выравнивание поправил здесь */
+        .lh-price { width: 85px; text-align: right; padding-right: 5px; } 
+        .lh-stock { width: 45px; text-align: center; } 
 
         #catalog { flex-grow: 1; overflow-y: auto; padding: 4px; border-bottom: 1px solid #222; }
-        .c-item { background: #141414; border: 1px solid #222; border-radius: 4px; padding: 8px 10px; margin-bottom: 3px; display: flex; align-items: center; gap: 8px; }
+        .c-item { background: #141414; border: 1px solid #222; border-radius: 4px; padding: 8px 10px; margin-bottom: 3px; display: flex; align-items: center; gap: 8px; cursor: pointer; }
         .i-name { flex-grow: 1; font-size: 12px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .i-price { width: 85px; font-size: 13px; font-weight: bold; text-align: right; color: #fff; }
         .i-stock { width: 45px; font-size: 14px; font-weight: bold; text-align: center; color: #00ffff; background: #003333; border: 1px solid #008888; border-radius: 3px; padding: 2px 0; }
@@ -45,7 +46,6 @@
         .footer { flex-shrink: 0; padding: 6px 4px; border-top: 1px solid #222; }
         .total-box { display: flex; justify-content: space-between; font-size: 18px; font-weight: 900; margin-bottom: 6px; padding: 0 4px; }
         
-        /* ПЯТЬ КНОПОК В РЯД */
         .btns { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; }
         .pay { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 50px; border: none; border-radius: 4px; color: #fff; cursor: pointer; padding: 2px; }
         .pay-title { font-weight: bold; font-size: 8px; text-transform: uppercase; margin-bottom: 2px; }
@@ -53,7 +53,7 @@
         
         .p-cash { background: #27ae60; }
         .p-qr { background: #c0392b; }
-        .p-red { background: #8e44ad; } /* Цвет для рассрочки */
+        .p-red { background: #8e44ad; } 
         .p-card { background: #2980b9; }
         .p-trans { background: #f39c12; color: #000 !important; }
         .p-trans .pay-sum { color: #000; }
@@ -133,23 +133,23 @@
             document.body.style.backgroundColor = m === 'return' ? '#2c0b0b' : '#0a0a0a';
         }
 
+        // БОЕВАЯ ФУНКЦИЯ ЗАГРУЗКИ (обращается к бэкенду)
         async function load() {
-            // Имитация ответа от сервера для тестирования дизайна
-            db = [
-                {id: '101', name: 'Тактический рюкзак Noir', price: 25000, stock: 12, cost: 15000},
-                {id: '102', name: 'Карабин страховочный', price: 3500, stock: 45, cost: 1200},
-                {id: '103', name: 'Куртка Softshell (L)', price: 42000, stock: 5, cost: 28000}
-            ];
-            
-            const t = { cash: 125000, qr_kaspi: 340000, pos_terminal: 85000, transfer: 15000, installment: 210000 };
-            
-            document.getElementById('sum-cash').innerText = t.cash.toLocaleString() + ' ₸';
-            document.getElementById('sum-qr').innerText = t.qr_kaspi.toLocaleString() + ' ₸';
-            document.getElementById('sum-red').innerText = t.installment.toLocaleString() + ' ₸';
-            document.getElementById('sum-card').innerText = t.pos_terminal.toLocaleString() + ' ₸';
-            document.getElementById('sum-trans').innerText = t.transfer.toLocaleString() + ' ₸';
-            
-            render();
+            try {
+                const res = await fetch(APPS_SCRIPT_URL + "?t=" + Date.now());
+                const data = await res.json();
+                
+                db = data.items || [];
+                const t = data.totals || { cash: 0, qr_kaspi: 0, pos_terminal: 0, transfer: 0, installment: 0 };
+                
+                document.getElementById('sum-cash').innerText = t.cash.toLocaleString() + ' ₸';
+                document.getElementById('sum-qr').innerText = t.qr_kaspi.toLocaleString() + ' ₸';
+                document.getElementById('sum-red').innerText = t.installment.toLocaleString() + ' ₸';
+                document.getElementById('sum-card').innerText = t.pos_terminal.toLocaleString() + ' ₸';
+                document.getElementById('sum-trans').innerText = t.transfer.toLocaleString() + ' ₸';
+                
+                render();
+            } catch (e) { console.error("Load Error"); }
         }
 
         function render() {
@@ -178,6 +178,15 @@
             update();
         }
 
+        // ВЕРНУЛ ФУНКЦИЮ ДЛЯ СКРОЛЛА КЛАВИАТУРЫ
+        function handleFocus(elem, rowId) {
+            elem.select(); 
+            setTimeout(() => { 
+                const row = document.getElementById(rowId);
+                if (row) row.scrollIntoView({behavior: "smooth", block: "center"}); 
+            }, 350);
+        }
+
         function update() {
             const list = document.getElementById('cart-list');
             list.innerHTML = cart.map((item, idx) => `
@@ -187,11 +196,11 @@
                         <div class="qty-box">
                             <button class="q-btn" onclick="qty('${item.id}',-1)">-</button>
                             <input type="text" inputmode="numeric" class="q-val" value="${item.qty}" 
-                                   onfocus="this.select()" oninput="cart[${idx}].qty=parseInt(this.value)||0; total()">
+                                   onfocus="handleFocus(this, 'r-${item.id}')" oninput="cart[${idx}].qty=parseInt(this.value)||0; total()">
                             <button class="q-btn" onclick="qty('${item.id}',1)">+</button>
                         </div>
                         <input type="text" inputmode="numeric" class="p-input" value="${item.price}" 
-                               onfocus="this.select()" oninput="cart[${idx}].price=parseFloat(this.value)||0; total()">
+                               onfocus="handleFocus(this, 'r-${item.id}')" oninput="cart[${idx}].price=parseFloat(this.value)||0; total()">
                         <div onclick="rm('${item.id}')" style="color:#e74c3c;padding:3px;font-size:18px;">✕</div>
                     </div>
                 </div>
