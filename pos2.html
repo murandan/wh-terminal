@@ -399,5 +399,69 @@ window.addEventListener('online', syncQueue);
     });
   }
 </script>
+
+// --- УМНЫЙ АВТООБНОВЛЯТОР (ВЕРСИЯ "НЕВИДИМКА") ---
+
+// Флаг, который запоминает, что пришло обновление, пока кассир был занят
+let isUpdatePending = false;
+
+// 1. Шпион, который следит за корзиной каждые 2 секунды
+setInterval(() => {
+    // Если обновление ждет в очереди И корзина пуста (продажа завершена)
+    if (isUpdatePending && typeof cart !== 'undefined' && cart.length === 0) {
+        console.log("Продажа завершена, корзина пуста. Тихо обновляю кассу...");
+        window.location.reload(true);
+    }
+}, 2000);
+
+// 2. Фоновая проверка базы каждые 15 минут
+setInterval(async () => {
+    console.log("Автопилот: проверяю обновления...");
+
+    // Проверка нового кода (PWA) на GitHub
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+            for(let reg of regs) { reg.update(); } 
+        });
+    }
+
+    // Обновление цен и итогов из Google
+    if (navigator.onLine) {
+        try {
+            const res = await fetch(APPS_SCRIPT_URL + "?t=" + Date.now());
+            const data = await res.json();
+            
+            db = data.items || [];
+            const t = data.totals || { cash: 0, qr_kaspi: 0, pos_terminal: 0, transfer: 0, installment: 0 };
+            
+            localStorage.setItem('db_cache', JSON.stringify(db));
+            localStorage.setItem('totals_cache', JSON.stringify(t));
+
+            // Итоги выручки обновляем безопасно всегда
+            document.getElementById('sum-cash').innerText = t.cash.toLocaleString() + ' ₸';
+            document.getElementById('sum-qr').innerText = t.qr_kaspi.toLocaleString() + ' ₸';
+            document.getElementById('sum-red').innerText = t.installment.toLocaleString() + ' ₸';
+            document.getElementById('sum-card').innerText = t.pos_terminal.toLocaleString() + ' ₸';
+            document.getElementById('sum-trans').innerText = t.transfer.toLocaleString() + ' ₸';
+            
+            if (typeof cart !== 'undefined' && cart.length === 0) {
+                render(); // Перерисовываем витрину сразу, если кассир свободен
+            } else {
+                isUpdatePending = true; // Откладываем обновление витрины
+            }
+        } catch(e) { }
+    }
+}, 15 * 60 * 1000);
+
+// 3. Реакция на изменение кода (Service Worker)
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (typeof cart !== 'undefined' && cart.length === 0) {
+            window.location.reload(true); // Свободен - обновляем сразу
+        } else {
+            isUpdatePending = true; // Занят - ставим в очередь, кнопку больше не красим
+        }
+    });
+}
 </body>
 </html>
