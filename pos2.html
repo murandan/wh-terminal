@@ -80,7 +80,7 @@
         </div>
         <div class="search-area" style="display: flex; gap: 10px;">
     <input type="text" id="sb" class="s-input" placeholder="ПОИСК..." onkeyup="filter()" style="flex-grow: 1; margin: 0;">
-    <button onclick="window.location.reload(true);" style="padding: 0 15px; background: #222; color: #eee; border: 1px solid #555; border-radius: 4px; cursor: pointer; white-space: nowrap; font-family: inherit;">
+    <button id="btn-update" onclick="forceAppUpdate();" style="padding: 0 15px; background: #222; color: #eee; border: 1px solid #555; border-radius: 4px; cursor: pointer; white-space: nowrap; font-family: inherit;">
         🔄 Обновить
     </button>
 </div>
@@ -400,6 +400,8 @@ window.addEventListener('online', syncQueue);
   }
 </script>
 
+
+
 <script>
       // --- УМНЫЙ АВТООБНОВЛЯТОР (ВЕРСИЯ "НЕВИДИМКА") ---
 
@@ -459,6 +461,33 @@ window.addEventListener('online', syncQueue);
               }
           });
       }
+
+// --- ФУНКЦИЯ ПРИНУДИТЕЛЬНОГО ОБНОВЛЕНИЯ (ДЛЯ КНОПКИ) ---
+function forceAppUpdate() {
+    // 1. Визуальный отклик кнопки
+    const btn = document.getElementById('btn-update');
+    if (btn) {
+        btn.innerText = '⏳ Ждите...';
+        btn.style.background = '#444'; 
+        btn.style.borderColor = '#333';
+        btn.disabled = true; // Блокируем от случайных двойных нажатий
+    }
+
+    // 2. Пингуем Service Worker для скачивания нового кода с GitHub
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for(let registration of registrations) {
+                registration.update(); 
+            }
+        });
+    }
+
+    // 3. Делаем паузу в полсекунды (чтобы кассир увидел надпись "Ждите..."), 
+    // а затем жестко перезагружаем страницу
+    setTimeout(() => {
+        window.location.reload(true);
+    }, 500);
+}
   </script>
 </body>
 </html>
