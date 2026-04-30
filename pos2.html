@@ -468,31 +468,34 @@ window.addEventListener('online', syncQueue);
           });
       }
 
-// --- ФУНКЦИЯ ПРИНУДИТЕЛЬНОГО ОБНОВЛЕНИЯ (ДЛЯ КНОПКИ) ---
+// --- ФУНКЦИЯ ПРИНУДИТЕЛЬНОГО ОБНОВЛЕНИЯ ---
 function forceAppUpdate() {
-    // 1. Визуальный отклик кнопки
     const btn = document.getElementById('btn-update');
     if (btn) {
-        btn.innerText = '⏳ Ждите...';
+        btn.innerText = '⏳ Качаю...';
         btn.style.background = '#444'; 
         btn.style.borderColor = '#333';
-        btn.disabled = true; // Блокируем от случайных двойных нажатий
+        btn.disabled = true;
     }
 
-    // 2. Пингуем Service Worker для скачивания нового кода с GitHub
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-            for(let registration of registrations) {
-                registration.update(); 
-            }
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+            if(regs.length === 0) { window.location.reload(true); return; }
+            
+            let promises = [];
+            for(let reg of regs) { promises.push(reg.update()); } // Ждем скачивания
+            
+            Promise.all(promises).then(() => {
+                // Как только GitHub ответил, даем 1 секунду на применение 
+                // и мягко перезагружаем интерфейс
+                setTimeout(() => { window.location.reload(true); }, 1000);
+            }).catch(() => {
+                window.location.reload(true); // Перезагружаем даже при ошибке
+            });
         });
-    }
-
-    // 3. Делаем паузу в полсекунды (чтобы кассир увидел надпись "Ждите..."), 
-    // а затем жестко перезагружаем страницу
-    setTimeout(() => {
+    } else {
         window.location.reload(true);
-    }, 500);
+    }
 }
 // --- ПОЛУЧЕНИЕ ВЕРСИИ ПРИЛОЖЕНИЯ ---
 function displayAppVersion() {

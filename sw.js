@@ -1,39 +1,46 @@
-const CACHE_NAME = 'pos-cache-v7'; // При каждом серьезном обновлении меняйте тут цифру (v3, v4...)
+const CACHE_NAME = 'pos-cache-v8'; // Сейчас мы на 6-й версии!
 
 const urlsToCache = [
     './pos2.html',
     './manifest.json',
-    './icon.png'
+    './config.js'
 ];
 
-// Установка и форсированный запуск
+// Установка: скачиваем файлы и сразу активируем
 self.addEventListener('install', event => {
-    self.skipWaiting(); // Заставляет новую версию работать сразу
+    self.skipWaiting(); 
     event.waitUntil(
         caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
     );
 });
 
-// Уборщик: удаляет старый кэш
+// Активация: чистим старый кэш и МГНОВЕННО берем управление
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(cacheNames => {
             return Promise.all(
                 cacheNames.map(cacheName => {
                     if (cacheName !== CACHE_NAME) {
-                        return caches.delete(cacheName); // Стираем всё, кроме текущей версии
+                        return caches.delete(cacheName);
                     }
                 })
             );
-        }).then(() => self.clients.claim()) // Мгновенно берем контроль над открытыми страницами
+        }).then(() => self.clients.claim()) // Это уберет надпись v: dev
     );
 });
 
-// Выдача файлов
+// Перехват запросов (работа в оффлайне)
 self.addEventListener('fetch', event => {
     event.respondWith(
         caches.match(event.request).then(response => {
             return response || fetch(event.request);
         })
     );
+});
+
+// Ответ на запрос версии от pos2.html
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'GET_VERSION') {
+        event.ports[0].postMessage({ version: CACHE_NAME });
+    }
 });
