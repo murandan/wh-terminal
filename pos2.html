@@ -235,14 +235,12 @@
 
     const tid = (mode === 'sale' ? 'SL-' : 'RT-') + Math.random().toString(36).substring(7).toUpperCase();
 
-    // ФИКС ВРЕМЕНИ 1: Генерируем точное время на самом устройстве
     const now = new Date();
-    // Форматируем в привычный вид, например: 28.04.2026 18:42:26
     const localTime = now.toLocaleDateString('ru-RU') + ' ' + now.toLocaleTimeString('ru-RU');
 
     const p = {
         tx_id: tid, tx_type: mode, payment_method: pendingMethod, source: "pos_v5.3.0",
-        created_at: localTime, // <--- Упаковываем время прямо в чек
+        created_at: localTime,
         cart: cart.map(c => ({item_id:c.id, item_name:c.name, qty:c.qty, price:c.price, cost_price:c.cost}))
     };
 
@@ -251,26 +249,39 @@
         queue.push(p);
         localStorage.setItem('txQueue', JSON.stringify(queue));
 
-        // ФИКС ИТОГОВ: Мгновенное (оптимистичное) обновление кнопок
-        // Считаем сумму текущего чека
+        // --- ФИКС ИТОГОВ: МГНОВЕННОЕ ОБНОВЛЕНИЕ КНОПОК ---
         const cartTotal = cart.reduce((sum, item) => sum + (item.qty * item.price), 0);
         
-        // Прибавляем или вычитаем сумму из локальной переменной totals
-        if (typeof totals !== 'undefined') {
-            // Убедитесь, что ключи в объекте totals совпадают с вашими payment_method (например, 'cash', 'qr')
-            if (totals[pendingMethod] !== undefined) {
-                if (mode === 'sale') {
-                    totals[pendingMethod] += cartTotal;
-                } else if (mode === 'return') {
-                    totals[pendingMethod] -= cartTotal;
-                }
+        // Карта-шпаргалка: какой метод оплаты какому ID на экране соответствует
+        const methodMap = {
+            'cash': 'sum-cash',
+            'qr_kaspi': 'sum-qr', // на случай если метод называется так
+            'qr': 'sum-qr',       // или так
+            'installment': 'sum-red',
+            'pos_terminal': 'sum-card',
+            'card': 'sum-card',
+            'transfer': 'sum-trans'
+        };
+        
+        // Находим нужный элемент на странице
+        const targetId = methodMap[pendingMethod];
+        if (targetId) {
+            const el = document.getElementById(targetId);
+            if (el) {
+                // Берем текст с кнопки (например "1 250 ₸"), вычищаем все кроме цифр -> получаем 1250
+                let currentSum = parseInt(el.innerText.replace(/\D/g, '')) || 0;
+                
+                // Прибавляем чек (или отнимаем, если это возврат)
+                currentSum = (mode === 'sale') ? currentSum + cartTotal : currentSum - cartTotal;
+                
+                // Вписываем обратно красиво, с пробелами и знаком ₸
+                el.innerText = currentSum.toLocaleString('ru-RU') + ' ₸';
             }
         }
+        // --- КОНЕЦ ФИКСА ИТОГОВ ---
 
         document.getElementById('receipt-modal').style.display = 'none';
         cart = []; 
-        
-        // Функция update() теперь отрисует новые итоги, потому что мы обновили переменную totals
         update(); 
         sm('sale'); 
         
