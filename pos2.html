@@ -78,9 +78,12 @@
             <button id="ms" class="m-btn active-s" onclick="sm('sale')">ПРОДАЖА</button>
             <button id="mr" class="m-btn" onclick="sm('return')">ВОЗВРАТ</button>
         </div>
-        <div class="search-area">
-            <input type="text" id="sb" class="s-input" placeholder="ПОИСК..." onkeyup="filter()">
-        </div>
+        <div class="search-area" style="display: flex; gap: 10px;">
+    <input type="text" id="sb" class="s-input" placeholder="ПОИСК..." onkeyup="filter()" style="flex-grow: 1; margin: 0;">
+    <button onclick="window.location.reload(true);" style="padding: 0 15px; background: #222; color: #eee; border: 1px solid #555; border-radius: 4px; cursor: pointer; white-space: nowrap; font-family: inherit;">
+        🔄 Обновить
+    </button>
+</div>
         <div class="list-header">
             <div class="lh-name">НАИМЕНОВАНИЕ</div>
             <div class="lh-price">ЦЕНА</div>
