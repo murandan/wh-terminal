@@ -267,6 +267,55 @@
 }
 
         load();
+// --- БЛОК ОФФЛАЙН-СИНХРОНИЗАЦИИ ---
+
+let isSyncing = false; // Защита, чтобы курьер не бегал дважды одновременно
+
+async function syncQueue() {
+    if (isSyncing) return; // Если уже отправляем, ждем
+    if (!navigator.onLine) return; // Если нет интернета (Wi-Fi/LTE), даже не пытаемся
+
+    // Открываем сейф
+    let queue = JSON.parse(localStorage.getItem('txQueue') || '[]');
+    if (queue.length === 0) return; // Если чеков нет, курьер отдыхает
+
+    isSyncing = true;
+
+    try {
+        // Берем самый старый чек (первый в очереди)
+        const currentTx = queue[0];
+
+        // Отправляем его в Google Apps Script
+        const response = await fetch(APPS_SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify(currentTx)
+        });
+        
+        const result = await response.json();
+
+        // Если Google принял чек и записал в таблицу...
+        if (result.success) {
+            queue.shift(); // ...выкидываем этот чек из памяти телефона
+            localStorage.setItem('txQueue', JSON.stringify(queue));
+            console.log("Успех: чек улетел на сервер. В очереди осталось: " + queue.length);
+        } else {
+            console.error("Сервер Google вернул ошибку: ", result.error);
+        }
+
+    } catch (e) {
+        // Если интернет моргнул прямо во время отправки, ничего не делаем.
+        // Чек остался в памяти, курьер попробует еще раз через 5 секунд.
+        console.log("Сбой сети. Повтор через 5 секунд...");
+    } finally {
+        isSyncing = false; // Снимаем защиту
+    }
+}
+
+// Запускаем курьера каждые 5 секунд (5000 миллисекунд)
+setInterval(syncQueue, 5000);
+
+// Бонус: если интернет пропадал, а потом появился, запускаем курьера мгновенно
+window.addEventListener('online', syncQueue);
     </script>
 </body>
 </html>
