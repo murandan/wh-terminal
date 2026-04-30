@@ -84,15 +84,19 @@
         🔄 Обновить
     </button>
 </div>
-        <div class="list-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="list-header" style="display: flex; align-items: center; gap: 8px; padding: 4px 10px;">
     
-    <div>НАИМЕНОВАНИЕ</div>
+    <!-- Левая часть: Название и бейджик (занимают всё свободное место) -->
+    <div style="flex-grow: 1; display: flex; align-items: center; gap: 10px;">
+        <span>НАИМЕНОВАНИЕ</span>
+        <span id="app-version" style="font-size: 9px; color: #888; font-family: monospace; background: #1a1a1a; padding: 2px 6px; border-radius: 6px; border: 1px solid #333; text-transform: lowercase; letter-spacing: normal;">v: --</span>
+    </div>
     
-    <!-- Технический бэдж версии -->
-    <span id="app-version" style="font-size: 9px; color: #888; font-family: monospace; background: #1a1a1a; padding: 2px 6px; border-radius: 6px; border: 1px solid #333; margin-left: 10px; margin-right: auto; text-transform: lowercase; letter-spacing: normal;">v: --</span>
+    <!-- Правая часть: Цена (строго 85px, выравнивание вправо, как у товаров) -->
+    <div style="width: 85px; text-align: right;">ЦЕНА</div>
     
-    <div>ЦЕНА</div>
-    <div style="margin-left: 15px;">ОСТ</div>
+    <!-- Правая часть: Остаток (строго 45px, выравнивание по центру, как у товаров) -->
+    <div style="width: 45px; text-align: center;">ОСТ</div>
     
 </div>
     </div>
