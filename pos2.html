@@ -134,19 +134,62 @@
         }
 
         async function load() {
-            try {
-                const res = await fetch(APPS_SCRIPT_URL + "?t=" + Date.now());
-                const data = await res.json();
-                db = data.items || [];
-                const t = data.totals || { cash: 0, qr_kaspi: 0, pos_terminal: 0, transfer: 0, installment: 0 };
-                document.getElementById('sum-cash').innerText = t.cash.toLocaleString() + ' ₸';
-                document.getElementById('sum-qr').innerText = t.qr_kaspi.toLocaleString() + ' ₸';
-                document.getElementById('sum-red').innerText = t.installment.toLocaleString() + ' ₸';
-                document.getElementById('sum-card').innerText = t.pos_terminal.toLocaleString() + ' ₸';
-                document.getElementById('sum-trans').innerText = t.transfer.toLocaleString() + ' ₸';
-                render();
-            } catch (e) { console.error("Load Error"); }
+    // ШАГ 1: МГНОВЕННЫЙ ЗАПУСК ИЗ ПАМЯТИ
+    try {
+        const cachedDb = localStorage.getItem('db_cache');
+        const cachedTotals = localStorage.getItem('totals_cache');
+        
+        if (cachedDb) {
+            db = JSON.parse(cachedDb);
         }
+        if (cachedTotals) {
+            const t = JSON.parse(cachedTotals);
+            document.getElementById('sum-cash').innerText = (t.cash || 0).toLocaleString() + ' ₸';
+            document.getElementById('sum-qr').innerText = (t.qr_kaspi || t.qr || 0).toLocaleString() + ' ₸';
+            document.getElementById('sum-red').innerText = (t.installment || 0).toLocaleString() + ' ₸';
+            document.getElementById('sum-card').innerText = (t.pos_terminal || t.card || 0).toLocaleString() + ' ₸';
+            document.getElementById('sum-trans').innerText = (t.transfer || 0).toLocaleString() + ' ₸';
+        }
+        
+        // Рисуем интерфейс сразу, если база была в кэше
+        if (db && db.length > 0) {
+            render();
+        }
+    } catch (e) {
+        console.error("Ошибка чтения кэша", e);
+    }
+
+    // ШАГ 2: ТИХОЕ ОБНОВЛЕНИЕ ИЗ GOOGLE
+    if (!navigator.onLine) return; // Если интернета физически нет, даже не пытаемся
+
+    try {
+        const res = await fetch(APPS_SCRIPT_URL + "?t=" + Date.now());
+        const data = await res.json();
+        
+        // Обновляем рабочие переменные
+        db = data.items || [];
+        const t = data.totals || { cash: 0, qr_kaspi: 0, pos_terminal: 0, transfer: 0, installment: 0 };
+        
+        // Обновляем HTML
+        document.getElementById('sum-cash').innerText = t.cash.toLocaleString() + ' ₸';
+        document.getElementById('sum-qr').innerText = t.qr_kaspi.toLocaleString() + ' ₸';
+        document.getElementById('sum-red').innerText = t.installment.toLocaleString() + ' ₸';
+        document.getElementById('sum-card').innerText = t.pos_terminal.toLocaleString() + ' ₸';
+        document.getElementById('sum-trans').innerText = t.transfer.toLocaleString() + ' ₸';
+        
+        // Перерисовываем товары
+        render();
+
+        // ШАГ 3: СОХРАНЯЕМ СВЕЖАК В ПАМЯТЬ ТЕЛЕФОНА
+        localStorage.setItem('db_cache', JSON.stringify(db));
+        localStorage.setItem('totals_cache', JSON.stringify(t));
+        
+        console.log("База успешно обновлена с сервера.");
+        
+    } catch (e) { 
+        console.error("Не удалось скачать свежую базу (работаем на кэше)", e); 
+    }
+}
 
         function render() {
             document.getElementById('catalog').innerHTML = db.map(i => `
