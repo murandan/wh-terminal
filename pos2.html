@@ -84,11 +84,17 @@
         🔄 Обновить
     </button>
 </div>
-        <div class="list-header">
-            <div class="lh-name">НАИМЕНОВАНИЕ</div>
-            <div class="lh-price">ЦЕНА</div>
-            <div class="lh-stock">ОСТ</div>
-        </div>
+        <div class="list-header" style="display: flex; justify-content: space-between; align-items: center;">
+    
+    <div>НАИМЕНОВАНИЕ</div>
+    
+    <!-- Технический бэдж версии -->
+    <span id="app-version" style="font-size: 9px; color: #888; font-family: monospace; background: #1a1a1a; padding: 2px 6px; border-radius: 6px; border: 1px solid #333; margin-left: 10px; margin-right: auto; text-transform: lowercase; letter-spacing: normal;">v: --</span>
+    
+    <div>ЦЕНА</div>
+    <div style="margin-left: 15px;">ОСТ</div>
+    
+</div>
     </div>
 
     <div id="catalog"></div>
