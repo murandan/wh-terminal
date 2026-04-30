@@ -231,33 +231,48 @@
 
         async function confirmTx() {
     const btn = document.getElementById('btn-confirm');
-    // Кнопку больше не блокируем надписью "ЗАПИСЬ...", сохранение будет мгновенным
-    btn.disabled = true; 
+    btn.disabled = true;
 
     const tid = (mode === 'sale' ? 'SL-' : 'RT-') + Math.random().toString(36).substring(7).toUpperCase();
+
+    // ФИКС ВРЕМЕНИ 1: Генерируем точное время на самом устройстве
+    const now = new Date();
+    // Форматируем в привычный вид, например: 28.04.2026 18:42:26
+    const localTime = now.toLocaleDateString('ru-RU') + ' ' + now.toLocaleTimeString('ru-RU');
+
     const p = {
         tx_id: tid, tx_type: mode, payment_method: pendingMethod, source: "pos_v5.3.0",
+        created_at: localTime, // <--- Упаковываем время прямо в чек
         cart: cart.map(c => ({item_id:c.id, item_name:c.name, qty:c.qty, price:c.price, cost_price:c.cost}))
     };
 
     try {
-        // 1. Достаем текущую очередь чеков из памяти телефона (или создаем пустую, если её нет)
         let queue = JSON.parse(localStorage.getItem('txQueue') || '[]');
-        
-        // 2. Кладем наш новый чек в эту очередь
         queue.push(p);
-        
-        // 3. Сохраняем обновленную очередь обратно в память телефона
         localStorage.setItem('txQueue', JSON.stringify(queue));
 
-        // 4. Мгновенно очищаем интерфейс (Optimistic UI)
+        // ФИКС ИТОГОВ: Мгновенное (оптимистичное) обновление кнопок
+        // Считаем сумму текущего чека
+        const cartTotal = cart.reduce((sum, item) => sum + (item.qty * item.price), 0);
+        
+        // Прибавляем или вычитаем сумму из локальной переменной totals
+        if (typeof totals !== 'undefined') {
+            // Убедитесь, что ключи в объекте totals совпадают с вашими payment_method (например, 'cash', 'qr')
+            if (totals[pendingMethod] !== undefined) {
+                if (mode === 'sale') {
+                    totals[pendingMethod] += cartTotal;
+                } else if (mode === 'return') {
+                    totals[pendingMethod] -= cartTotal;
+                }
+            }
+        }
+
         document.getElementById('receipt-modal').style.display = 'none';
         cart = []; 
-        update(); 
-        sm('sale'); // Сброс в режим продажи
         
-        // Примечание: мы убрали вызов load(), чтобы касса не пыталась 
-        // скачивать всю базу после каждого чека и не тратила трафик
+        // Функция update() теперь отрисует новые итоги, потому что мы обновили переменную totals
+        update(); 
+        sm('sale'); 
         
     } catch (e) { 
         alert("ОШИБКА СОХРАНЕНИЯ В ПАМЯТЬ: " + e.message); 
