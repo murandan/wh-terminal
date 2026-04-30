@@ -230,21 +230,41 @@
         function cancelTx() { document.getElementById('receipt-modal').style.display = 'none'; }
 
         async function confirmTx() {
-            const btn = document.getElementById('btn-confirm');
-            btn.disabled = true; btn.innerText = "ЗАПИСЬ...";
-            const tid = (mode==='sale'?'SL-':'RT-') + Math.random().toString(36).substring(7).toUpperCase();
-            const p = {
-                tx_id: tid, tx_type: mode, payment_method: pendingMethod, source: "pos_v5.3.0",
-                cart: cart.map(c => ({item_id:c.id, item_name:c.name, qty:c.qty, price:c.price, cost_price:c.cost}))
-            };
-            try {
-                await fetch(APPS_SCRIPT_URL, {method:'POST', body:JSON.stringify(p)});
-                document.getElementById('receipt-modal').style.display = 'none';
-                cart = []; update(); load();
-                sm('sale'); // СБРОС В РЕЖИМ ПРОДАЖИ (восстановлено)
-            } catch (e) { alert("ОШИБКА"); }
-            finally { btn.disabled = false; btn.innerText = "ПОДТВЕРДИТЬ"; }
-        }
+    const btn = document.getElementById('btn-confirm');
+    // Кнопку больше не блокируем надписью "ЗАПИСЬ...", сохранение будет мгновенным
+    btn.disabled = true; 
+
+    const tid = (mode === 'sale' ? 'SL-' : 'RT-') + Math.random().toString(36).substring(7).toUpperCase();
+    const p = {
+        tx_id: tid, tx_type: mode, payment_method: pendingMethod, source: "pos_v5.3.0",
+        cart: cart.map(c => ({item_id:c.id, item_name:c.name, qty:c.qty, price:c.price, cost_price:c.cost}))
+    };
+
+    try {
+        // 1. Достаем текущую очередь чеков из памяти телефона (или создаем пустую, если её нет)
+        let queue = JSON.parse(localStorage.getItem('txQueue') || '[]');
+        
+        // 2. Кладем наш новый чек в эту очередь
+        queue.push(p);
+        
+        // 3. Сохраняем обновленную очередь обратно в память телефона
+        localStorage.setItem('txQueue', JSON.stringify(queue));
+
+        // 4. Мгновенно очищаем интерфейс (Optimistic UI)
+        document.getElementById('receipt-modal').style.display = 'none';
+        cart = []; 
+        update(); 
+        sm('sale'); // Сброс в режим продажи
+        
+        // Примечание: мы убрали вызов load(), чтобы касса не пыталась 
+        // скачивать всю базу после каждого чека и не тратила трафик
+        
+    } catch (e) { 
+        alert("ОШИБКА СОХРАНЕНИЯ В ПАМЯТЬ: " + e.message); 
+    } finally { 
+        btn.disabled = false; 
+    }
+}
 
         load();
     </script>
