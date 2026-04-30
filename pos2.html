@@ -494,6 +494,33 @@ function forceAppUpdate() {
         window.location.reload(true);
     }, 500);
 }
+// --- ПОЛУЧЕНИЕ ВЕРСИИ ПРИЛОЖЕНИЯ ---
+function displayAppVersion() {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        // Создаем "канал связи" с sw.js
+        const messageChannel = new MessageChannel();
+        
+        // Ждем ответа
+        messageChannel.port1.onmessage = function(event) {
+            if (event.data && event.data.version) {
+                document.getElementById('app-version').innerText = "v: " + event.data.version;
+            }
+        };
+
+        // Отправляем запрос на версию
+        navigator.serviceWorker.controller.postMessage({ type: 'GET_VERSION' }, [messageChannel.port2]);
+    } else {
+        document.getElementById('app-version').innerText = "v: dev";
+    }
+}
+
+// Запускаем проверку при загрузке
+window.addEventListener('load', displayAppVersion);
+
+// И обновляем текст, если версия скачалась в фоне
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('controllerchange', displayAppVersion);
+}
   </script>
 </body>
 </html>
