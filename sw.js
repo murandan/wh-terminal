@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pos-cache-v1';
+const CACHE_NAME = 'pos-cache-v2';
 // Указываем, какие файлы нужно скачать на телефон для оффлайн работы
 const urlsToCache = [
     './pos2.html',
