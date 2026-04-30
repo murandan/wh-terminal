@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pos-cache-v4'; // При каждом серьезном обновлении меняйте тут цифру (v3, v4...)
+const CACHE_NAME = 'pos-cache-v5'; // При каждом серьезном обновлении меняйте тут цифру (v3, v4...)
 
 const urlsToCache = [
     './pos2.html',
