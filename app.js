@@ -433,16 +433,16 @@ window.openQuickEditModal = function(id) {
     let currentCatValue = (!item.category || item.category === '0') ? '0' : item.category;
 
     // Собираем пункты списка
-    let customDropdownHtml = `<div data-val="0" data-text="${escapeHtml(t('qe_no_category'))}" onclick="window.handleCatClick(this)" style="padding: 10px; cursor: pointer; border-bottom: 1px solid rgba(128,128,128,0.2);">${escapeHtml(t('qe_no_category'))}</div>`;
+    let customDropdownHtml = `<div data-val="0" data-text="${escapeHtml(t('qe_no_category'))}" onclick="window.handleQeCatClick(this)" style="padding: 10px; cursor: pointer; border-bottom: 1px solid rgba(128,128,128,0.2);">${escapeHtml(t('qe_no_category'))}</div>`;
     
     uniqueCats.forEach(cat => {
-        if (cat !== '0') {
+        if (cat !== '0' && cat !== 'Без категории') {
             const safeCat = escapeHtml(cat);
-            customDropdownHtml += `<div data-val="${safeCat}" data-text="${safeCat}" onclick="window.handleCatClick(this)" style="padding: 10px; cursor: pointer; border-bottom: 1px solid rgba(128,128,128,0.2);">${safeCat}</div>`;
+            customDropdownHtml += `<div data-val="${safeCat}" data-text="${safeCat}" onclick="window.handleQeCatClick(this)" style="padding: 10px; cursor: pointer; border-bottom: 1px solid rgba(128,128,128,0.2);">${safeCat}</div>`;
         }
     });
     
-    customDropdownHtml += `<div data-val="new" data-text="${escapeHtml(t('qe_new_category'))}" onclick="window.handleCatClick(this)" style="padding: 10px; cursor: pointer; color: #4caf50; font-weight: bold;">${escapeHtml(t('qe_new_category'))}</div>`;
+    customDropdownHtml += `<div data-val="new" data-text="${escapeHtml(t('qe_new_category'))}" onclick="window.handleQeCatClick(this)" style="padding: 10px; cursor: pointer; color: #4caf50; font-weight: bold;">${escapeHtml(t('qe_new_category'))}</div>`;
 
     const minStockVal = item.min_stock !== undefined ? item.min_stock : 1;
     const currentStock = Number(item.stock) || 0;
@@ -588,8 +588,8 @@ window.toggleCustomDropdown = function() {
     if (dropdown) dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
 };
 
-// Обработка клика по пункту меню (Safari считает это прямым тапом)
-window.handleCatClick = function(element) {
+// Обработчик клика ТОЛЬКО для модального окна быстрых правок
+window.handleQeCatClick = function(element) {
     const value = element.getAttribute('data-val');
     const text = element.getAttribute('data-text');
     
@@ -601,19 +601,14 @@ window.handleCatClick = function(element) {
     const newCatInput = document.getElementById('qe-new-category');
     
     if (value === 'new') {
-        // Прячем кнопку-триггер и сам список
-        trigger.style.display = 'none';
+        if (trigger) trigger.style.display = 'none';
         if (dropdown) dropdown.style.display = 'none';
         
-        // Показываем поле ввода
-        newCatWrapper.style.display = 'flex';
+        if (newCatWrapper) newCatWrapper.style.display = 'flex';
         if (hiddenInput) hiddenInput.value = 'new';
         
-        // МГНОВЕННЫЙ ФОКУС. Клавиатура в iOS Safari выедет сразу, 
-        // так как событие вызвано прямым касанием пользователя (click).
         if (newCatInput) newCatInput.focus();
     } else {
-        // Просто выбрали существующую категорию
         if (display) display.innerText = text;
         if (hiddenInput) hiddenInput.value = value;
         if (dropdown) dropdown.style.display = 'none';
