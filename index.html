@@ -447,11 +447,11 @@
 <!-- ОКНО БЫСТРОГО РЕДАКТИРОВАНИЯ И ПРИЕМКИ -->
 <!-- ========================================= -->
 <div id="modal-quick-edit" class="modal-overlay" style="display: none;" onclick="closeQuickEdit()">
-    <div class="settings-box" onclick="event.stopPropagation()">
+    <div class="settings-box" onclick="event.stopPropagation()" style="max-width: 420px; width: 95%;">
         
         <!-- Шапка с заголовком и индикатором очереди -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <div class="r-title" style="margin-bottom: 0;" data-i18n="qe_title">РЕДАКТИРОВАНИЕ</div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-main); padding-bottom: 10px;">
+            <div class="r-title" style="margin-bottom: 0; font-weight: bold; font-size: 18px;" data-i18n="qe_title">РАСПРЕДЕЛЕНИЕ ТОВАРА</div>
             
             <!-- Индикатор локальной очереди (txQueue) -->
             <div id="qe-queue-indicator" style="display: none; align-items: center; gap: 6px; font-size: 16px;">
@@ -464,65 +464,77 @@
         
         <!-- ОСНОВНОЙ БЛОК (Метаданные товара) -->
         <div id="qe-main-block">
-            <div class="field-group" style="margin-bottom: 15px;">
-                <label style="font-size: 12px; color: var(--text-muted);">Наименование</label>
-                <input type="text" id="qe-name" readonly onclick="setQeActiveField('qe-name')" style="width: 100%; padding: 12px; margin-top: 5px; background: var(--bg-card); border: 1px solid var(--border-main); color: var(--text-main); border-radius: 4px; box-sizing: border-box;">
+            <!-- Наименование -->
+            <div class="field-group" style="margin-bottom: 12px;">
+                <label style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">НАИМЕНОВАНИЕ</label>
+                <input type="text" id="qe-name" style="width: 100%; padding: 10px; margin-top: 4px; background: #000; border: 1px solid var(--border-main); color: #fff; border-radius: 4px; box-sizing: border-box; font-size: 15px; font-weight: bold;">
+                <div style="font-size: 10px; color: var(--accent-green); margin-top: 4px;">* Если не появляется экранная клавиатура, нажмите 2 раза кнопку на сканере</div>
             </div>
 
-            <div class="grid-row" style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <!-- Категория -->
+            <div class="field-group" style="margin-bottom: 12px;">
+                <label style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">КАТЕГОРИЯ</label>
+                <select id="qe-category" style="width: 100%; padding: 10px; margin-top: 4px; background: #000; border: 1px solid var(--border-main); color: #fff; border-radius: 4px; box-sizing: border-box; font-size: 14px;">
+                    <!-- Динамический список из db -->
+                </select>
+            </div>
+
+            <!-- Штрихкод -->
+            <div class="field-group" style="margin-bottom: 12px;">
+                <label style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">ШТРИХКОД</label>
+                <div style="display: flex; gap: 6px; margin-top: 4px;">
+                    <input type="text" id="qe-barcode" style="flex: 1; padding: 10px; background: #000; border: 1px solid var(--border-main); color: #fff; border-radius: 4px; box-sizing: border-box; font-size: 15px; font-weight: bold;">
+                    <button type="button" id="qe-btn-scan" style="padding: 10px 14px; background: #222; border: 1px solid var(--border-main); border-radius: 4px; color: #fff; cursor: pointer;">📷</button>
+                </div>
+            </div>
+
+            <!-- Ряд: Цена и Мин. Остаток -->
+            <div class="grid-row" style="display: flex; gap: 10px; margin-bottom: 15px;">
                 <div class="field-group" style="flex: 1;">
-                    <label style="font-size: 12px; color: var(--text-muted);">Цена (Розница)</label>
-                    <input type="text" id="qe-price" readonly onclick="setQeActiveField('qe-price')" style="width: 100%; padding: 12px; margin-top: 5px; background: var(--bg-card); border: 2px solid var(--accent-blue); color: var(--text-main); border-radius: 4px; box-sizing: border-box; text-align: center; font-size: 18px; font-weight: bold;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">ЦЕНА (₸)</label>
+                        <span id="qe-price-current-badge" style="font-size: 10px; color: var(--accent-green);">Тек: 0</span>
+                    </div>
+                    <input type="text" id="qe-price" style="width: 100%; padding: 10px; margin-top: 4px; background: #000; border: 1px solid var(--border-main); color: #fff; border-radius: 4px; box-sizing: border-box; font-size: 16px; font-weight: bold;">
                 </div>
                 <div class="field-group" style="flex: 1;">
-                    <label style="font-size: 12px; color: var(--text-muted);">Факт. Остаток</label>
-                    <input type="text" id="qe-stock" readonly onclick="setQeActiveField('qe-stock')" style="width: 100%; padding: 12px; margin-top: 5px; background: var(--bg-card); border: 1px solid var(--border-main); color: var(--text-main); border-radius: 4px; box-sizing: border-box; text-align: center; font-size: 18px; font-weight: bold;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label style="font-size: 11px; color: var(--text-muted); text-transform: uppercase;">МИН. ОСТАТОК</label>
+                        <span id="qe-stock-current-badge" style="font-size: 10px; color: var(--accent-green);">Факт: 0</span>
+                    </div>
+                    <input type="text" id="qe-stock" style="width: 100%; padding: 10px; margin-top: 4px; background: #000; border: 1px solid var(--border-main); color: #fff; border-radius: 4px; box-sizing: border-box; font-size: 16px; font-weight: bold;">
                 </div>
             </div>
         </div>
 
         <!-- БЛОК ПРИЕМКИ (Скрыт по умолчанию) -->
-        <div id="qe-receive-block" style="display: none; padding: 15px; background: var(--bg-body); border: 1px dashed var(--accent-green); border-radius: 6px; margin-bottom: 20px;">
-            <div style="color: var(--accent-green); font-size: 12px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase;">📦 Быстрый приход</div>
+        <div id="qe-receive-block" style="display: none; padding: 12px; background: rgba(46, 125, 50, 0.15); border: 1px dashed var(--accent-green); border-radius: 6px; margin-bottom: 15px;">
+            <div style="color: var(--accent-green); font-size: 11px; font-weight: bold; margin-bottom: 8px; text-transform: uppercase;">📦 Быстрый приход</div>
             <div class="grid-row" style="display: flex; gap: 10px;">
                 <div class="field-group" style="flex: 1;">
-                    <label style="font-size: 12px; color: var(--text-muted);">Пришло (Кол-во)</label>
-                    <input type="text" id="qe-receive-qty" readonly onclick="setQeActiveField('qe-receive-qty')" style="width: 100%; padding: 12px; margin-top: 5px; background: var(--bg-card); border: 2px solid var(--accent-green); color: var(--text-main); border-radius: 4px; box-sizing: border-box; text-align: center; font-size: 18px; font-weight: bold;" placeholder="+0">
+                    <label style="font-size: 10px; color: var(--text-muted);">Пришло (Кол-во)</label>
+                    <input type="text" id="qe-receive-qty" style="width: 100%; padding: 10px; margin-top: 4px; background: #000; border: 2px solid var(--accent-green); color: #fff; border-radius: 4px; box-sizing: border-box; text-align: center; font-size: 16px; font-weight: bold;" placeholder="+0">
                 </div>
                 <div class="field-group" style="flex: 1;">
-                    <label style="font-size: 12px; color: var(--text-muted);">Цена закупа (G)</label>
-                    <input type="text" id="qe-receive-cost" readonly onclick="setQeActiveField('qe-receive-cost')" style="width: 100%; padding: 12px; margin-top: 5px; background: var(--bg-card); border: 1px solid var(--border-main); color: var(--text-main); border-radius: 4px; box-sizing: border-box; text-align: center; font-size: 18px; font-weight: bold;" placeholder="0">
+                    <label style="font-size: 10px; color: var(--text-muted);">Цена закупа (G)</label>
+                    <input type="text" id="qe-receive-cost" style="width: 100%; padding: 10px; margin-top: 4px; background: #000; border: 1px solid var(--border-main); color: #fff; border-radius: 4px; box-sizing: border-box; text-align: center; font-size: 16px; font-weight: bold;" placeholder="0">
                 </div>
             </div>
         </div>
 
-        <!-- КАСТОМНАЯ КЛАВИАТУРА ДЛЯ РЕДАКТИРОВАНИЯ (Без изменений) -->
-        <div class="numpad" style="margin-bottom: 20px; grid-template-columns: repeat(3, 1fr); gap: 10px; display: grid;">
-            <div class="num-btn" onmousedown="qeAddDigit('1', event)" ontouchstart="qeAddDigit('1', event)">1</div>
-            <div class="num-btn" onmousedown="qeAddDigit('2', event)" ontouchstart="qeAddDigit('2', event)">2</div>
-            <div class="num-btn" onmousedown="qeAddDigit('3', event)" ontouchstart="qeAddDigit('3', event)">3</div>
-            <div class="num-btn" onmousedown="qeAddDigit('4', event)" ontouchstart="qeAddDigit('4', event)">4</div>
-            <div class="num-btn" onmousedown="qeAddDigit('5', event)" ontouchstart="qeAddDigit('5', event)">5</div>
-            <div class="num-btn" onmousedown="qeAddDigit('6', event)" ontouchstart="qeAddDigit('6', event)">6</div>
-            <div class="num-btn" onmousedown="qeAddDigit('7', event)" ontouchstart="qeAddDigit('7', event)">7</div>
-            <div class="num-btn" onmousedown="qeAddDigit('8', event)" ontouchstart="qeAddDigit('8', event)">8</div>
-            <div class="num-btn" onmousedown="qeAddDigit('9', event)" ontouchstart="qeAddDigit('9', event)">9</div>
-            <div class="num-btn btn-clear" onmousedown="qeClearField(event)" ontouchstart="qeClearField(event)">C</div>
-            <div class="num-btn" onmousedown="qeAddDigit('0', event)" ontouchstart="qeAddDigit('0', event)">0</div>
-            <div class="num-btn btn-clear" onmousedown="qeDelDigit(event)" ontouchstart="qeDelDigit(event)">⌫</div>
-        </div>
-
-        <!-- КНОПКИ: РЕЖИМ ПРОСМОТРА/РЕДАКТИРОВАНИЯ -->
+        <!-- КНОПКИ: ОСНОВНОЙ РЕЖИМ -->
         <div id="qe-buttons-edit">
-            <button class="btn-save-native" onclick="saveQuickEdit()" style="width: 100%; padding: 15px; background: var(--accent-green); color: white; border: none; border-radius: 4px; font-weight: bold; margin-bottom: 10px;">СОХРАНИТЬ ИЗМЕНЕНИЯ</button>
-            <button onclick="toggleQeReceiveMode(true)" style="width: 100%; padding: 15px; background: var(--bg-success-dim); border: 1px solid var(--accent-green); color: var(--accent-green); border-radius: 4px; font-weight: bold; margin-bottom: 10px;">+ БЫСТРЫЙ ПРИХОД</button>
-            <button class="cancel-btn" style="width: 100%; padding: 15px; background: transparent; border: 1px solid var(--border-main); color: var(--text-muted); border-radius: 4px;" onclick="closeQuickEdit()">ОТМЕНА</button>
+            <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+                <button class="btn-save-native" onclick="saveQuickEdit()" style="flex: 1; padding: 12px; background: #2e7d32; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 15px;">СОХРАНИТЬ</button>
+                <button class="cancel-btn" style="width: 50px; padding: 12px; background: #c62828; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 16px;" onclick="closeQuickEdit()">✖</button>
+            </div>
+            <button type="button" onclick="toggleQeReceiveMode(true)" style="width: 100%; padding: 10px; background: transparent; border: 1px solid #2e7d32; color: var(--accent-green); border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 13px;">+ БЫСТРЫЙ ПРИХОД</button>
         </div>
 
         <!-- КНОПКИ: РЕЖИМ ПРИЕМКИ (Скрыты по умолчанию) -->
         <div id="qe-buttons-receive" style="display: none;">
-            <button onclick="confirmQeReceive()" style="width: 100%; padding: 15px; background: var(--accent-blue); color: white; border: none; border-radius: 4px; font-weight: bold; margin-bottom: 10px;">✅ ОПРИХОДОВАТЬ</button>
-            <button class="cancel-btn" style="width: 100%; padding: 15px; background: transparent; border: 1px solid var(--border-main); color: var(--text-muted); border-radius: 4px;" onclick="toggleQeReceiveMode(false)">СВЕРНУТЬ ПРИХОД</button>
+            <button type="button" onclick="confirmQeReceive()" style="width: 100%; padding: 12px; background: #1976d2; color: white; border: none; border-radius: 4px; font-weight: bold; margin-bottom: 8px; cursor: pointer; font-size: 15px;">✅ ОПРИХОДОВАТЬ</button>
+            <button type="button" class="cancel-btn" style="width: 100%; padding: 10px; background: transparent; border: 1px solid var(--border-main); color: var(--text-muted); border-radius: 4px; cursor: pointer;" onclick="toggleQeReceiveMode(false)">СВЕРНУТЬ ПРИХОД</button>
         </div>
 
     </div>
