@@ -586,26 +586,35 @@ window.toggleQeReceiveMode = function(show) {
     const receiveBtns = document.getElementById('qe-buttons-receive');
     const numpad = document.getElementById('custom-numpad');
     const mainFields = document.getElementById('qe-main-fields'); 
-    const overlay = document.getElementById('qe-main-overlay'); // Наш щит
+    const overlay = document.getElementById('qe-main-overlay'); 
     
     if (block && mainBtns && receiveBtns && mainFields) {
         block.style.display = show ? 'block' : 'none';
         mainBtns.style.display = show ? 'none' : 'flex';
         receiveBtns.style.display = show ? 'flex' : 'none';
         
+        // Находим все инпуты внутри основных полей
+        const topInputs = mainFields.querySelectorAll('input');
+
         if (show) {
-            // Включаем физический невидимый барьер для кликов
             if (overlay) overlay.style.display = 'block';
             mainFields.style.opacity = '0.35';
+            // Жестко отключаем клики
+            mainFields.style.pointerEvents = 'none';
+            // Физически блокируем поля
+            topInputs.forEach(input => input.disabled = true);
             
             const qtyInput = document.getElementById('qe-receive-qty');
             if (qtyInput && typeof window.setQeActive === 'function') {
                 window.setQeActive(qtyInput);
             }
         } else {
-            // Отключаем барьер
             if (overlay) overlay.style.display = 'none';
             mainFields.style.opacity = '1';
+            // Возвращаем клики
+            mainFields.style.pointerEvents = 'auto';
+            // Разблокируем поля
+            topInputs.forEach(input => input.disabled = false);
             
             if (numpad) numpad.style.display = 'none';
             
@@ -1085,13 +1094,26 @@ window.saveQuickEdit = function(id, isReceive = false) {
 
     // ЕСЛИ ЭТО БЫСТРЫЙ ПРИХОД - МЫ НЕ ЗАКРЫВАЕМ ОКНО
     if (isReceive) {
-        // Просто сворачиваем панель прихода
+        // Сворачиваем панель прихода
         window.toggleQeReceiveMode(false);
+        
         // Обновляем циферку остатка прямо в окне
         const stockDisplay = document.getElementById('qe-fact-stock-val');
         if (stockDisplay) stockDisplay.textContent = newStock;
+        
         // Очищаем поле ввода прихода для следующего раза
         document.getElementById('qe-receive-qty').value = '';
+        
+        // ПРИНУДИТЕЛЬНО ЗАКРЫВАЕМ КЛАВИАТУРУ
+        const numpad = document.getElementById('custom-numpad');
+        if (numpad) numpad.style.display = 'none';
+        if (typeof window.closeQeNumpad === 'function') window.closeQeNumpad();
+        
+        // Снимаем зеленую рамку и фокус со всех инпутов
+        document.querySelectorAll('#quickEditModal input').forEach(input => {
+            input.classList.remove('qe-active-input');
+            input.blur();
+        });
     } else {
         // Если это обычное сохранение - закрываем модалку полностью
         document.querySelectorAll('#quickEditModal').forEach(m => m.remove());
