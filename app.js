@@ -504,7 +504,7 @@ window.openQuickEditModal = function(id) {
                             <input type="hidden" id="qe-category" value="${escapeHtml(currentCatValue)}">
                             <div id="qe-category-trigger" class="custom-dropdown-trigger" onclick="window.toggleCustomDropdown()" style="width: 100%; border-radius: 4px; padding: 8px; font-size: 15px; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
                                 <span id="qe-category-display" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(currentCatText)}</span>
-                                <span style="font-size: 12px;">▼</span>
+                                <span id="qe-cat-arrow" style="font-size: 12px;">▼</span>
                             </div>
                             <div id="qe-category-dropdown" class="custom-dropdown-list" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; max-height: 45vh; overflow-y: auto; border-radius: 4px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.5); margin-top: 4px;">
                                 ${customDropdownHtml}
@@ -597,7 +597,7 @@ window.toggleQeReceiveMode = function(show) {
     const mainBtns = document.getElementById('qe-buttons-main');
     const receiveBtns = document.getElementById('qe-buttons-receive');
     const numpad = document.getElementById('custom-numpad');
-    const mainFields = document.getElementById('qe-main-fields'); // Блок старой модалки
+    const mainFields = document.getElementById('qe-main-fields'); 
     
     if (block && mainBtns && receiveBtns && mainFields) {
         block.style.display = show ? 'block' : 'none';
@@ -605,20 +605,23 @@ window.toggleQeReceiveMode = function(show) {
         receiveBtns.style.display = show ? 'flex' : 'none';
         
         if (show) {
-            // Пункт 2: Отключаем и делаем прозрачными окна старой модалки
-            mainFields.classList.add('qe-disabled');
+            // Надежная блокировка кликов и фокуса
+            mainFields.style.pointerEvents = 'none';
+            mainFields.style.opacity = '0.35';
             
-            // Ставим фокус на поле "Пришло (кол-во)"
             const qtyInput = document.getElementById('qe-receive-qty');
             if (qtyInput && typeof window.setQeActive === 'function') {
                 window.setQeActive(qtyInput);
             }
         } else {
-            // Пункт 2: Возвращаем активность старым окнам
-            mainFields.classList.remove('qe-disabled');
+            // Возвращаем активность старым окнам
+            mainFields.style.pointerEvents = 'auto';
+            mainFields.style.opacity = '1';
             
-            // Пункт 3: Закрываем клаву при сворачивании 
-            if (numpad) numpad.style.display = 'none';
+            // Жестко закрываем клаву при сворачивании 
+            if (numpad) {
+                numpad.style.display = 'none';
+            }
             
             // Снимаем зеленую рамку со всех полей
             document.querySelectorAll('#quickEditModal input').forEach(input => {
@@ -679,7 +682,20 @@ window.toggleQeReceiveMode = function(show) {
 // Открывает/закрывает наш кастомный список
 window.toggleCustomDropdown = function() {
     const dropdown = document.getElementById('qe-category-dropdown');
-    if (dropdown) dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+    const arrow = document.getElementById('qe-cat-arrow');
+
+    if (dropdown) {
+        // Если список скрыт - открываем и ставим стрелку вверх
+        if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+            dropdown.style.display = 'block';
+            if (arrow) arrow.textContent = '▲';
+        } 
+        // Если открыт - закрываем и ставим стрелку вниз
+        else {
+            dropdown.style.display = 'none';
+            if (arrow) arrow.textContent = '▼';
+        }
+    }
 };
 
 // Обработчик клика ТОЛЬКО для модального окна быстрых правок
@@ -1013,12 +1029,16 @@ window.saveQuickEdit = function(id) {
         return elements.length > 0 ? elements[elements.length - 1].value : "";
     };
 
-    // 2. Читаем актуальные данные, игнорируя скрытые и старые окна
+    // 2. Читаем актуальные данные, включая новые поля быстрого прихода
     const rawName = getLatestValue('qe-name');
     const rawPrice = getLatestValue('qe-price');
     const rawCategory = getLatestValue('qe-category');
     const rawBarcode = getLatestValue('qe-barcode');
     const rawMinStock = getLatestValue('qe-minstock');
+    
+    // Считываем данные из подмодалки "Быстрый приход"
+    const rawReceiveQty = getLatestValue('qe-receive-qty');
+    const rawReceiveCost = getLatestValue('qe-receive-cost');
 
     // 3. Очистка и подготовка данных
     const newName = rawName.trim();
@@ -1029,40 +1049,43 @@ window.saveQuickEdit = function(id) {
         return; 
     }
 
+    // Очищаем числа от пробелов (разделителей тысяч) и меняем запятые на точки
     const newPrice = parseFloat(String(rawPrice).replace(/\s/g, '').replace(',', '.')) || 0;
     const newMinStock = parseFloat(String(rawMinStock).replace(/\s/g, '').replace(',', '.')) || 0;
+    
+    // Очищаем данные прихода (убираем знак '+', пробелы и запятые)
+    const receiveQty = parseFloat(String(rawReceiveQty).replace(/[\s+]/g, '').replace(',', '.')) || 0;
+    const receiveCost = parseFloat(String(rawReceiveCost).replace(/\s/g, '').replace(',', '.')) || 0;
 
-    // === НАЧАЛО ПУНКТА 3 ===
     let newCategory = rawCategory;
     
-    // Если выбрали создание новой категории, читаем данные из скрытого поля через твой перехватчик
     if (newCategory === 'new') {
         newCategory = getLatestValue('qe-new-category').trim();
         
-        // Защита от пустой строки
         if (!newCategory) {
             alert('Введите название новой категории!');
-            // Находим последнее открытое поле ввода и ставим туда фокус
             const newCatInputs = document.querySelectorAll('#qe-new-category');
             if (newCatInputs.length > 0) newCatInputs[newCatInputs.length - 1].focus();
-            return; // Останавливаем сохранение
+            return; 
         }
     } else if (newCategory === '0' || newCategory === 'Не выбрано') {
         newCategory = "Без категории"; 
     }
-    // === КОНЕЦ ПУНКТА 3 ===
 
     // 4. Формируем правильный пакет данных для бэкенда
     const payload = {
         action: "update_single_item",
-        api_key: CLIENT_API_KEY,
+        api_key: typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : '',
         itemId: String(item.id),
         data: {
             item_name: newName,
             price: newPrice,
             category: newCategory,
             min_stock: newMinStock,
-            barcode: rawBarcode.trim()
+            barcode: rawBarcode.trim(),
+            // Передаем данные прихода на сервер
+            receive_qty: receiveQty,
+            cost: receiveCost > 0 ? receiveCost : item.cost
         }
     };
 
@@ -1075,19 +1098,35 @@ window.saveQuickEdit = function(id) {
     item.category = newCategory;
     item.min_stock = newMinStock;
     item.barcode = rawBarcode.trim();
+    
+    // Если был быстрый приход, сразу обновляем остаток и цену закупа локально
+    if (receiveQty > 0) {
+        item.stock = (parseFloat(item.stock) || 0) + receiveQty;
+    }
+    if (receiveCost > 0) {
+        item.cost = receiveCost;
+    }
 
-    // ЖЕСТКАЯ ОЧИСТКА: удаляем вообще все окна редактирования из кода, чтобы не плодить дубликаты
+    // === ПУНКТ 5: ВКЛЮЧАЕМ ИНДИКАТОР ОБЛАКА (1 позиция в очереди) ===
+    if (typeof window.updateQeSyncStatus === 'function') {
+        window.updateQeSyncStatus(1);
+    }
+
+    // ЖЕСТКАЯ ОЧИСТКА: удаляем вообще все окна редактирования из кода
     document.querySelectorAll('#quickEditModal').forEach(m => m.remove());
     if (typeof render === 'function') render();
 
     // 6. Отправляем в Google Таблицу
-    fetch(GATEWAY_URL, {
+    fetch(typeof GATEWAY_URL !== 'undefined' ? GATEWAY_URL : '', {
         method: 'POST',
         body: JSON.stringify(payload),
         headers: { 'Content-Type': 'text/plain;charset=utf-8' }
     })
     .then(res => res.json())
     .then(response => {
+        // === ПУНКТ 5: ВЫКЛЮЧАЕМ ИНДИКАТОР ОБЛАКА (Успех) ===
+        if (typeof window.updateQeSyncStatus === 'function') window.updateQeSyncStatus(0);
+
         if (response && response.error) {
             alert('Ошибка сервера: ' + response.error);
         } else {
@@ -1095,6 +1134,9 @@ window.saveQuickEdit = function(id) {
         }
     })
     .catch(err => {
+        // === ПУНКТ 5: ВЫКЛЮЧАЕМ ИНДИКАТОР ОБЛАКА (Ошибка) ===
+        if (typeof window.updateQeSyncStatus === 'function') window.updateQeSyncStatus(0);
+        
         alert('Ошибка связи с сервером: ' + err.message);
     });
 };
