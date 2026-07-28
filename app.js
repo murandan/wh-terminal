@@ -411,19 +411,14 @@ window.openQuickEditModal = function(id) {
     const item = db.find(i => String(i.id) === String(id));
     if (!item) return;
 
-    // Удаляем старое окно, если есть
     const existingModal = document.getElementById('quickEditModal');
     if (existingModal) existingModal.remove();
 
-    // Язык и словари
     const savedLang = localStorage.getItem('pos_lang');
     const lang = savedLang || window.currentLang || (typeof currentLang !== 'undefined' ? currentLang : 'ru');
-    const dict = (typeof translations !== 'undefined' && translations[lang]) 
-        ? translations[lang] 
-        : (typeof translations !== 'undefined' && translations['ru'] ? translations['ru'] : {});
+    const dict = (typeof translations !== 'undefined' && translations[lang]) ? translations[lang] : (typeof translations !== 'undefined' && translations['ru'] ? translations['ru'] : {});
     const t = (key) => dict[key] || key;
 
-    // Подготовка данных
     const uniqueCats = [...new Set(db.map(i => i.category).filter(Boolean))];
     const escapeHtml = (str) => String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
@@ -444,7 +439,6 @@ window.openQuickEditModal = function(id) {
     const minStockVal = item.min_stock !== undefined ? item.min_stock : 1;
     const currentStock = Number(item.stock) || 0;
     
-    // ПУНКТ 1: Форматируем цену с тысячным разделителем (например, "1 500")
     const rawPrice = Number(item.price || 0);
     const formattedPrice = rawPrice > 0 ? rawPrice.toLocaleString('ru-RU') : '0';
 
@@ -466,6 +460,11 @@ window.openQuickEditModal = function(id) {
                 .custom-dropdown-trigger { background: #000000; color: #ffffff; border: 1px solid #333333; }
                 .custom-dropdown-list { background: #1e1e1e; border: 1px solid #333333; }
 
+                /* Стили для неактивного блока и мигающего облака */
+                .qe-disabled { pointer-events: none; opacity: 0.35; transition: opacity 0.3s ease; filter: grayscale(50%); }
+                @keyframes smoothBlink { 0% {opacity: 0.2;} 50% {opacity: 1;} 100% {opacity: 0.2;} }
+                .qe-syncing { display: flex !important; animation: smoothBlink 1.5s infinite ease-in-out; color: #4caf50; stroke: #4caf50; }
+
                 body.light-theme #quickEditModal .qe-container { background: #ffffff !important; color: #18181b !important; border-color: #e4e4e7 !important; }
                 body.light-theme #quickEditModal input, 
                 body.light-theme #quickEditModal select { background: #f4f4f5 !important; color: #000000 !important; border-color: #d4d4d8 !important; }
@@ -478,67 +477,67 @@ window.openQuickEditModal = function(id) {
 
             <div class="qe-container" style="padding: 15px; border-radius: 8px; width: 90%; max-width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
                 
-                <!-- ПУНКТ 4: ШАПКА С ИКОНКОЙ ОБЛАКА ☁️ -->
-                <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 12px; border-bottom: 1px solid rgba(128,128,128,0.2); padding-bottom: 8px;">
-                    <span style="font-size: 16px;">☁️</span>
+                <!-- ШАПКА -->
+                <div style="position: relative; margin-bottom: 12px; border-bottom: 1px solid rgba(128,128,128,0.2); padding-bottom: 8px; text-align: center; display: flex; justify-content: center; align-items: center; min-height: 24px;">
                     <h3 data-i18n="qe_title" style="margin: 0; font-size: 15px; text-transform: uppercase; letter-spacing: 1px;">${t('qe_title')}</h3>
-                </div>
-                
-                <div style="margin-bottom: 10px;">
-                    <label data-i18n="qe_name">${t('qe_name')}</label>
-                    <input type="text" id="qe-name" value="${escapeHtml(item.name || '')}" style="width: 100%;">
-                    <div data-i18n="qe_name_hint" style="font-size: 9px; color: #2e7d32; margin-top: 3px; letter-spacing: 0.3px;">${t('qe_name_hint')}</div>
-                </div>
-                
-                <div style="margin-bottom: 10px;">
-                    <label data-i18n="qe_category">${t('qe_category')}</label>
-                    <div style="position: relative; width: 100%;">
-                        <input type="hidden" id="qe-category" value="${escapeHtml(currentCatValue)}">
-                        <div id="qe-category-trigger" class="custom-dropdown-trigger" onclick="window.toggleCustomDropdown()" style="width: 100%; border-radius: 4px; padding: 8px; font-size: 15px; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                            <span id="qe-category-display" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(currentCatText)}</span>
-                            <span style="font-size: 12px;">▼</span>
-                        </div>
-                        <div id="qe-category-dropdown" class="custom-dropdown-list" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; max-height: 45vh; overflow-y: auto; border-radius: 4px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.5); margin-top: 4px;">
-                            ${customDropdownHtml}
-                        </div>
-                        <div id="qe-new-category-wrapper" style="display: none; width: 100%; gap: 5px;">
-                            <input type="text" id="qe-new-category" placeholder="Введите название..." style="flex: 1; width: 100%;">
-                            <button type="button" id="qe-cancel-new-cat" onclick="window.cancelNewCategory()" style="background: #c62828; color: #fff; border: none; border-radius: 4px; padding: 0 12px; font-weight: bold; cursor: pointer;">✖</button>
-                        </div>
+                    
+                    <!-- Индикатор синхронизации (Пункт 1) -->
+                    <div id="qe-sync-indicator" style="position: absolute; right: 0; display: none; align-items: center; gap: 4px; color: #a0a0a0;">
+                        <span id="qe-sync-count" style="font-size: 12px; font-weight: bold; padding-top: 2px;">0</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+                        </svg>
                     </div>
                 </div>
-
-                <div style="margin-bottom: 10px;">
-                    <label data-i18n="qe_barcode" style="display: block; font-size: 10px; margin-bottom: 2px;">${t('qe_barcode')}</label>
-                    <div style="display: flex; margin-bottom: 8px;">
-                        <input type="text" id="qe-barcode" value="${item.barcode || ''}" placeholder="${t('qe_barcode_placeholder')}" inputmode="none" readonly onclick="window.setQeActive(this)" style="flex: 1; border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: none;">
-                        <button type="button" onclick="window.startQuaggaScanner()" style="padding: 0 15px; border: 1px solid rgba(128,128,128,0.3); background: rgba(128,128,128,0.1); border-top-right-radius: 4px; border-bottom-right-radius: 4px; color: inherit; font-size: 18px; cursor: pointer;">📷</button>
+                
+                <!-- ОБЕРТКА ОСНОВНЫХ ПОЛЕЙ (Пункт 2) -->
+                <div id="qe-main-fields" style="transition: opacity 0.3s ease;">
+                    <div style="margin-bottom: 10px;">
+                        <label data-i18n="qe_name">${t('qe_name')}</label>
+                        <input type="text" id="qe-name" value="${escapeHtml(item.name || '')}" style="width: 100%;">
+                        <div data-i18n="qe_name_hint" style="font-size: 9px; color: #2e7d32; margin-top: 3px; letter-spacing: 0.3px;">${t('qe_name_hint')}</div>
                     </div>
                     
-                    <div id="quagga-scanner-container" style="display: none; position: relative; width: 100%; height: 180px; background: #000; border-radius: 4px; overflow: hidden; border: 1px solid #444;">
-                        <div id="quagga-video-target" style="width: 100%; height: 100%;"></div>
-                        <div style="position: absolute; top: 50%; left: 10%; width: 80%; height: 2px; background: rgba(255, 0, 0, 0.7); box-shadow: 0 0 8px rgba(255, 0, 0, 1); z-index: 5; transform: translateY(-50%); pointer-events: none;"></div>
-                        <button type="button" data-i18n="qe_close" onclick="window.stopQuaggaScanner()" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #555; border-radius: 4px; padding: 4px 10px; font-size: 12px; z-index: 10;">${t('qe_close')}</button>
+                    <div style="margin-bottom: 10px;">
+                        <label data-i18n="qe_category">${t('qe_category')}</label>
+                        <div style="position: relative; width: 100%;">
+                            <input type="hidden" id="qe-category" value="${escapeHtml(currentCatValue)}">
+                            <div id="qe-category-trigger" class="custom-dropdown-trigger" onclick="window.toggleCustomDropdown()" style="width: 100%; border-radius: 4px; padding: 8px; font-size: 15px; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                                <span id="qe-category-display" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(currentCatText)}</span>
+                                <span style="font-size: 12px;">▼</span>
+                            </div>
+                            <div id="qe-category-dropdown" class="custom-dropdown-list" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; max-height: 45vh; overflow-y: auto; border-radius: 4px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.5); margin-top: 4px;">
+                                ${customDropdownHtml}
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                <div style="display: flex; gap: 12px; margin-bottom: 12px;">
-                    <div style="flex: 1;">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2px;">
-                            <label data-i18n="qe_price" style="margin-bottom: 0;">${t('qe_price')}</label>
-                            <span style="font-size: 10px; color: #2e7d32; font-weight: bold;"><span data-i18n="qe_current">${t('qe_current')}</span>: ${formattedPrice}</span>
+                    <div style="margin-bottom: 10px;">
+                        <label data-i18n="qe_barcode" style="display: block; font-size: 10px; margin-bottom: 2px;">${t('qe_barcode')}</label>
+                        <div style="display: flex; margin-bottom: 8px;">
+                            <input type="text" id="qe-barcode" value="${item.barcode || ''}" placeholder="${t('qe_barcode_placeholder')}" inputmode="none" readonly onclick="window.setQeActive(this)" style="flex: 1; border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: none;">
+                            <button type="button" onclick="window.startQuaggaScanner()" style="padding: 0 15px; border: 1px solid rgba(128,128,128,0.3); background: rgba(128,128,128,0.1); border-top-right-radius: 4px; border-bottom-right-radius: 4px; color: inherit; font-size: 18px; cursor: pointer;">📷</button>
                         </div>
-                        <!-- ПУНКТ 1: Выводим отформатированную цену -->
-                        <input type="text" class="no-spinners" id="qe-price" value="${formattedPrice}" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%;">
                     </div>
-                    <div style="flex: 1;">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2px;">
-                            <label data-i18n="qe_min_stock" style="margin-bottom: 0;">${t('qe_min_stock')}</label>
-                            <span style="font-size: 10px; color: #2e7d32; font-weight: bold;"><span data-i18n="qe_fact">${t('qe_fact')}</span>: ${currentStock}</span>
+
+                    <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                        <div style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2px;">
+                                <label data-i18n="qe_price" style="margin-bottom: 0;">${t('qe_price')}</label>
+                                <span style="font-size: 10px; color: #2e7d32; font-weight: bold;"><span data-i18n="qe_current">${t('qe_current')}</span>: ${formattedPrice}</span>
+                            </div>
+                            <input type="text" class="no-spinners" id="qe-price" value="${formattedPrice}" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%;">
                         </div>
-                        <input type="text" class="no-spinners" id="qe-minstock" value="${minStockVal}" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%;">
+                        <div style="flex: 1;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2px;">
+                                <label data-i18n="qe_min_stock" style="margin-bottom: 0;">${t('qe_min_stock')}</label>
+                                <span style="font-size: 10px; color: #2e7d32; font-weight: bold;"><span data-i18n="qe_fact">${t('qe_fact')}</span>: ${currentStock}</span>
+                            </div>
+                            <input type="text" class="no-spinners" id="qe-minstock" value="${minStockVal}" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%;">
+                        </div>
                     </div>
-                </div>
+                </div> 
+                <!-- КОНЕЦ ОБЕРТКИ ОСНОВНЫХ ПОЛЕЙ -->
 
                 <!-- БЛОК БЫСТРОГО ПРИХОДА -->
                 <div id="qe-receive-block" style="display: none; padding: 10px; background: rgba(46, 125, 50, 0.15); border: 1px dashed #2e7d32; border-radius: 6px; margin-bottom: 12px;">
@@ -549,7 +548,6 @@ window.openQuickEditModal = function(id) {
                             <input type="text" class="no-spinners" id="qe-receive-qty" placeholder="+0" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%; text-align: center; font-weight: bold; border-color: #2e7d32;">
                         </div>
                         <div style="flex: 1;">
-                            <!-- ПУНКТ 2: Без буквы (G) -->
                             <label style="font-size: 9px; color: #888;">Цена закупа</label>
                             <input type="text" class="no-spinners" id="qe-receive-cost" value="${item.cost || ''}" placeholder="0" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%; text-align: center; font-weight: bold;">
                         </div>
@@ -594,30 +592,35 @@ window.openQuickEditModal = function(id) {
     document.body.insertAdjacentHTML('beforeend', modalHtml);
 };
 
-// =========================================================
-// 2. СВОРАЧИВАНИЕ ПРИХОДАС С ЗАКРЫТИЕМ КЛАВИАТУРЫ (ПУНКТ 3)
-// =========================================================
 window.toggleQeReceiveMode = function(show) {
     const block = document.getElementById('qe-receive-block');
     const mainBtns = document.getElementById('qe-buttons-main');
     const receiveBtns = document.getElementById('qe-buttons-receive');
     const numpad = document.getElementById('custom-numpad');
+    const mainFields = document.getElementById('qe-main-fields'); // Блок старой модалки
     
-    if (block && mainBtns && receiveBtns) {
+    if (block && mainBtns && receiveBtns && mainFields) {
         block.style.display = show ? 'block' : 'none';
         mainBtns.style.display = show ? 'none' : 'flex';
         receiveBtns.style.display = show ? 'flex' : 'none';
         
         if (show) {
+            // Пункт 2: Отключаем и делаем прозрачными окна старой модалки
+            mainFields.classList.add('qe-disabled');
+            
+            // Ставим фокус на поле "Пришло (кол-во)"
             const qtyInput = document.getElementById('qe-receive-qty');
             if (qtyInput && typeof window.setQeActive === 'function') {
                 window.setQeActive(qtyInput);
             }
         } else {
-            // ПУНКТ 3: Закрываем цифровую клавиатуру при сворачивании
+            // Пункт 2: Возвращаем активность старым окнам
+            mainFields.classList.remove('qe-disabled');
+            
+            // Пункт 3: Закрываем клаву при сворачивании 
             if (numpad) numpad.style.display = 'none';
             
-            // Снимаем подсветку со всех активных полей
+            // Снимаем зеленую рамку со всех полей
             document.querySelectorAll('#quickEditModal input').forEach(input => {
                 input.classList.remove('qe-active-input');
             });
@@ -3778,3 +3781,19 @@ document.addEventListener('click', function(e) {
         el.focus();
     }
 });
+// Функция для обновления статуса облака
+window.updateQeSyncStatus = function(queueCount) {
+    const syncIndicator = document.getElementById('qe-sync-indicator');
+    const syncCount = document.getElementById('qe-sync-count');
+    
+    if (syncIndicator && syncCount) {
+        if (queueCount > 0) {
+            syncCount.textContent = queueCount;
+            // Добавляем класс, который включает мигание и отображает блок
+            syncIndicator.classList.add('qe-syncing'); 
+        } else {
+            // Убираем мигание и скрываем блок
+            syncIndicator.classList.remove('qe-syncing'); 
+        }
+    }
+};
