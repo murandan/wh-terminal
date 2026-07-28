@@ -412,27 +412,23 @@ window.openQuickEditModal = function(id) {
     const existingModal = document.getElementById('quickEditModal');
     if (existingModal) existingModal.remove();
 
-    // 1. ОПРЕДЕЛЕНИЕ ЯЗЫКА (из localStorage или переменных)
+    // 1. ОПРЕДЕЛЕНИЕ ЯЗЫКА
     const savedLang = localStorage.getItem('pos_lang');
     const lang = savedLang || window.currentLang || (typeof currentLang !== 'undefined' ? currentLang : 'ru');
     
-    // Получаем словарь (используем 'kz' или 'ru')
     const dict = (typeof translations !== 'undefined' && translations[lang]) 
         ? translations[lang] 
         : (typeof translations !== 'undefined' && translations['ru'] ? translations['ru'] : {});
     
     const t = (key) => dict[key] || key;
 
-    // 2. ПОДГОТОВКА ДАННЫХ (с защитой от кавычек)
+    // 2. ПОДГОТОВКА ДАННЫХ
     const uniqueCats = [...new Set(db.map(i => i.category).filter(Boolean))];
-    
-    // Функция, которая превращает кавычки в безопасный код, чтобы не сломать HTML
     const escapeHtml = (str) => String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
     let currentCatText = (!item.category || item.category === '0') ? t('qe_no_category') : item.category;
     let currentCatValue = (!item.category || item.category === '0') ? '0' : item.category;
 
-    // Собираем пункты списка
     let customDropdownHtml = `<div data-val="0" data-text="${escapeHtml(t('qe_no_category'))}" onclick="window.handleQeCatClick(this)" style="padding: 10px; cursor: pointer; border-bottom: 1px solid rgba(128,128,128,0.2);">${escapeHtml(t('qe_no_category'))}</div>`;
     
     uniqueCats.forEach(cat => {
@@ -448,7 +444,7 @@ window.openQuickEditModal = function(id) {
     const currentStock = Number(item.stock) || 0;
     const formattedPrice = Number(item.price || 0).toLocaleString('ru-RU');
 
-    // 3. HTML И СТИЛИ С ПОДДЕРЖКОЙ СВЕТЛОЙ ТЕМЫ
+    // 3. СБОРКА ШАБЛОНА ОКНА
     const modalHtml = `
         <div id="quickEditModal" onclick="if(event.target.id === 'quickEditModal') window.closeQeNumpad()" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: flex-start; padding-top: 3vh; font-family: 'Roboto', sans-serif;">
             
@@ -457,7 +453,6 @@ window.openQuickEditModal = function(id) {
                 .no-spinners::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
                 .no-spinners { -moz-appearance: textfield; }
                 
-                /* --- ТЁМНАЯ ТЕМА (ПО УМОЛЧАНИЮ) --- */
                 #quickEditModal .qe-container { background: #1e1e1e; color: #ffffff; border: 1px solid #333333; }
                 #quickEditModal input, #quickEditModal select { background: #000000; color: #ffffff; border: 1px solid #333333; border-radius: 4px; padding: 8px; font-size: 15px; box-sizing: border-box; outline: none; }
                 #quickEditModal input:focus, #quickEditModal select:focus { border-color: #2e7d32; }
@@ -465,18 +460,15 @@ window.openQuickEditModal = function(id) {
                 .np-btn { background: #2a2a2a; color: #ffffff; border: 1px solid #444444; border-radius: 6px; height: 45px; font-size: 20px; font-weight: bold; cursor: pointer; user-select: none; }
                 .np-btn-action { background: #333333; color: #ff9800; }
                 .qe-active-input { border-color: #2e7d32 !important; box-shadow: 0 0 8px rgba(46, 125, 50, 0.4); }
-                /* Стили кастомного выпадающего списка (Тёмная) */
                 .custom-dropdown-trigger { background: #000000; color: #ffffff; border: 1px solid #333333; }
                 .custom-dropdown-list { background: #1e1e1e; border: 1px solid #333333; }
 
-                /* --- СВЕТЛАЯ ТЕМА (АВТОМАТИЧЕСКИ ПРИ .light-theme НА BODY) --- */
                 body.light-theme #quickEditModal .qe-container { background: #ffffff !important; color: #18181b !important; border-color: #e4e4e7 !important; }
                 body.light-theme #quickEditModal input, 
                 body.light-theme #quickEditModal select { background: #f4f4f5 !important; color: #000000 !important; border-color: #d4d4d8 !important; }
                 body.light-theme #quickEditModal label { color: #71717a !important; }
                 body.light-theme #quickEditModal .np-btn { background: #e4e4e7 !important; color: #18181b !important; border-color: #d4d4d8 !important; }
                 body.light-theme #quickEditModal .np-btn-action { background: #d4d4d8 !important; color: #e65100 !important; }
-                /* Стили кастомного выпадающего списка (Светлая) */
                 body.light-theme #quickEditModal .custom-dropdown-trigger { background: #f4f4f5 !important; color: #000000 !important; border-color: #d4d4d8 !important; }
                 body.light-theme #quickEditModal .custom-dropdown-list { background: #ffffff !important; border-color: #d4d4d8 !important; }
             </style>
@@ -492,24 +484,15 @@ window.openQuickEditModal = function(id) {
                 
                 <div style="margin-bottom: 10px;">
                     <label data-i18n="qe_category">${t('qe_category')}</label>
-                    
-                    <!-- КАСТОМНЫЙ ВЫПАДАЮЩИЙ СПИСОК -->
                     <div style="position: relative; width: 100%;">
-                        <!-- Скрытое поле. Именно из него функция сохранения будет брать данные -->
                         <input type="hidden" id="qe-category" value="${escapeHtml(currentCatValue)}">
-                        
-                        <!-- Видимая кнопка (триггер) -->
                         <div id="qe-category-trigger" class="custom-dropdown-trigger" onclick="window.toggleCustomDropdown()" style="width: 100%; border-radius: 4px; padding: 8px; font-size: 15px; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
                             <span id="qe-category-display" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(currentCatText)}</span>
                             <span style="font-size: 12px;">▼</span>
                         </div>
-                        
-                        <!-- Сам список, который появляется поверх интерфейса -->
                         <div id="qe-category-dropdown" class="custom-dropdown-list" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; max-height: 45vh; overflow-y: auto; border-radius: 4px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.5); margin-top: 4px;">
                             ${customDropdownHtml}
                         </div>
-                        
-                        <!-- Скрытое поле для ввода новой категории -->
                         <div id="qe-new-category-wrapper" style="display: none; width: 100%; gap: 5px;">
                             <input type="text" id="qe-new-category" placeholder="Введите название..." style="flex: 1; width: 100%;">
                             <button type="button" id="qe-cancel-new-cat" onclick="window.cancelNewCategory()" style="background: #c62828; color: #fff; border: none; border-radius: 4px; padding: 0 12px; font-weight: bold; cursor: pointer;">✖</button>
@@ -525,20 +508,13 @@ window.openQuickEditModal = function(id) {
                     </div>
                     
                     <div id="quagga-scanner-container" style="display: none; position: relative; width: 100%; height: 180px; background: #000; border-radius: 4px; overflow: hidden; border: 1px solid #444;">
-    
-                        <!-- Контейнер для потока с камеры -->
                         <div id="quagga-video-target" style="width: 100%; height: 100%;"></div>
-                        
-                        <!-- === ВИЗУАЛЬНЫЙ ПРИЦЕЛ (КРАСНАЯ ЛИНИЯ) === -->
                         <div style="position: absolute; top: 50%; left: 10%; width: 80%; height: 2px; background: rgba(255, 0, 0, 0.7); box-shadow: 0 0 8px rgba(255, 0, 0, 1); z-index: 5; transform: translateY(-50%); pointer-events: none;"></div>
-                        <!-- ========================================= -->
-
-                        <!-- Кнопка закрытия -->
                         <button type="button" data-i18n="qe_close" onclick="window.stopQuaggaScanner()" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #555; border-radius: 4px; padding: 4px 10px; font-size: 12px; z-index: 10;">${t('qe_close')}</button>
                     </div>
                 </div>
 
-                <div style="display: flex; gap: 12px; margin-bottom: 15px;">
+                <div style="display: flex; gap: 12px; margin-bottom: 12px;">
                     <div style="flex: 1;">
                         <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2px;">
                             <label data-i18n="qe_price" style="margin-bottom: 0;">${t('qe_price')}</label>
@@ -555,8 +531,23 @@ window.openQuickEditModal = function(id) {
                     </div>
                 </div>
 
+                <!-- БЛОК БЫСТРОГО ПРИХОДА (Скрыт по умолчанию) -->
+                <div id="qe-receive-block" style="display: none; padding: 10px; background: rgba(46, 125, 50, 0.15); border: 1px dashed #2e7d32; border-radius: 6px; margin-bottom: 12px;">
+                    <div style="color: #2e7d32; font-size: 11px; font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">📦 Быстрый приход</div>
+                    <div style="display: flex; gap: 8px;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 9px; color: #888;">Пришло (Кол-во)</label>
+                            <input type="text" class="no-spinners" id="qe-receive-qty" placeholder="+0" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%; text-align: center; font-weight: bold; border-color: #2e7d32;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-size: 9px; color: #888;">Цена закупа (G)</label>
+                            <input type="text" class="no-spinners" id="qe-receive-cost" value="${item.cost || ''}" placeholder="0" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%; text-align: center; font-weight: bold;">
+                        </div>
+                    </div>
+                </div>
+
                 <!-- БЛОК NUMPAD -->
-                <div id="custom-numpad" style="display: none; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 15px;">
+                <div id="custom-numpad" style="display: none; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 12px;">
                     <button type="button" class="np-btn" onclick="window.qeNumpad('1', event)">1</button>
                     <button type="button" class="np-btn" onclick="window.qeNumpad('2', event)">2</button>
                     <button type="button" class="np-btn" onclick="window.qeNumpad('3', event)">3</button>
@@ -571,15 +562,46 @@ window.openQuickEditModal = function(id) {
                     <button type="button" class="np-btn np-btn-action" onclick="window.qeNumpad('DEL', event)">⌫</button>
                 </div>
 
-                <div style="display: flex; gap: 8px;">
-                    <button type="button" data-i18n="qe_save" onclick="window.saveQuickEdit('${item.id}')" style="flex: 2; padding: 10px; border: none; background: #2e7d32; color: #fff; border-radius: 4px; font-weight: bold; font-size: 14px; text-transform: uppercase; cursor: pointer;">${t('qe_save')}</button>
-                    <button type="button" onclick="document.getElementById('quickEditModal').remove()" style="flex: 1; padding: 10px; border: none; background: #c62828; color: #fff; border-radius: 4px; font-weight: bold; font-size: 16px; cursor: pointer;">✖</button>
+                <!-- ОСНОВНЫЕ КНОПКИ -->
+                <div id="qe-buttons-main" style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" data-i18n="qe_save" onclick="window.saveQuickEdit('${item.id}')" style="flex: 2; padding: 10px; border: none; background: #2e7d32; color: #fff; border-radius: 4px; font-weight: bold; font-size: 14px; text-transform: uppercase; cursor: pointer;">${t('qe_save')}</button>
+                        <button type="button" onclick="document.getElementById('quickEditModal').remove()" style="flex: 1; padding: 10px; border: none; background: #c62828; color: #fff; border-radius: 4px; font-weight: bold; font-size: 16px; cursor: pointer;">✖</button>
+                    </div>
+                    <button type="button" onclick="window.toggleQeReceiveMode(true)" style="width: 100%; padding: 8px; background: transparent; border: 1px solid #2e7d32; color: #2e7d32; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px;">+ БЫСТРЫЙ ПРИХОД</button>
                 </div>
+
+                <!-- КНОПКИ РЕЖИМА ПРИЕМКИ -->
+                <div id="qe-buttons-receive" style="display: none; flex-direction: column; gap: 8px;">
+                    <button type="button" onclick="window.saveQuickEdit('${item.id}')" style="width: 100%; padding: 10px; border: none; background: #1976d2; color: #fff; border-radius: 4px; font-weight: bold; font-size: 14px; text-transform: uppercase; cursor: pointer;">✅ ОПРИХОДОВАТЬ И СОХРАНИТЬ</button>
+                    <button type="button" onclick="window.toggleQeReceiveMode(false)" style="width: 100%; padding: 8px; background: transparent; border: 1px solid rgba(128,128,128,0.3); color: #888; border-radius: 4px; cursor: pointer; font-size: 12px;">СВЕРНУТЬ ПРИХОД</button>
+                </div>
+
             </div>
         </div>
     `;
     
     document.body.insertAdjacentHTML('beforeend', modalHtml);
+};
+
+// Вспомогательная функция переключения отображения Приемки
+window.toggleQeReceiveMode = function(show) {
+    const block = document.getElementById('qe-receive-block');
+    const mainBtns = document.getElementById('qe-buttons-main');
+    const receiveBtns = document.getElementById('qe-buttons-receive');
+    
+    if (block && mainBtns && receiveBtns) {
+        block.style.display = show ? 'block' : 'none';
+        mainBtns.style.display = show ? 'none' : 'flex';
+        receiveBtns.style.display = show ? 'flex' : 'none';
+        
+        if (show) {
+            const qtyInput = document.getElementById('qe-receive-qty');
+            if (qtyInput && typeof window.setQeActive === 'function') {
+                window.setQeActive(qtyInput);
+            }
+        }
+    }
 };
 
 // Открывает/закрывает наш кастомный список
