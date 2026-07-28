@@ -404,6 +404,9 @@ window.checkScannerStatus = function(el) {
     }
 };
 
+// =========================================================
+// 1. ОТКРЫТИЕ МОДАЛКИ С ОБЛАКОМ, РАЗДЕЛИТЕЛЯМИ И ИСПРАВЛЕНИЯМИ
+// =========================================================
 window.openQuickEditModal = function(id) {
     const item = db.find(i => String(i.id) === String(id));
     if (!item) return;
@@ -412,17 +415,15 @@ window.openQuickEditModal = function(id) {
     const existingModal = document.getElementById('quickEditModal');
     if (existingModal) existingModal.remove();
 
-    // 1. ОПРЕДЕЛЕНИЕ ЯЗЫКА
+    // Язык и словари
     const savedLang = localStorage.getItem('pos_lang');
     const lang = savedLang || window.currentLang || (typeof currentLang !== 'undefined' ? currentLang : 'ru');
-    
     const dict = (typeof translations !== 'undefined' && translations[lang]) 
         ? translations[lang] 
         : (typeof translations !== 'undefined' && translations['ru'] ? translations['ru'] : {});
-    
     const t = (key) => dict[key] || key;
 
-    // 2. ПОДГОТОВКА ДАННЫХ
+    // Подготовка данных
     const uniqueCats = [...new Set(db.map(i => i.category).filter(Boolean))];
     const escapeHtml = (str) => String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
@@ -442,9 +443,11 @@ window.openQuickEditModal = function(id) {
 
     const minStockVal = item.min_stock !== undefined ? item.min_stock : 1;
     const currentStock = Number(item.stock) || 0;
-    const formattedPrice = Number(item.price || 0).toLocaleString('ru-RU');
+    
+    // ПУНКТ 1: Форматируем цену с тысячным разделителем (например, "1 500")
+    const rawPrice = Number(item.price || 0);
+    const formattedPrice = rawPrice > 0 ? rawPrice.toLocaleString('ru-RU') : '0';
 
-    // 3. СБОРКА ШАБЛОНА ОКНА
     const modalHtml = `
         <div id="quickEditModal" onclick="if(event.target.id === 'quickEditModal') window.closeQeNumpad()" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: flex-start; padding-top: 3vh; font-family: 'Roboto', sans-serif;">
             
@@ -474,7 +477,12 @@ window.openQuickEditModal = function(id) {
             </style>
 
             <div class="qe-container" style="padding: 15px; border-radius: 8px; width: 90%; max-width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
-                <h3 data-i18n="qe_title" style="margin-top: 0; margin-bottom: 12px; font-size: 15px; text-align: center; text-transform: uppercase; border-bottom: 1px solid rgba(128,128,128,0.2); padding-bottom: 8px; letter-spacing: 1px;">${t('qe_title')}</h3>
+                
+                <!-- ПУНКТ 4: ШАПКА С ИКОНКОЙ ОБЛАКА ☁️ -->
+                <div style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 12px; border-bottom: 1px solid rgba(128,128,128,0.2); padding-bottom: 8px;">
+                    <span style="font-size: 16px;">☁️</span>
+                    <h3 data-i18n="qe_title" style="margin: 0; font-size: 15px; text-transform: uppercase; letter-spacing: 1px;">${t('qe_title')}</h3>
+                </div>
                 
                 <div style="margin-bottom: 10px;">
                     <label data-i18n="qe_name">${t('qe_name')}</label>
@@ -520,7 +528,8 @@ window.openQuickEditModal = function(id) {
                             <label data-i18n="qe_price" style="margin-bottom: 0;">${t('qe_price')}</label>
                             <span style="font-size: 10px; color: #2e7d32; font-weight: bold;"><span data-i18n="qe_current">${t('qe_current')}</span>: ${formattedPrice}</span>
                         </div>
-                        <input type="text" class="no-spinners" id="qe-price" value="${item.price || 0}" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%;">
+                        <!-- ПУНКТ 1: Выводим отформатированную цену -->
+                        <input type="text" class="no-spinners" id="qe-price" value="${formattedPrice}" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%;">
                     </div>
                     <div style="flex: 1;">
                         <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2px;">
@@ -531,7 +540,7 @@ window.openQuickEditModal = function(id) {
                     </div>
                 </div>
 
-                <!-- БЛОК БЫСТРОГО ПРИХОДА (Скрыт по умолчанию) -->
+                <!-- БЛОК БЫСТРОГО ПРИХОДА -->
                 <div id="qe-receive-block" style="display: none; padding: 10px; background: rgba(46, 125, 50, 0.15); border: 1px dashed #2e7d32; border-radius: 6px; margin-bottom: 12px;">
                     <div style="color: #2e7d32; font-size: 11px; font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">📦 Быстрый приход</div>
                     <div style="display: flex; gap: 8px;">
@@ -540,7 +549,8 @@ window.openQuickEditModal = function(id) {
                             <input type="text" class="no-spinners" id="qe-receive-qty" placeholder="+0" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%; text-align: center; font-weight: bold; border-color: #2e7d32;">
                         </div>
                         <div style="flex: 1;">
-                            <label style="font-size: 9px; color: #888;">Цена закупа (G)</label>
+                            <!-- ПУНКТ 2: Без буквы (G) -->
+                            <label style="font-size: 9px; color: #888;">Цена закупа</label>
                             <input type="text" class="no-spinners" id="qe-receive-cost" value="${item.cost || ''}" placeholder="0" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%; text-align: center; font-weight: bold;">
                         </div>
                     </div>
@@ -582,6 +592,65 @@ window.openQuickEditModal = function(id) {
     `;
     
     document.body.insertAdjacentHTML('beforeend', modalHtml);
+};
+
+// =========================================================
+// 2. СВОРАЧИВАНИЕ ПРИХОДАС С ЗАКРЫТИЕМ КЛАВИАТУРЫ (ПУНКТ 3)
+// =========================================================
+window.toggleQeReceiveMode = function(show) {
+    const block = document.getElementById('qe-receive-block');
+    const mainBtns = document.getElementById('qe-buttons-main');
+    const receiveBtns = document.getElementById('qe-buttons-receive');
+    const numpad = document.getElementById('custom-numpad');
+    
+    if (block && mainBtns && receiveBtns) {
+        block.style.display = show ? 'block' : 'none';
+        mainBtns.style.display = show ? 'none' : 'flex';
+        receiveBtns.style.display = show ? 'flex' : 'none';
+        
+        if (show) {
+            const qtyInput = document.getElementById('qe-receive-qty');
+            if (qtyInput && typeof window.setQeActive === 'function') {
+                window.setQeActive(qtyInput);
+            }
+        } else {
+            // ПУНКТ 3: Закрываем цифровую клавиатуру при сворачивании
+            if (numpad) numpad.style.display = 'none';
+            
+            // Снимаем подсветку со всех активных полей
+            document.querySelectorAll('#quickEditModal input').forEach(input => {
+                input.classList.remove('qe-active-input');
+            });
+        }
+    }
+};
+
+// =========================================================
+// 3. ОБРАБОТЧИК NUMPAD С АВТО-ФОРМАТИРОВАНИЕМ ЦЕНЫ (ПУНКТ 1)
+// =========================================================
+window.qeNumpad = function(val, e) {
+    if (e) e.preventDefault();
+    const activeInput = document.querySelector('#quickEditModal input.qe-active-input');
+    if (!activeInput) return;
+
+    // Очищаем текущее значение от пробелов для расчетов
+    let cleanVal = activeInput.value.replace(/\s/g, '');
+
+    if (val === 'C') {
+        cleanVal = '';
+    } else if (val === 'DEL') {
+        cleanVal = cleanVal.slice(0, -1);
+    } else {
+        cleanVal += val;
+    }
+
+    // Если вводим в поле Цены или Цены закупа — форматируем с тысячным разделителем
+    if (activeInput.id === 'qe-price' || activeInput.id === 'qe-receive-cost') {
+        const num = parseInt(cleanVal, 10);
+        activeInput.value = isNaN(num) ? '' : num.toLocaleString('ru-RU');
+    } else {
+        activeInput.value = cleanVal;
+    }
 };
 
 // Вспомогательная функция переключения отображения Приемки
