@@ -361,30 +361,33 @@ window.closeQeNumpad = function() {
     }
 };
 
-// 3. Обработка нажатий на цифры
-window.qeNumpad = function(val, event) {
-    if (event) event.stopPropagation();
-    if (!window.currentQeInput) return;
-    
-    let currentVal = window.currentQeInput.value;
-    
-    // Если поле только что выбрали и нажали цифру — стираем старое значение
-    if (window.qeNeedsClear && val !== 'C' && val !== 'DEL') {
-        currentVal = '';
+// Флаг для затирания старых данных при первом вводе
+window.qeClearOnNextInput = false;
+
+window.activateReceiveNumpad = function(el) {
+    window.setQeActive(el); 
+    // При активации поля ставим флаг готовности к перезаписи
+    window.qeClearOnNextInput = true; 
+};
+
+window.qeNumpad = function(val, e) {
+    if (e) e.preventDefault();
+    const activeInput = document.querySelector('.qe-active-input');
+    if (!activeInput) return;
+
+    // Если флаг активен и нажата цифра, затираем поле
+    if (window.qeClearOnNextInput && val !== 'C' && val !== 'DEL') {
+        activeInput.value = '';
+        window.qeClearOnNextInput = false;
     }
-    // Сбрасываем флаг после любого действия на клавиатуре
-    window.qeNeedsClear = false;
-    
-    if (currentVal === '0' && val !== 'C' && val !== 'DEL') {
-        currentVal = '';
-    }
-    
+
+    let currentVal = activeInput.value;
     if (val === 'C') {
-        window.currentQeInput.value = '';
+        activeInput.value = '';
     } else if (val === 'DEL') {
-        window.currentQeInput.value = currentVal.slice(0, -1);
+        activeInput.value = currentVal.slice(0, -1);
     } else {
-        window.currentQeInput.value = currentVal + val;
+        activeInput.value = currentVal + val;
     }
 };
 
@@ -414,15 +417,16 @@ window.openQuickEditModal = function(id) {
     const existingModal = document.getElementById('quickEditModal');
     if (existingModal) existingModal.remove();
 
+    // Локализация (если используется)
     const savedLang = localStorage.getItem('pos_lang');
     const lang = savedLang || window.currentLang || (typeof currentLang !== 'undefined' ? currentLang : 'ru');
     const dict = (typeof translations !== 'undefined' && translations[lang]) ? translations[lang] : (typeof translations !== 'undefined' && translations['ru'] ? translations['ru'] : {});
     const t = (key) => dict[key] || key;
 
-    const uniqueCats = [...new Set(db.map(i => i.category).filter(Boolean))];
     const escapeHtml = (str) => String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
-    // Формируем список категорий
+    // 1. Формируем список категорий
+    const uniqueCats = [...new Set(db.map(i => i.category).filter(Boolean))];
     let currentCatText = (!item.category || item.category === '0') ? t('qe_no_category') : item.category;
     let currentCatValue = (!item.category || item.category === '0') ? '0' : item.category;
 
@@ -433,24 +437,28 @@ window.openQuickEditModal = function(id) {
             customDropdownHtml += `<div data-val="${safeCat}" data-text="${safeCat}" onclick="window.handleQeCatClick(this)" style="padding: 10px; cursor: pointer; border-bottom: 1px solid rgba(128,128,128,0.2);">${safeCat}</div>`;
         }
     });
-    customDropdownHtml += `<div data-val="new" data-text="${escapeHtml(t('qe_new_category'))}" onclick="window.handleQeCatClick(this)" style="padding: 10px; cursor: pointer; color: #4caf50; font-weight: bold;">${escapeHtml(t('qe_new_category'))}</div>`;
+    customDropdownHtml += `<div data-val="new" data-text="Новая категория" onclick="window.handleQeCatClick(this)" style="padding: 10px; cursor: pointer; color: #4caf50; font-weight: bold;">+ Новая категория</div>`;
 
-    // Формируем список поставщиков (аналогично категориями)
-    const suppliers = window.suppliersList || [];
+    // 2. Формируем список поставщиков
+    const dataSource = typeof incomes !== 'undefined' ? incomes : db; 
+    const uniqueSuppliers = [...new Set(dataSource.map(i => i.supplier || i.provider || i.postavshik).filter(Boolean))];
+    
     let suppliersDropdownHtml = '';
-    suppliers.forEach(sup => {
+    uniqueSuppliers.forEach(sup => {
         const safeSup = escapeHtml(sup);
         suppliersDropdownHtml += `<div data-val="${safeSup}" data-text="${safeSup}" onclick="window.handleSupplierClick(this)" style="padding: 10px; cursor: pointer; border-bottom: 1px solid rgba(128,128,128,0.2);">${safeSup}</div>`;
     });
     suppliersDropdownHtml += `<div data-val="new" data-text="+ Новый поставщик" onclick="window.handleSupplierClick(this)" style="padding: 10px; cursor: pointer; color: #4caf50; font-weight: bold;">+ Новый поставщик</div>`;
 
+    // 3. Данные товара
     const minStockVal = item.min_stock !== undefined ? item.min_stock : 1;
     const currentStock = Number(item.stock) || 0;
     const rawPrice = Number(item.price || 0);
     const formattedPrice = rawPrice > 0 ? rawPrice.toLocaleString('ru-RU') : '0';
 
+    // 4. HTML Модального окна
     const modalHtml = `
-        <div id="quickEditModal" onclick="if(event.target.id === 'quickEditModal') { window.closeQeNumpad(); const sd = document.getElementById('qe-supplier-dropdown'); if(sd) sd.style.display = 'none'; }" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: flex-start; padding-top: 3vh; font-family: 'Roboto', sans-serif;">
+        <div id="quickEditModal" onclick="if(event.target.id === 'quickEditModal') { window.closeQeNumpad(); const sd = document.getElementById('qe-supplier-dropdown'); const cd = document.getElementById('qe-category-dropdown'); if(sd) sd.style.display = 'none'; if(cd) cd.style.display = 'none'; }" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: flex-start; padding-top: 3vh; font-family: 'Roboto', sans-serif;">
             
             <style>
                 .no-spinners::-webkit-outer-spin-button, .no-spinners::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -464,31 +472,35 @@ window.openQuickEditModal = function(id) {
                 .qe-active-input { border-color: #2e7d32 !important; box-shadow: 0 0 8px rgba(46, 125, 50, 0.4); }
                 .custom-dropdown-trigger { background: #000000; color: #ffffff; border: 1px solid #333333; }
                 .custom-dropdown-list { background: #1e1e1e; border: 1px solid #333333; }
+                .dropdown-arrow { transition: transform 0.2s ease; display: inline-block; }
             </style>
 
             <div class="qe-container" style="padding: 15px; border-radius: 8px; width: 90%; max-width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); max-height: 90vh; overflow-y: auto;">
                 
-                <div style="position: relative; margin-bottom: 12px; border-bottom: 1px solid rgba(128,128,128,0.2); padding-bottom: 8px; text-align: center; display: flex; justify-content: center; align-items: center; min-height: 24px;">
+                <div style="position: relative; margin-bottom: 12px; border-bottom: 1px solid rgba(128,128,128,0.2); padding-bottom: 8px; text-align: center;">
                     <h3 style="margin: 0; font-size: 15px; text-transform: uppercase; letter-spacing: 1px;">${t('qe_title')}</h3>
                 </div>
                 
                 <div id="qe-main-fields" style="position: relative; transition: opacity 0.3s ease;">
-                    <div id="qe-main-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 50; background: transparent;"></div>
-
                     <div style="margin-bottom: 10px;">
                         <label>${t('qe_name')}</label>
                         <input type="text" id="qe-name" value="${escapeHtml(item.name || '')}" style="width: 100%;">
                     </div>
                     
+                    <!-- БЛОК КАТЕГОРИИ -->
                     <div style="margin-bottom: 10px;">
                         <label>${t('qe_category')}</label>
                         <div style="position: relative; width: 100%;">
                             <input type="hidden" id="qe-category" value="${escapeHtml(currentCatValue)}">
+                            
                             <div id="qe-category-trigger" class="custom-dropdown-trigger" onclick="window.toggleCustomDropdown()" style="width: 100%; border-radius: 4px; padding: 8px; font-size: 15px; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
                                 <span id="qe-category-display" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(currentCatText)}</span>
-                                <span style="font-size: 12px;">▼</span>
+                                <span id="qe-cat-arrow" class="dropdown-arrow" style="font-size: 12px;">▼</span>
                             </div>
-                            <div id="qe-category-dropdown" class="custom-dropdown-list" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; max-height: 45vh; overflow-y: auto; border-radius: 4px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.5); margin-top: 4px;">
+
+                            <input type="text" id="qe-category-input" placeholder="Введите новую категорию..." onkeypress="window.handleSupplierKeyPress(event)" style="display: none; width: 100%; border-color: #2e7d32; background: #000; color: #fff; padding: 8px; font-size: 14px; box-sizing: border-box;">
+
+                            <div id="qe-category-dropdown" class="custom-dropdown-list" style="display: none; position: relative; width: 100%; max-height: 250px; overflow-y: auto; border-radius: 4px; z-index: 100; margin-top: 4px; border: 1px solid #333;">
                                 ${customDropdownHtml}
                             </div>
                         </div>
@@ -517,33 +529,29 @@ window.openQuickEditModal = function(id) {
                     </div>
                 </div> 
 
-                <!-- ОБНОВЛЕННЫЙ БЛОК ПРИХОДА -->
+                <!-- БЛОК ПРИХОДА -->
                 <div id="qe-receive-block" style="display: none; padding: 10px; background: rgba(46, 125, 50, 0.15); border: 1px dashed #2e7d32; border-radius: 6px; margin-bottom: 12px;">
                     <div style="color: #2e7d32; font-size: 11px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase;">📦 Быстрый приход</div>
                     
-                    <!-- ПОСТАВЩИК (Аналог категории) -->
+                    <!-- ПОСТАВЩИК -->
                     <div style="margin-bottom: 10px;">
                         <label style="font-size: 9px; color: #888; display: block; margin-bottom: 4px;">ПОСТАВЩИК</label>
                         <div style="position: relative; width: 100%;">
                             <input type="hidden" id="qe-receive-supplier" value="">
                             
-                            <!-- Выпадашка -->
                             <div id="qe-supplier-trigger" class="custom-dropdown-trigger" onclick="window.toggleSupplierDropdown()" style="width: 100%; border-color: #2e7d32; border-radius: 4px; padding: 8px; font-size: 14px; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
                                 <span id="qe-supplier-display" style="color: #bbb; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Выберите поставщика...</span>
-                                <span style="font-size: 12px;">▼</span>
+                                <span id="qe-sup-arrow" class="dropdown-arrow" style="font-size: 12px;">▼</span>
                             </div>
                             
-                            <!-- Поле ввода для нового (скрыто по умолчанию) -->
-                            <input type="text" id="qe-supplier-input" class="qe-input" placeholder="Введите название..." onkeypress="window.handleSupplierKeyPress(event)" style="display: none; width: 100%; border-color: #2e7d32; background: #000; color: #fff; padding: 8px; font-size: 14px; box-sizing: border-box;">
+                            <input type="text" id="qe-supplier-input" placeholder="Введите название..." onkeypress="window.handleSupplierKeyPress(event)" style="display: none; width: 100%; border-color: #2e7d32; background: #000; color: #fff; padding: 8px; font-size: 14px; box-sizing: border-box;">
                             
-                            <!-- Список вариантов -->
-                            <div id="qe-supplier-dropdown" class="custom-dropdown-list" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; max-height: 35vh; overflow-y: auto; border-radius: 4px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.5); margin-top: 4px;">
+                            <div id="qe-supplier-dropdown" class="custom-dropdown-list" style="display: none; position: relative; width: 100%; max-height: 250px; overflow-y: auto; border-radius: 4px; z-index: 100; margin-top: 4px; border: 1px solid #333;">
                                 ${suppliersDropdownHtml}
                             </div>
                         </div>
                     </div>
 
-                    <!-- ПОЛЯ КОЛ-ВО И ЦЕНА (УБРАЛИ ПЛЮС) -->
                     <div style="display: flex; gap: 8px;">
                         <div style="flex: 1;">
                             <label style="font-size: 9px; color: #888;">ПРИШЛО (КОЛ-ВО)</label>
@@ -556,10 +564,10 @@ window.openQuickEditModal = function(id) {
                     </div>
                 </div>
 
+                <!-- NUMPAD -->
                 <div id="custom-numpad" style="display: none; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 12px;">
                     <button type="button" class="np-btn" onclick="window.qeNumpad('1', event)">1</button>
                     <button type="button" class="np-btn" onclick="window.qeNumpad('2', event)">2</button>
-                    <!-- ... остальные кнопки NumPad без изменений ... -->
                     <button type="button" class="np-btn" onclick="window.qeNumpad('3', event)">3</button>
                     <button type="button" class="np-btn" onclick="window.qeNumpad('4', event)">4</button>
                     <button type="button" class="np-btn" onclick="window.qeNumpad('5', event)">5</button>
@@ -572,6 +580,7 @@ window.openQuickEditModal = function(id) {
                     <button type="button" class="np-btn np-btn-action" onclick="window.qeNumpad('DEL', event)">⌫</button>
                 </div>
 
+                <!-- КНОПКИ -->
                 <div id="qe-buttons-main" style="display: flex; flex-direction: column; gap: 8px;">
                     <div style="display: flex; gap: 8px;">
                         <button type="button" onclick="window.saveQuickEdit('${item.id}', false)" style="flex: 2; padding: 10px; border: none; background: #2e7d32; color: #fff; border-radius: 4px; font-weight: bold; font-size: 14px; text-transform: uppercase; cursor: pointer;">${t('qe_save')}</button>
@@ -694,71 +703,91 @@ window.handleSupplierKeyPress = function(e) {
     }
 };
 
-// Активация Numpad при клике на количество или цену закупа
-window.activateReceiveNumpad = function(inputEl) {
-    // 1. Принудительно прячем текстовую системную клавиатуру, если она открыта
-    const newSuppInput = document.getElementById('qe-receive-supplier-new');
-    if (newSuppInput) newSuppInput.blur();
-    
-    // 2. Показываем ваш кастомный Numpad
-    const numpad = document.getElementById('custom-numpad');
-    if (numpad) numpad.style.display = 'grid';
-    
-    // 3. Выделяем поле зеленой рамкой
-    if (typeof window.setQeActive === 'function') {
-        window.setQeActive(inputEl);
-    }
-    
-    // 4. Прокручиваем так, чтобы Numpad полностью влез в экран
-    setTimeout(() => {
-        const receiveBtns = document.getElementById('qe-buttons-receive');
-        if (receiveBtns) receiveBtns.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }, 100);
-};
-
-// Открывает/закрывает наш кастомный список
 window.toggleCustomDropdown = function() {
     const dropdown = document.getElementById('qe-category-dropdown');
     const arrow = document.getElementById('qe-cat-arrow');
-
     if (dropdown) {
-        // Если список скрыт - открываем и ставим стрелку вверх
-        if (dropdown.style.display === 'none' || dropdown.style.display === '') {
-            dropdown.style.display = 'block';
-            if (arrow) arrow.textContent = '▲';
-        } 
-        // Если открыт - закрываем и ставим стрелку вниз
-        else {
-            dropdown.style.display = 'none';
-            if (arrow) arrow.textContent = '▼';
-        }
+        const isHidden = dropdown.style.display === 'none';
+        dropdown.style.display = isHidden ? 'block' : 'none';
+        if (arrow) arrow.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
     }
 };
 
-// Обработчик клика ТОЛЬКО для модального окна быстрых правок
-window.handleQeCatClick = function(element) {
-    const value = element.getAttribute('data-val');
-    const text = element.getAttribute('data-text');
+window.toggleSupplierDropdown = function() {
+    const dropdown = document.getElementById('qe-supplier-dropdown');
+    const arrow = document.getElementById('qe-sup-arrow');
+    if (dropdown) {
+        const isHidden = dropdown.style.display === 'none';
+        dropdown.style.display = isHidden ? 'block' : 'none';
+        if (arrow) arrow.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+    }
+};
+
+window.handleQeCatClick = function(el) {
+    const val = el.getAttribute('data-val');
+    const text = el.getAttribute('data-text');
     
-    const dropdown = document.getElementById('qe-category-dropdown');
     const trigger = document.getElementById('qe-category-trigger');
+    const input = document.getElementById('qe-category-input');
+    const hidden = document.getElementById('qe-category');
     const display = document.getElementById('qe-category-display');
-    const hiddenInput = document.getElementById('qe-category');
-    const newCatWrapper = document.getElementById('qe-new-category-wrapper');
-    const newCatInput = document.getElementById('qe-new-category');
+    const dropdown = document.getElementById('qe-category-dropdown');
+    const arrow = document.getElementById('qe-cat-arrow');
     
-    if (value === 'new') {
-        if (trigger) trigger.style.display = 'none';
-        if (dropdown) dropdown.style.display = 'none';
-        
-        if (newCatWrapper) newCatWrapper.style.display = 'flex';
-        if (hiddenInput) hiddenInput.value = 'new';
-        
-        if (newCatInput) newCatInput.focus();
+    dropdown.style.display = 'none';
+    if (arrow) arrow.style.transform = 'rotate(0deg)';
+    
+    if (val === 'new') {
+        trigger.style.display = 'none';
+        input.style.display = 'block';
+        input.value = '';
+        input.focus();
+        hidden.value = '__NEW__';
+        // Сдвигаем экран выше клавиатуры
+        setTimeout(() => input.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
     } else {
-        if (display) display.innerText = text;
-        if (hiddenInput) hiddenInput.value = value;
-        if (dropdown) dropdown.style.display = 'none';
+        trigger.style.display = 'flex';
+        input.style.display = 'none';
+        display.textContent = text;
+        hidden.value = val;
+    }
+};
+
+window.handleSupplierClick = function(el) {
+    const val = el.getAttribute('data-val');
+    const text = el.getAttribute('data-text');
+    
+    const trigger = document.getElementById('qe-supplier-trigger');
+    const input = document.getElementById('qe-supplier-input');
+    const hidden = document.getElementById('qe-receive-supplier');
+    const display = document.getElementById('qe-supplier-display');
+    const dropdown = document.getElementById('qe-supplier-dropdown');
+    const arrow = document.getElementById('qe-sup-arrow');
+    
+    dropdown.style.display = 'none';
+    if (arrow) arrow.style.transform = 'rotate(0deg)';
+    
+    if (val === 'new') {
+        trigger.style.display = 'none';
+        input.style.display = 'block';
+        input.value = '';
+        input.focus(); 
+        hidden.value = '__NEW__';
+        // Сдвигаем экран выше клавиатуры
+        setTimeout(() => input.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+    } else {
+        trigger.style.display = 'flex';
+        input.style.display = 'none';
+        display.textContent = text;
+        hidden.value = val;
+    }
+};
+
+// Скрытие клавиатуры по кнопке Enter
+window.handleSupplierKeyPress = function(e) {
+    if (e.key === 'Enter' || e.keyCode === 13) {
+        e.preventDefault();
+        e.target.blur(); 
     }
 };
 
@@ -1108,130 +1137,87 @@ window.handleSupplierKeyPress = function(e) {
 };
 
 // Добавлен второй параметр isReceive
-window.saveQuickEdit = function(id, isReceive = false) {
-    const item = db.find(i => String(i.id) === String(id));
+window.saveQuickEdit = function(itemId, isReceive) {
+    // 1. Находим товар в базе
+    const item = db.find(i => String(i.id) === String(itemId));
     if (!item) return;
 
-    const getLatestValue = (elementId) => {
-        const elements = document.querySelectorAll('#' + elementId);
-        return elements.length > 0 ? elements[elements.length - 1].value : "";
+    // Вспомогательная функция чтения значений
+    const getValue = (id) => {
+        const el = document.getElementById(id);
+        return el ? el.value : '';
     };
 
-    const rawName = getLatestValue('qe-name');
-    const rawPrice = getLatestValue('qe-price');
-    const rawCategory = getLatestValue('qe-category');
-    const rawBarcode = getLatestValue('qe-barcode');
-    const rawMinStock = getLatestValue('qe-minstock');
-    
-    let receiveQty = 0;
-    let receiveCost = 0;
-    let supplierName = "";
+    // 2. Считываем основные поля
+    const name = getValue('qe-name').trim();
+    const barcode = getValue('qe-barcode').trim();
+    const price = parseFloat(String(getValue('qe-price')).replace(/\s/g, '').replace(',', '.')) || 0;
+    const minStock = parseFloat(String(getValue('qe-minstock')).replace(/\s/g, '').replace(',', '.')) || 0;
 
+    // 3. Считываем Категорию (НОВАЯ ЛОГИКА)
+    let categoryName = getValue('qe-category');
+    if (categoryName === '__NEW__') {
+        // Если выбран "Новая категория", берем текст из поля ввода
+        categoryName = getValue('qe-category-input').trim();
+    }
+
+    // Обновляем базовые свойства товара
+    item.name = name;
+    item.barcode = barcode;
+    item.price = price;
+    item.min_stock = minStock;
+    if (categoryName) item.category = categoryName;
+
+    // 4. Если нажата кнопка "Оприходовать и сохранить" (Быстрый приход)
     if (isReceive) {
-        receiveQty = parseFloat(String(getLatestValue('qe-receive-qty')).replace(/[\s+]/g, '').replace(',', '.')) || 0;
-        receiveCost = parseFloat(String(getLatestValue('qe-receive-cost')).replace(/\s/g, '').replace(',', '.')) || 0;
+        const receiveQty = parseFloat(String(getValue('qe-receive-qty')).replace(/[\s+]/g, '').replace(',', '.')) || 0;
+        const receiveCost = parseFloat(String(getValue('qe-receive-cost')).replace(/\s/g, '').replace(',', '.')) || 0;
         
-        // --- НОВАЯ логика считывания поставщика ---
-        const hiddenSupplier = document.getElementById('qe-receive-supplier');
-        if (hiddenSupplier) {
-            if (hiddenSupplier.value === '__NEW__') {
-                supplierName = document.getElementById('qe-supplier-input').value.trim();
-            } else {
-                supplierName = hiddenSupplier.value.trim();
+        // Считываем Поставщика (НОВАЯ ЛОГИКА)
+        let supplierName = '';
+        const hiddenSupplierVal = getValue('qe-receive-supplier');
+        if (hiddenSupplierVal === '__NEW__') {
+            // Если выбран "Новый поставщик", берем текст из поля ввода
+            supplierName = getValue('qe-supplier-input').trim();
+        } else {
+            supplierName = hiddenSupplierVal.trim();
+        }
+
+        // Если введено количество больше 0, прибавляем к остатку
+        if (receiveQty > 0) {
+            item.stock = (Number(item.stock) || 0) + receiveQty;
+            if (receiveCost > 0) item.cost = receiveCost;
+
+            // Если у вас есть массив/база поставщиков, сохраняем нового
+            if (supplierName) {
+                if (!window.suppliersList) window.suppliersList = [];
+                if (!window.suppliersList.includes(supplierName)) {
+                    window.suppliersList.push(supplierName);
+                }
+            }
+
+            // Если есть функция записи движения товара/прихода
+            if (typeof window.addIncomeRecord === 'function') {
+                window.addIncomeRecord({
+                    itemId: item.id,
+                    name: item.name,
+                    qty: receiveQty,
+                    cost: receiveCost,
+                    supplier: supplierName,
+                    date: new Date().toISOString()
+                });
             }
         }
     }
 
-    const newName = rawName.trim();
-    if (newName === "" && item.name !== "" && item.name !== "Без названия") {
-        alert("Сработала защита: скрипт попытался сохранить пустое имя. Попробуйте еще раз.");
-        return; 
-    }
+    // 5. Сохраняем изменения в LocalStorage / Гугл Таблицу и обновляем список
+    if (typeof window.saveDb === 'function') window.saveDb();
+    if (typeof window.renderProducts === 'function') window.renderProducts();
+    if (typeof window.renderCatalog === 'function') window.renderCatalog();
 
-    const newPrice = parseFloat(String(rawPrice).replace(/\s/g, '').replace(',', '.')) || 0;
-    const newMinStock = parseFloat(String(rawMinStock).replace(/\s/g, '').replace(',', '.')) || 0;
-    
-    const currentStock = parseFloat(item.stock) || 0;
-    const newStock = currentStock + receiveQty;
-
-    let newCategory = rawCategory;
-    if (newCategory === 'new') {
-        newCategory = getLatestValue('qe-new-category').trim();
-        if (!newCategory) {
-            alert('Введите название новой категории!');
-            return; 
-        }
-    } else if (newCategory === '0' || newCategory === 'Не выбрано') {
-        newCategory = "Без категории"; 
-    }
-
-    const payload = {
-        action: "update_single_item",
-        api_key: typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : '',
-        itemId: String(item.id),
-        data: {
-            item_name: newName,
-            price: newPrice,
-            category: newCategory,
-            min_stock: newMinStock,
-            barcode: rawBarcode.trim(),
-            stock: newStock, 
-            cost: receiveCost > 0 ? receiveCost : item.cost,
-            supplier: supplierName // Передаем поставщика на бэкенд
-        }
-    };
-
-    console.log("Улетает на сервер:", payload);
-
-    item.name = newName;
-    item.item_name = newName;
-    item.price = newPrice;
-    item.category = newCategory;
-    item.min_stock = newMinStock;
-    item.barcode = rawBarcode.trim();
-    item.stock = newStock;
-    if (receiveCost > 0) item.cost = receiveCost;
-
-    if (typeof window.updateQeSyncStatus === 'function') {
-        window.updateQeSyncStatus(1);
-    }
-
-    if (isReceive) {
-        window.toggleQeReceiveMode(false);
-        const stockDisplay = document.getElementById('qe-fact-stock-val');
-        if (stockDisplay) stockDisplay.textContent = newStock;
-        document.getElementById('qe-receive-qty').value = '';
-        
-        const numpad = document.getElementById('custom-numpad');
-        if (numpad) numpad.style.display = 'none';
-        if (typeof window.closeQeNumpad === 'function') window.closeQeNumpad();
-        
-        document.querySelectorAll('#quickEditModal input').forEach(input => {
-            input.classList.remove('qe-active-input');
-            input.blur();
-        });
-    } else {
-        document.querySelectorAll('#quickEditModal').forEach(m => m.remove());
-    }
-    
-    if (typeof render === 'function') render();
-
-    fetch(typeof GATEWAY_URL !== 'undefined' ? GATEWAY_URL : '', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-    })
-    .then(res => res.json())
-    .then(response => {
-        if (typeof window.updateQeSyncStatus === 'function') window.updateQeSyncStatus(0);
-        if (response && response.error) {
-            alert('Ошибка сервера: ' + response.error);
-        }
-    })
-    .catch(err => {
-        if (typeof window.updateQeSyncStatus === 'function') window.updateQeSyncStatus(0);
-        alert('Ошибка связи с сервером: ' + err.message);
-    });
+    // 6. Закрываем модальное окно
+    const modal = document.getElementById('quickEditModal');
+    if (modal) modal.remove();
 };
 
 // === (Конец П1) ===
