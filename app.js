@@ -361,6 +361,33 @@ window.closeQeNumpad = function() {
     }
 };
 
+// 3. Обработка нажатий на цифры
+window.qeNumpad = function(val, event) {
+    if (event) event.stopPropagation();
+    if (!window.currentQeInput) return;
+    
+    let currentVal = window.currentQeInput.value;
+    
+    // Если поле только что выбрали и нажали цифру — стираем старое значение
+    if (window.qeNeedsClear && val !== 'C' && val !== 'DEL') {
+        currentVal = '';
+    }
+    // Сбрасываем флаг после любого действия на клавиатуре
+    window.qeNeedsClear = false;
+    
+    if (currentVal === '0' && val !== 'C' && val !== 'DEL') {
+        currentVal = '';
+    }
+    
+    if (val === 'C') {
+        window.currentQeInput.value = '';
+    } else if (val === 'DEL') {
+        window.currentQeInput.value = currentVal.slice(0, -1);
+    } else {
+        window.currentQeInput.value = currentVal + val;
+    }
+};
+
 // 4. Умная проверка текстового поля
 window.checkScannerStatus = function(el) {
     // Закрываем Numpad, если он был открыт
@@ -377,161 +404,159 @@ window.checkScannerStatus = function(el) {
     }
 };
 
-// =========================================================
-// 1. ОТКРЫТИЕ МОДАЛКИ С ОБЛАКОМ, РАЗДЕЛИТЕЛЯМИ И ИСПРАВЛЕНИЯМИ
-// =========================================================
 window.openQuickEditModal = function(id) {
     const item = db.find(i => String(i.id) === String(id));
     if (!item) return;
 
+    // Удаляем старое окно, если есть
     const existingModal = document.getElementById('quickEditModal');
     if (existingModal) existingModal.remove();
 
+    // 1. ОПРЕДЕЛЕНИЕ ЯЗЫКА (из localStorage или переменных)
     const savedLang = localStorage.getItem('pos_lang');
     const lang = savedLang || window.currentLang || (typeof currentLang !== 'undefined' ? currentLang : 'ru');
-    const dict = (typeof translations !== 'undefined' && translations[lang]) ? translations[lang] : (typeof translations !== 'undefined' && translations['ru'] ? translations['ru'] : {});
+    
+    // Получаем словарь (используем 'kz' или 'ru')
+    const dict = (typeof translations !== 'undefined' && translations[lang]) 
+        ? translations[lang] 
+        : (typeof translations !== 'undefined' && translations['ru'] ? translations['ru'] : {});
+    
     const t = (key) => dict[key] || key;
 
+    // 2. ПОДГОТОВКА ДАННЫХ (с защитой от кавычек)
+    const uniqueCats = [...new Set(db.map(i => i.category).filter(Boolean))];
+    
+    // Функция, которая превращает кавычки в безопасный код, чтобы не сломать HTML
     const escapeHtml = (str) => String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
-    // 1. Категории
-    const uniqueCats = [...new Set(db.map(i => i.category).filter(Boolean))];
     let currentCatText = (!item.category || item.category === '0') ? t('qe_no_category') : item.category;
     let currentCatValue = (!item.category || item.category === '0') ? '0' : item.category;
 
-    let customDropdownHtml = `<div data-val="0" data-text="${escapeHtml(t('qe_no_category'))}" onclick="window.handleQeCatClick(this, event)" style="padding: 10px; cursor: pointer; border-bottom: 1px solid rgba(128,128,128,0.2);">${escapeHtml(t('qe_no_category'))}</div>`;
+    // Собираем пункты списка
+    let customDropdownHtml = `<div data-val="0" data-text="${escapeHtml(t('qe_no_category'))}" onclick="window.handleQeCatClick(this)" style="padding: 10px; cursor: pointer; border-bottom: 1px solid rgba(128,128,128,0.2);">${escapeHtml(t('qe_no_category'))}</div>`;
+    
     uniqueCats.forEach(cat => {
         if (cat !== '0' && cat !== 'Без категории') {
             const safeCat = escapeHtml(cat);
-            customDropdownHtml += `<div data-val="${safeCat}" data-text="${safeCat}" onclick="window.handleQeCatClick(this, event)" style="padding: 10px; cursor: pointer; border-bottom: 1px solid rgba(128,128,128,0.2);">${safeCat}</div>`;
+            customDropdownHtml += `<div data-val="${safeCat}" data-text="${safeCat}" onclick="window.handleQeCatClick(this)" style="padding: 10px; cursor: pointer; border-bottom: 1px solid rgba(128,128,128,0.2);">${safeCat}</div>`;
         }
     });
-    customDropdownHtml += `<div data-val="new" data-text="Новая категория" onclick="window.handleQeCatClick(this, event)" style="padding: 10px; cursor: pointer; color: #4caf50; font-weight: bold;">+ Новая категория</div>`;
-
-    // 2. Поставщики (ищет Supplier в объекте или берет индекс 2 в сыром массиве)
-    const dataSource = typeof incomes !== 'undefined' ? incomes : (typeof incomesData !== 'undefined' ? incomesData : []); 
-    const uniqueSuppliers = [...new Set(dataSource.map(i => Array.isArray(i) ? i[2] : i.Supplier).filter(Boolean))];
     
-    let suppliersDropdownHtml = '';
-    uniqueSuppliers.forEach(sup => {
-        const safeSup = escapeHtml(String(sup));
-        suppliersDropdownHtml += `<div data-val="${safeSup}" data-text="${safeSup}" onclick="window.handleSupplierClick(this, event)" style="padding: 10px; cursor: pointer; border-bottom: 1px solid rgba(128,128,128,0.2);">${safeSup}</div>`;
-    });
-    suppliersDropdownHtml += `<div data-val="new" data-text="+ Новый поставщик" onclick="window.handleSupplierClick(this, event)" style="padding: 10px; cursor: pointer; color: #4caf50; font-weight: bold;">+ Новый поставщик</div>`;
+    customDropdownHtml += `<div data-val="new" data-text="${escapeHtml(t('qe_new_category'))}" onclick="window.handleQeCatClick(this)" style="padding: 10px; cursor: pointer; color: #4caf50; font-weight: bold;">${escapeHtml(t('qe_new_category'))}</div>`;
 
-    // 3. Данные товара
     const minStockVal = item.min_stock !== undefined ? item.min_stock : 1;
     const currentStock = Number(item.stock) || 0;
-    const rawPrice = Number(item.price || 0);
-    const formattedPrice = rawPrice > 0 ? rawPrice.toLocaleString('ru-RU') : '0';
+    const formattedPrice = Number(item.price || 0).toLocaleString('ru-RU');
 
-    // 4. Отрисовка
+    // 3. HTML И СТИЛИ С ПОДДЕРЖКОЙ СВЕТЛОЙ ТЕМЫ
     const modalHtml = `
-        <div id="quickEditModal" onclick="if(event.target.id === 'quickEditModal') { window.closeAllQeDropdowns(); window.closeQeNumpad(); }" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: flex-start; padding-top: 3vh; font-family: 'Roboto', sans-serif;">
+        <div id="quickEditModal" onclick="if(event.target.id === 'quickEditModal') window.closeQeNumpad()" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: flex-start; padding-top: 3vh; font-family: 'Roboto', sans-serif;">
             
             <style>
-                .no-spinners::-webkit-outer-spin-button, .no-spinners::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+                .no-spinners::-webkit-outer-spin-button,
+                .no-spinners::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
                 .no-spinners { -moz-appearance: textfield; }
+                
+                /* --- ТЁМНАЯ ТЕМА (ПО УМОЛЧАНИЮ) --- */
                 #quickEditModal .qe-container { background: #1e1e1e; color: #ffffff; border: 1px solid #333333; }
-                #quickEditModal input { background: #000000; color: #ffffff; border: 1px solid #333333; border-radius: 4px; padding: 8px; font-size: 15px; box-sizing: border-box; outline: none; }
-                #quickEditModal input:focus { border-color: #2e7d32; }
+                #quickEditModal input, #quickEditModal select { background: #000000; color: #ffffff; border: 1px solid #333333; border-radius: 4px; padding: 8px; font-size: 15px; box-sizing: border-box; outline: none; }
+                #quickEditModal input:focus, #quickEditModal select:focus { border-color: #2e7d32; }
                 #quickEditModal label { font-size: 10px; color: #888888; text-transform: uppercase; margin-bottom: 2px; display: block; letter-spacing: 0.5px; }
                 .np-btn { background: #2a2a2a; color: #ffffff; border: 1px solid #444444; border-radius: 6px; height: 45px; font-size: 20px; font-weight: bold; cursor: pointer; user-select: none; }
                 .np-btn-action { background: #333333; color: #ff9800; }
                 .qe-active-input { border-color: #2e7d32 !important; box-shadow: 0 0 8px rgba(46, 125, 50, 0.4); }
+                /* Стили кастомного выпадающего списка (Тёмная) */
                 .custom-dropdown-trigger { background: #000000; color: #ffffff; border: 1px solid #333333; }
                 .custom-dropdown-list { background: #1e1e1e; border: 1px solid #333333; }
-                .dropdown-arrow { transition: transform 0.2s ease; display: inline-block; }
+
+                /* --- СВЕТЛАЯ ТЕМА (АВТОМАТИЧЕСКИ ПРИ .light-theme НА BODY) --- */
+                body.light-theme #quickEditModal .qe-container { background: #ffffff !important; color: #18181b !important; border-color: #e4e4e7 !important; }
+                body.light-theme #quickEditModal input, 
+                body.light-theme #quickEditModal select { background: #f4f4f5 !important; color: #000000 !important; border-color: #d4d4d8 !important; }
+                body.light-theme #quickEditModal label { color: #71717a !important; }
+                body.light-theme #quickEditModal .np-btn { background: #e4e4e7 !important; color: #18181b !important; border-color: #d4d4d8 !important; }
+                body.light-theme #quickEditModal .np-btn-action { background: #d4d4d8 !important; color: #e65100 !important; }
+                /* Стили кастомного выпадающего списка (Светлая) */
+                body.light-theme #quickEditModal .custom-dropdown-trigger { background: #f4f4f5 !important; color: #000000 !important; border-color: #d4d4d8 !important; }
+                body.light-theme #quickEditModal .custom-dropdown-list { background: #ffffff !important; border-color: #d4d4d8 !important; }
             </style>
 
-            <div class="qe-container" onclick="window.closeAllQeDropdowns()" style="padding: 15px; border-radius: 8px; width: 90%; max-width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); max-height: 90vh; overflow-y: auto;">
+            <div class="qe-container" style="padding: 15px; border-radius: 8px; width: 90%; max-width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
+                <h3 data-i18n="qe_title" style="margin-top: 0; margin-bottom: 12px; font-size: 15px; text-align: center; text-transform: uppercase; border-bottom: 1px solid rgba(128,128,128,0.2); padding-bottom: 8px; letter-spacing: 1px;">${t('qe_title')}</h3>
                 
-                <div style="position: relative; margin-bottom: 12px; border-bottom: 1px solid rgba(128,128,128,0.2); padding-bottom: 8px; text-align: center;">
-                    <h3 style="margin: 0; font-size: 15px; text-transform: uppercase; letter-spacing: 1px;">${t('qe_title')}</h3>
+                <div style="margin-bottom: 10px;">
+                    <label data-i18n="qe_name">${t('qe_name')}</label>
+                    <input type="text" id="qe-name" value="${escapeHtml(item.name || '')}" style="width: 100%;">
+                    <div data-i18n="qe_name_hint" style="font-size: 9px; color: #2e7d32; margin-top: 3px; letter-spacing: 0.3px;">${t('qe_name_hint')}</div>
                 </div>
                 
-                <div id="qe-main-fields" style="position: relative; transition: opacity 0.3s ease;">
-                    <div style="margin-bottom: 10px;">
-                        <label>${t('qe_name')}</label>
-                        <input type="text" id="qe-name" value="${escapeHtml(item.name || '')}" style="width: 100%;" onclick="event.stopPropagation()">
-                    </div>
+                <div style="margin-bottom: 10px;">
+                    <label data-i18n="qe_category">${t('qe_category')}</label>
                     
-                    <div style="margin-bottom: 10px;">
-                        <label>${t('qe_category')}</label>
-                        <div style="position: relative; width: 100%;">
-                            <input type="hidden" id="qe-category" value="${escapeHtml(currentCatValue)}">
-                            
-                            <div id="qe-category-trigger" class="custom-dropdown-trigger" onclick="window.toggleCustomDropdown(event)" style="width: 100%; border-radius: 4px; padding: 8px; font-size: 15px; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                                <span id="qe-category-display" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(currentCatText)}</span>
-                                <span id="qe-cat-arrow" class="dropdown-arrow" style="font-size: 12px;">▼</span>
-                            </div>
-
-                            <input type="text" id="qe-category-input" placeholder="Введите новую категорию..." onclick="event.stopPropagation()" onkeypress="window.handleSupplierKeyPress(event)" style="display: none; width: 100%; border-color: #2e7d32; background: #000; color: #fff; padding: 8px; font-size: 14px; box-sizing: border-box;">
-
-                            <div id="qe-category-dropdown" class="custom-dropdown-list" style="display: none; position: relative; width: 100%; max-height: 250px; overflow-y: auto; border-radius: 4px; z-index: 100; margin-top: 4px; border: 1px solid #333;">
-                                ${customDropdownHtml}
-                            </div>
+                    <!-- КАСТОМНЫЙ ВЫПАДАЮЩИЙ СПИСОК -->
+                    <div style="position: relative; width: 100%;">
+                        <!-- Скрытое поле. Именно из него функция сохранения будет брать данные -->
+                        <input type="hidden" id="qe-category" value="${escapeHtml(currentCatValue)}">
+                        
+                        <!-- Видимая кнопка (триггер) -->
+                        <div id="qe-category-trigger" class="custom-dropdown-trigger" onclick="window.toggleCustomDropdown()" style="width: 100%; border-radius: 4px; padding: 8px; font-size: 15px; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                            <span id="qe-category-display" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(currentCatText)}</span>
+                            <span style="font-size: 12px;">▼</span>
                         </div>
-                    </div>
-
-                    <div style="margin-bottom: 10px;">
-                        <label style="display: block; font-size: 10px; margin-bottom: 2px;">${t('qe_barcode')}</label>
-                        <input type="text" id="qe-barcode" value="${item.barcode || ''}" placeholder="${t('qe_barcode_placeholder')}" inputmode="none" readonly onclick="event.stopPropagation(); window.setQeActive(this)" style="width: 100%;">
-                    </div>
-
-                    <div style="display: flex; gap: 12px; margin-bottom: 12px;">
-                        <div style="flex: 1;">
-                            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2px;">
-                                <label style="margin-bottom: 0;">${t('qe_price')}</label>
-                                <span style="font-size: 10px; color: #2e7d32; font-weight: bold;">Тек: ${formattedPrice}</span>
-                            </div>
-                            <input type="text" class="no-spinners" id="qe-price" value="${formattedPrice}" inputmode="none" readonly onclick="event.stopPropagation(); window.setQeActive(this)" style="width: 100%;">
+                        
+                        <!-- Сам список, который появляется поверх интерфейса -->
+                        <div id="qe-category-dropdown" class="custom-dropdown-list" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; max-height: 45vh; overflow-y: auto; border-radius: 4px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.5); margin-top: 4px;">
+                            ${customDropdownHtml}
                         </div>
-                        <div style="flex: 1;">
-                            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2px;">
-                                <label style="margin-bottom: 0;">${t('qe_min_stock')}</label>
-                                <span style="font-size: 10px; color: #2e7d32; font-weight: bold;">Факт: <span id="qe-fact-stock-val">${currentStock}</span></span>
-                            </div>
-                            <input type="text" class="no-spinners" id="qe-minstock" value="${minStockVal}" inputmode="none" readonly onclick="event.stopPropagation(); window.setQeActive(this)" style="width: 100%;">
-                        </div>
-                    </div>
-                </div> 
-
-                <div id="qe-receive-block" style="display: none; padding: 10px; background: rgba(46, 125, 50, 0.15); border: 1px dashed #2e7d32; border-radius: 6px; margin-bottom: 12px;">
-                    <div style="color: #2e7d32; font-size: 11px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase;">📦 Быстрый приход</div>
-                    
-                    <div style="margin-bottom: 10px;">
-                        <label style="font-size: 9px; color: #888; display: block; margin-bottom: 4px;">ПОСТАВЩИК</label>
-                        <div style="position: relative; width: 100%;">
-                            <input type="hidden" id="qe-receive-supplier" value="">
-                            
-                            <div id="qe-supplier-trigger" class="custom-dropdown-trigger" onclick="window.toggleSupplierDropdown(event)" style="width: 100%; border-color: #2e7d32; border-radius: 4px; padding: 8px; font-size: 14px; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                                <span id="qe-supplier-display" style="color: #bbb; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Выберите поставщика...</span>
-                                <span id="qe-sup-arrow" class="dropdown-arrow" style="font-size: 12px;">▼</span>
-                            </div>
-                            
-                            <input type="text" id="qe-supplier-input" placeholder="Введите название..." onclick="event.stopPropagation()" onkeypress="window.handleSupplierKeyPress(event)" style="display: none; width: 100%; border-color: #2e7d32; background: #000; color: #fff; padding: 8px; font-size: 14px; box-sizing: border-box;">
-                            
-                            <div id="qe-supplier-dropdown" class="custom-dropdown-list" style="display: none; position: relative; width: 100%; max-height: 250px; overflow-y: auto; border-radius: 4px; z-index: 100; margin-top: 4px; border: 1px solid #333;">
-                                ${suppliersDropdownHtml}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="display: flex; gap: 8px;">
-                        <div style="flex: 1;">
-                            <label style="font-size: 9px; color: #888;">ПРИШЛО (КОЛ-ВО)</label>
-                            <input type="text" class="no-spinners" id="qe-receive-qty" placeholder="0" inputmode="none" readonly onclick="event.stopPropagation(); window.setQeActive(this)" style="width: 100%; text-align: center; font-weight: bold; border-color: #333;">
-                        </div>
-                        <div style="flex: 1;">
-                            <label style="font-size: 9px; color: #888;">ЦЕНА ЗАКУПА</label>
-                            <input type="text" class="no-spinners" id="qe-receive-cost" value="${item.cost || ''}" placeholder="0" inputmode="none" readonly onclick="event.stopPropagation(); window.setQeActive(this)" style="width: 100%; text-align: center; font-weight: bold; border-color: #333;">
+                        
+                        <!-- Скрытое поле для ввода новой категории -->
+                        <div id="qe-new-category-wrapper" style="display: none; width: 100%; gap: 5px;">
+                            <input type="text" id="qe-new-category" placeholder="Введите название..." style="flex: 1; width: 100%;">
+                            <button type="button" id="qe-cancel-new-cat" onclick="window.cancelNewCategory()" style="background: #c62828; color: #fff; border: none; border-radius: 4px; padding: 0 12px; font-weight: bold; cursor: pointer;">✖</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- NUMPAD -->
-                <div id="custom-numpad" onclick="event.stopPropagation()" style="display: none; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 12px;">
+                <div style="margin-bottom: 10px;">
+                    <label data-i18n="qe_barcode" style="display: block; font-size: 10px; margin-bottom: 2px;">${t('qe_barcode')}</label>
+                    <div style="display: flex; margin-bottom: 8px;">
+                        <input type="text" id="qe-barcode" value="${item.barcode || ''}" placeholder="${t('qe_barcode_placeholder')}" inputmode="none" readonly onclick="window.setQeActive(this)" style="flex: 1; border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: none;">
+                        <button type="button" onclick="window.startQuaggaScanner()" style="padding: 0 15px; border: 1px solid rgba(128,128,128,0.3); background: rgba(128,128,128,0.1); border-top-right-radius: 4px; border-bottom-right-radius: 4px; color: inherit; font-size: 18px; cursor: pointer;">📷</button>
+                    </div>
+                    
+                    <div id="quagga-scanner-container" style="display: none; position: relative; width: 100%; height: 180px; background: #000; border-radius: 4px; overflow: hidden; border: 1px solid #444;">
+    
+                        <!-- Контейнер для потока с камеры -->
+                        <div id="quagga-video-target" style="width: 100%; height: 100%;"></div>
+                        
+                        <!-- === ВИЗУАЛЬНЫЙ ПРИЦЕЛ (КРАСНАЯ ЛИНИЯ) === -->
+                        <div style="position: absolute; top: 50%; left: 10%; width: 80%; height: 2px; background: rgba(255, 0, 0, 0.7); box-shadow: 0 0 8px rgba(255, 0, 0, 1); z-index: 5; transform: translateY(-50%); pointer-events: none;"></div>
+                        <!-- ========================================= -->
+
+                        <!-- Кнопка закрытия -->
+                        <button type="button" data-i18n="qe_close" onclick="window.stopQuaggaScanner()" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.7); color: #fff; border: 1px solid #555; border-radius: 4px; padding: 4px 10px; font-size: 12px; z-index: 10;">${t('qe_close')}</button>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2px;">
+                            <label data-i18n="qe_price" style="margin-bottom: 0;">${t('qe_price')}</label>
+                            <span style="font-size: 10px; color: #2e7d32; font-weight: bold;"><span data-i18n="qe_current">${t('qe_current')}</span>: ${formattedPrice}</span>
+                        </div>
+                        <input type="text" class="no-spinners" id="qe-price" value="${item.price || 0}" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%;">
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2px;">
+                            <label data-i18n="qe_min_stock" style="margin-bottom: 0;">${t('qe_min_stock')}</label>
+                            <span style="font-size: 10px; color: #2e7d32; font-weight: bold;"><span data-i18n="qe_fact">${t('qe_fact')}</span>: ${currentStock}</span>
+                        </div>
+                        <input type="text" class="no-spinners" id="qe-minstock" value="${minStockVal}" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%;">
+                    </div>
+                </div>
+
+                <!-- БЛОК NUMPAD -->
+                <div id="custom-numpad" style="display: none; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 15px;">
                     <button type="button" class="np-btn" onclick="window.qeNumpad('1', event)">1</button>
                     <button type="button" class="np-btn" onclick="window.qeNumpad('2', event)">2</button>
                     <button type="button" class="np-btn" onclick="window.qeNumpad('3', event)">3</button>
@@ -546,19 +571,10 @@ window.openQuickEditModal = function(id) {
                     <button type="button" class="np-btn np-btn-action" onclick="window.qeNumpad('DEL', event)">⌫</button>
                 </div>
 
-                <div id="qe-buttons-main" onclick="event.stopPropagation()" style="display: flex; flex-direction: column; gap: 8px;">
-                    <div style="display: flex; gap: 8px;">
-                        <button type="button" onclick="window.saveQuickEdit('${item.id}', false)" style="flex: 2; padding: 10px; border: none; background: #2e7d32; color: #fff; border-radius: 4px; font-weight: bold; font-size: 14px; text-transform: uppercase; cursor: pointer;">${t('qe_save')}</button>
-                        <button type="button" onclick="document.getElementById('quickEditModal').remove()" style="flex: 1; padding: 10px; border: none; background: #c62828; color: #fff; border-radius: 4px; font-weight: bold; font-size: 16px; cursor: pointer;">✖</button>
-                    </div>
-                    <button type="button" onclick="window.toggleQeReceiveMode(true)" style="width: 100%; padding: 8px; background: transparent; border: 1px solid #2e7d32; color: #2e7d32; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px;">+ БЫСТРЫЙ ПРИХОД</button>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" data-i18n="qe_save" onclick="window.saveQuickEdit('${item.id}')" style="flex: 2; padding: 10px; border: none; background: #2e7d32; color: #fff; border-radius: 4px; font-weight: bold; font-size: 14px; text-transform: uppercase; cursor: pointer;">${t('qe_save')}</button>
+                    <button type="button" onclick="document.getElementById('quickEditModal').remove()" style="flex: 1; padding: 10px; border: none; background: #c62828; color: #fff; border-radius: 4px; font-weight: bold; font-size: 16px; cursor: pointer;">✖</button>
                 </div>
-
-                <div id="qe-buttons-receive" onclick="event.stopPropagation()" style="display: none; flex-direction: column; gap: 8px;">
-                    <button type="button" onclick="window.saveQuickEdit('${item.id}', true)" style="width: 100%; padding: 10px; border: none; background: #1976d2; color: #fff; border-radius: 4px; font-weight: bold; font-size: 14px; text-transform: uppercase; cursor: pointer;">✅ ОПРИХОДОВАТЬ И СОХРАНИТЬ</button>
-                    <button type="button" onclick="window.toggleQeReceiveMode(false)" style="width: 100%; padding: 8px; background: transparent; border: 1px solid rgba(128,128,128,0.3); color: #888; border-radius: 4px; cursor: pointer; font-size: 12px;">СВЕРНУТЬ ПРИХОД</button>
-                </div>
-
             </div>
         </div>
     `;
@@ -566,133 +582,36 @@ window.openQuickEditModal = function(id) {
     document.body.insertAdjacentHTML('beforeend', modalHtml);
 };
 
-// Вспомогательная функция переключения отображения Приемки
-window.toggleQeReceiveMode = function(showReceive) {
-    window.closeAllQeDropdowns(); // Скрываем открытые списки при смене режима
-    const receiveBlock = document.getElementById('qe-receive-block');
-    const mainBtns = document.getElementById('qe-buttons-main');
-    const recBtns = document.getElementById('qe-buttons-receive');
-    
-    if (showReceive) {
-        receiveBlock.style.display = 'block';
-        mainBtns.style.display = 'none';
-        recBtns.style.display = 'flex';
-        // Автоматически фокусируемся на количестве
-        const qtyInput = document.getElementById('qe-receive-qty');
-        if (qtyInput) {
-            window.setQeActive(qtyInput);
-            setTimeout(() => qtyInput.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200);
-        }
-    } else {
-        receiveBlock.style.display = 'none';
-        mainBtns.style.display = 'flex';
-        recBtns.style.display = 'none';
-    }
-};
-
-// Обработчик выбора из выпадающего списка поставщиков
-window.handleSupplierChange = function(select) {
-    const newSuppInput = document.getElementById('qe-receive-supplier-new');
-    if (!newSuppInput) return;
-    
-    if (select.value === '__NEW__') {
-        newSuppInput.style.display = 'block';
-        newSuppInput.focus(); // Сразу открываем системную клавиатуру
-    } else {
-        newSuppInput.style.display = 'none';
-        newSuppInput.value = ''; // Очищаем поле, если передумали
-    }
-};
-
-// При клике на текстовое поле поставщика
-window.handleSupplierFocus = function(el) {
-    const numpad = document.getElementById('custom-numpad');
-    if (numpad) numpad.style.display = 'none'; // Прячем цифровой Numpad
-    
-    // Слегка прокручиваем окно вверх, чтобы системная клава не закрыла кнопки
-    setTimeout(() => {
-        const receiveBtns = document.getElementById('qe-buttons-receive');
-        if (receiveBtns) receiveBtns.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }, 300);
-};
-
+// Открывает/закрывает наш кастомный список
 window.toggleCustomDropdown = function() {
     const dropdown = document.getElementById('qe-category-dropdown');
-    const arrow = document.getElementById('qe-cat-arrow');
-    if (dropdown) {
-        const isHidden = dropdown.style.display === 'none';
-        dropdown.style.display = isHidden ? 'block' : 'none';
-        if (arrow) arrow.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
-    }
+    if (dropdown) dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
 };
 
-window.toggleSupplierDropdown = function() {
-    const dropdown = document.getElementById('qe-supplier-dropdown');
-    const arrow = document.getElementById('qe-sup-arrow');
-    if (dropdown) {
-        const isHidden = dropdown.style.display === 'none';
-        dropdown.style.display = isHidden ? 'block' : 'none';
-        if (arrow) arrow.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
-    }
-};
-
-window.handleQeCatClick = function(el) {
-    const val = el.getAttribute('data-val');
-    const text = el.getAttribute('data-text');
+// Обработчик клика ТОЛЬКО для модального окна быстрых правок
+window.handleQeCatClick = function(element) {
+    const value = element.getAttribute('data-val');
+    const text = element.getAttribute('data-text');
     
-    const trigger = document.getElementById('qe-category-trigger');
-    const input = document.getElementById('qe-category-input');
-    const hidden = document.getElementById('qe-category');
-    const display = document.getElementById('qe-category-display');
     const dropdown = document.getElementById('qe-category-dropdown');
-    const arrow = document.getElementById('qe-cat-arrow');
+    const trigger = document.getElementById('qe-category-trigger');
+    const display = document.getElementById('qe-category-display');
+    const hiddenInput = document.getElementById('qe-category');
+    const newCatWrapper = document.getElementById('qe-new-category-wrapper');
+    const newCatInput = document.getElementById('qe-new-category');
     
-    dropdown.style.display = 'none';
-    if (arrow) arrow.style.transform = 'rotate(0deg)';
-    
-    if (val === 'new') {
-        trigger.style.display = 'none';
-        input.style.display = 'block';
-        input.value = '';
-        input.focus();
-        hidden.value = '__NEW__';
-        // Сдвигаем экран выше клавиатуры
-        setTimeout(() => input.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+    if (value === 'new') {
+        if (trigger) trigger.style.display = 'none';
+        if (dropdown) dropdown.style.display = 'none';
+        
+        if (newCatWrapper) newCatWrapper.style.display = 'flex';
+        if (hiddenInput) hiddenInput.value = 'new';
+        
+        if (newCatInput) newCatInput.focus();
     } else {
-        trigger.style.display = 'flex';
-        input.style.display = 'none';
-        display.textContent = text;
-        hidden.value = val;
-    }
-};
-
-window.handleSupplierClick = function(el) {
-    const val = el.getAttribute('data-val');
-    const text = el.getAttribute('data-text');
-    
-    const trigger = document.getElementById('qe-supplier-trigger');
-    const input = document.getElementById('qe-supplier-input');
-    const hidden = document.getElementById('qe-receive-supplier');
-    const display = document.getElementById('qe-supplier-display');
-    const dropdown = document.getElementById('qe-supplier-dropdown');
-    const arrow = document.getElementById('qe-sup-arrow');
-    
-    dropdown.style.display = 'none';
-    if (arrow) arrow.style.transform = 'rotate(0deg)';
-    
-    if (val === 'new') {
-        trigger.style.display = 'none';
-        input.style.display = 'block';
-        input.value = '';
-        input.focus(); 
-        hidden.value = '__NEW__';
-        // Сдвигаем экран выше клавиатуры
-        setTimeout(() => input.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
-    } else {
-        trigger.style.display = 'flex';
-        input.style.display = 'none';
-        display.textContent = text;
-        hidden.value = val;
+        if (display) display.innerText = text;
+        if (hiddenInput) hiddenInput.value = value;
+        if (dropdown) dropdown.style.display = 'none';
     }
 };
 
@@ -990,131 +909,100 @@ window.stopScanner = function() {
     }
 };
 
-// Открытие/закрытие списка поставщиков
-window.toggleSupplierDropdown = function() {
-    const dropdown = document.getElementById('qe-supplier-dropdown');
-    if (dropdown) {
-        dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
-    }
-};
-
-// Обработка клика по пункту в списке поставщиков
-window.handleSupplierClick = function(el) {
-    const val = el.getAttribute('data-val');
-    const text = el.getAttribute('data-text');
-    
-    const trigger = document.getElementById('qe-supplier-trigger');
-    const input = document.getElementById('qe-supplier-input');
-    const hidden = document.getElementById('qe-receive-supplier');
-    const display = document.getElementById('qe-supplier-display');
-    const dropdown = document.getElementById('qe-supplier-dropdown');
-    
-    dropdown.style.display = 'none';
-    
-    if (val === 'new') {
-        // Скрываем триггер, показываем текстовое поле на его месте
-        trigger.style.display = 'none';
-        input.style.display = 'block';
-        input.value = '';
-        input.focus(); // Вызываем клавиатуру
-        hidden.value = '__NEW__';
-        
-        // Слегка прокручиваем, чтобы кнопки были видны над клавиатурой
-        setTimeout(() => {
-            const receiveBtns = document.getElementById('qe-buttons-receive');
-            if (receiveBtns) receiveBtns.scrollIntoView({ behavior: 'smooth', block: 'end' });
-        }, 300);
-    } else {
-        // Обычный выбор существующего
-        trigger.style.display = 'flex';
-        input.style.display = 'none';
-        display.textContent = text;
-        hidden.value = val;
-    }
-};
-
-// Добавлен второй параметр isReceive
-window.saveQuickEdit = function(itemId, isReceive) {
-    // 1. Находим товар в базе
-    const item = db.find(i => String(i.id) === String(itemId));
+window.saveQuickEdit = function(id) {
+    const item = db.find(i => String(i.id) === String(id));
     if (!item) return;
 
-    // Вспомогательная функция чтения значений
-    const getValue = (id) => {
-        const el = document.getElementById(id);
-        return el ? el.value : '';
+    // 1. ФУНКЦИЯ-ПЕРЕХВАТЧИК: берет значение только из самого последнего открытого окна
+    const getLatestValue = (elementId) => {
+        const elements = document.querySelectorAll('#' + elementId);
+        return elements.length > 0 ? elements[elements.length - 1].value : "";
     };
 
-    // 2. Считываем основные поля
-    const name = getValue('qe-name').trim();
-    const barcode = getValue('qe-barcode').trim();
-    const price = parseFloat(String(getValue('qe-price')).replace(/\s/g, '').replace(',', '.')) || 0;
-    const minStock = parseFloat(String(getValue('qe-minstock')).replace(/\s/g, '').replace(',', '.')) || 0;
+    // 2. Читаем актуальные данные, игнорируя скрытые и старые окна
+    const rawName = getLatestValue('qe-name');
+    const rawPrice = getLatestValue('qe-price');
+    const rawCategory = getLatestValue('qe-category');
+    const rawBarcode = getLatestValue('qe-barcode');
+    const rawMinStock = getLatestValue('qe-minstock');
 
-    // 3. Считываем Категорию (НОВАЯ ЛОГИКА)
-    let categoryName = getValue('qe-category');
-    if (categoryName === '__NEW__') {
-        // Если выбран "Новая категория", берем текст из поля ввода
-        categoryName = getValue('qe-category-input').trim();
+    // 3. Очистка и подготовка данных
+    const newName = rawName.trim();
+    
+    // Если скрипт поймал пустое имя (а товар не был безымянным), блокируем отправку для защиты таблицы
+    if (newName === "" && item.name !== "" && item.name !== "Без названия") {
+        alert("Сработала защита: скрипт попытался сохранить пустое имя. Попробуйте еще раз.");
+        return; 
     }
 
-    // Обновляем базовые свойства товара
-    item.name = name;
-    item.barcode = barcode;
-    item.price = price;
-    item.min_stock = minStock;
-    if (categoryName) item.category = categoryName;
+    const newPrice = parseFloat(String(rawPrice).replace(/\s/g, '').replace(',', '.')) || 0;
+    const newMinStock = parseFloat(String(rawMinStock).replace(/\s/g, '').replace(',', '.')) || 0;
 
-    // 4. Если нажата кнопка "Оприходовать и сохранить" (Быстрый приход)
-    if (isReceive) {
-        const receiveQty = parseFloat(String(getValue('qe-receive-qty')).replace(/[\s+]/g, '').replace(',', '.')) || 0;
-        const receiveCost = parseFloat(String(getValue('qe-receive-cost')).replace(/\s/g, '').replace(',', '.')) || 0;
+    // === НАЧАЛО ПУНКТА 3 ===
+    let newCategory = rawCategory;
+    
+    // Если выбрали создание новой категории, читаем данные из скрытого поля через твой перехватчик
+    if (newCategory === 'new') {
+        newCategory = getLatestValue('qe-new-category').trim();
         
-        // Считываем Поставщика (НОВАЯ ЛОГИКА)
-        let supplierName = '';
-        const hiddenSupplierVal = getValue('qe-receive-supplier');
-        if (hiddenSupplierVal === '__NEW__') {
-            // Если выбран "Новый поставщик", берем текст из поля ввода
-            supplierName = getValue('qe-supplier-input').trim();
-        } else {
-            supplierName = hiddenSupplierVal.trim();
+        // Защита от пустой строки
+        if (!newCategory) {
+            alert('Введите название новой категории!');
+            // Находим последнее открытое поле ввода и ставим туда фокус
+            const newCatInputs = document.querySelectorAll('#qe-new-category');
+            if (newCatInputs.length > 0) newCatInputs[newCatInputs.length - 1].focus();
+            return; // Останавливаем сохранение
         }
-
-        // Если введено количество больше 0, прибавляем к остатку
-        if (receiveQty > 0) {
-            item.stock = (Number(item.stock) || 0) + receiveQty;
-            if (receiveCost > 0) item.cost = receiveCost;
-
-            // Если у вас есть массив/база поставщиков, сохраняем нового
-            if (supplierName) {
-                if (!window.suppliersList) window.suppliersList = [];
-                if (!window.suppliersList.includes(supplierName)) {
-                    window.suppliersList.push(supplierName);
-                }
-            }
-
-            // Если есть функция записи движения товара/прихода
-            if (typeof window.addIncomeRecord === 'function') {
-                window.addIncomeRecord({
-                    itemId: item.id,
-                    name: item.name,
-                    qty: receiveQty,
-                    cost: receiveCost,
-                    supplier: supplierName,
-                    date: new Date().toISOString()
-                });
-            }
-        }
+    } else if (newCategory === '0' || newCategory === 'Не выбрано') {
+        newCategory = "Без категории"; 
     }
+    // === КОНЕЦ ПУНКТА 3 ===
 
-    // 5. Сохраняем изменения в LocalStorage / Гугл Таблицу и обновляем список
-    if (typeof window.saveDb === 'function') window.saveDb();
-    if (typeof window.renderProducts === 'function') window.renderProducts();
-    if (typeof window.renderCatalog === 'function') window.renderCatalog();
+    // 4. Формируем правильный пакет данных для бэкенда
+    const payload = {
+        action: "update_single_item",
+        api_key: CLIENT_API_KEY,
+        itemId: String(item.id),
+        data: {
+            item_name: newName,
+            price: newPrice,
+            category: newCategory,
+            min_stock: newMinStock,
+            barcode: rawBarcode.trim()
+        }
+    };
 
-    // 6. Закрываем модальное окно
-    const modal = document.getElementById('quickEditModal');
-    if (modal) modal.remove();
+    console.log("Улетает на сервер:", payload);
+
+    // 5. Мгновенно обновляем интерфейс приложения
+    item.name = newName;
+    item.item_name = newName;
+    item.price = newPrice;
+    item.category = newCategory;
+    item.min_stock = newMinStock;
+    item.barcode = rawBarcode.trim();
+
+    // ЖЕСТКАЯ ОЧИСТКА: удаляем вообще все окна редактирования из кода, чтобы не плодить дубликаты
+    document.querySelectorAll('#quickEditModal').forEach(m => m.remove());
+    if (typeof render === 'function') render();
+
+    // 6. Отправляем в Google Таблицу
+    fetch(GATEWAY_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+    })
+    .then(res => res.json())
+    .then(response => {
+        if (response && response.error) {
+            alert('Ошибка сервера: ' + response.error);
+        } else {
+            console.log('Успешно записано в таблицу!');
+        }
+    })
+    .catch(err => {
+        alert('Ошибка связи с сервером: ' + err.message);
+    });
 };
 
 // === (Конец П1) ===
@@ -3799,611 +3687,3 @@ document.addEventListener('click', function(e) {
         el.focus();
     }
 });
-// Функция для обновления статуса облака
-window.updateQeSyncStatus = function(queueCount) {
-    const syncIndicator = document.getElementById('qe-sync-indicator');
-    const syncCount = document.getElementById('qe-sync-count');
-    
-    if (syncIndicator && syncCount) {
-        if (queueCount > 0) {
-            syncCount.textContent = queueCount;
-            // Добавляем класс, который включает мигание и отображает блок
-            syncIndicator.classList.add('qe-syncing'); 
-        } else {
-            // Убираем мигание и скрываем блок
-            syncIndicator.classList.remove('qe-syncing'); 
-        }
-    }
-};
-
-// --- ЛОГИКА NUMPAD И ОЧИСТКИ ПОЛЕЙ ---
-window.qeClearOnNextInput = false;
-
-window.setQeActive = function(el) {
-    document.querySelectorAll('.qe-active-input').forEach(input => input.classList.remove('qe-active-input'));
-    el.classList.add('qe-active-input');
-    window.qeClearOnNextInput = true; // Активируем очистку при вводе для ВСЕХ полей
-    
-    const numpad = document.getElementById('custom-numpad');
-    if (numpad) numpad.style.display = 'grid';
-};
-
-window.activateReceiveNumpad = function(el) {
-    window.setQeActive(el); // Используем единую логику
-};
-
-window.qeNumpad = function(val, e) {
-    if (e) e.preventDefault();
-    const activeInput = document.querySelector('.qe-active-input');
-    if (!activeInput) return;
-
-    if (window.qeClearOnNextInput && val !== 'C' && val !== 'DEL') {
-        activeInput.value = '';
-        window.qeClearOnNextInput = false;
-    }
-
-    let currentVal = activeInput.value;
-    if (val === 'C') {
-        activeInput.value = '';
-    } else if (val === 'DEL') {
-        activeInput.value = currentVal.slice(0, -1);
-    } else {
-        activeInput.value = currentVal + val;
-    }
-};
-
-// --- УПРАВЛЕНИЕ СПИСКАМИ ---
-window.closeAllQeDropdowns = function() {
-    const catDropdown = document.getElementById('qe-category-dropdown');
-    const supDropdown = document.getElementById('qe-supplier-dropdown');
-    const catArrow = document.getElementById('qe-cat-arrow');
-    const supArrow = document.getElementById('qe-sup-arrow');
-    
-    if (catDropdown) catDropdown.style.display = 'none';
-    if (supDropdown) supDropdown.style.display = 'none';
-    if (catArrow) catArrow.style.transform = 'rotate(0deg)';
-    if (supArrow) supArrow.style.transform = 'rotate(0deg)';
-
-    // Сброс пустой Новой категории на "Не выбрано"
-    const catInput = document.getElementById('qe-category-input');
-    if (catInput && catInput.style.display === 'block' && catInput.value.trim() === '') {
-        catInput.style.display = 'none';
-        document.getElementById('qe-category-trigger').style.display = 'flex';
-        document.getElementById('qe-category').value = '0';
-        
-        // Достаем локализованное "Не выбрано", если оно есть, иначе ставим текст по умолчанию
-        const lang = localStorage.getItem('pos_lang') || window.currentLang || 'ru';
-        const dict = (typeof translations !== 'undefined' && translations[lang]) ? translations[lang] : {};
-        document.getElementById('qe-category-display').textContent = dict['qe_no_category'] || 'Не выбрано';
-    }
-
-    // Сброс пустого Нового поставщика
-    const supInput = document.getElementById('qe-supplier-input');
-    if (supInput && supInput.style.display === 'block' && supInput.value.trim() === '') {
-        supInput.style.display = 'none';
-        document.getElementById('qe-supplier-trigger').style.display = 'flex';
-        document.getElementById('qe-receive-supplier').value = '';
-        document.getElementById('qe-supplier-display').textContent = 'Выберите поставщика...';
-    }
-};
-
-window.toggleCustomDropdown = function(e) {
-    if (e) e.stopPropagation();
-    window.closeAllQeDropdowns(); // Сначала закрываем все остальные
-    const dropdown = document.getElementById('qe-category-dropdown');
-    const arrow = document.getElementById('qe-cat-arrow');
-    if (dropdown) {
-        dropdown.style.display = 'block';
-        if (arrow) arrow.style.transform = 'rotate(180deg)';
-    }
-};
-
-window.toggleSupplierDropdown = function(e) {
-    if (e) e.stopPropagation();
-    window.closeAllQeDropdowns();
-    const dropdown = document.getElementById('qe-supplier-dropdown');
-    const arrow = document.getElementById('qe-sup-arrow');
-    if (dropdown) {
-        dropdown.style.display = 'block';
-        if (arrow) arrow.style.transform = 'rotate(180deg)';
-    }
-};
-
-window.handleQeCatClick = function(el, e) {
-    if (e) e.stopPropagation();
-    const val = el.getAttribute('data-val');
-    const text = el.getAttribute('data-text');
-    
-    const trigger = document.getElementById('qe-category-trigger');
-    const input = document.getElementById('qe-category-input');
-    const hidden = document.getElementById('qe-category');
-    const display = document.getElementById('qe-category-display');
-    
-    window.closeAllQeDropdowns();
-    
-    if (val === 'new') {
-        trigger.style.display = 'none';
-        input.style.display = 'block';
-        input.value = '';
-        input.focus();
-        hidden.value = '__NEW__';
-        setTimeout(() => input.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
-    } else {
-        trigger.style.display = 'flex';
-        input.style.display = 'none';
-        display.textContent = text;
-        hidden.value = val;
-    }
-};
-
-window.handleSupplierClick = function(el, e) {
-    if (e) e.stopPropagation();
-    const val = el.getAttribute('data-val');
-    const text = el.getAttribute('data-text');
-    
-    const trigger = document.getElementById('qe-supplier-trigger');
-    const input = document.getElementById('qe-supplier-input');
-    const hidden = document.getElementById('qe-receive-supplier');
-    const display = document.getElementById('qe-supplier-display');
-    
-    window.closeAllQeDropdowns();
-    
-    if (val === 'new') {
-        trigger.style.display = 'none';
-        input.style.display = 'block';
-        input.value = '';
-        input.focus(); 
-        hidden.value = '__NEW__';
-        setTimeout(() => input.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
-    } else {
-        trigger.style.display = 'flex';
-        input.style.display = 'none';
-        display.textContent = text;
-        hidden.value = val;
-    }
-};
-
-window.handleSupplierKeyPress = function(e) {
-    if (e.key === 'Enter' || e.keyCode === 13) {
-        e.preventDefault();
-        e.target.blur(); 
-        window.closeAllQeDropdowns();
-    }
-};
-
-// ==========================================
-// 1. УПРАВЛЕНИЕ КЛАВИАТУРОЙ И ИНПУТАМИ
-// ==========================================
-window.qeClearOnNextInput = false;
-
-window.setQeActive = function(el) {
-    document.querySelectorAll('.qe-active-input').forEach(input => input.classList.remove('qe-active-input'));
-    el.classList.add('qe-active-input');
-    window.qeClearOnNextInput = true;
-    
-    const numpad = document.getElementById('custom-numpad');
-    if (numpad) numpad.style.display = 'grid';
-};
-
-window.qeNumpad = function(val, e) {
-    if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-    const activeInput = document.querySelector('.qe-active-input');
-    if (!activeInput) return;
-
-    if (window.qeClearOnNextInput && val !== 'C' && val !== 'DEL') {
-        activeInput.value = '';
-        window.qeClearOnNextInput = false;
-    }
-
-    const isNumericField = ['qe-price', 'qe-minstock', 'qe-receive-qty', 'qe-receive-cost'].includes(activeInput.id);
-    let rawVal = activeInput.value.replace(/\s/g, '');
-
-    if (val === 'C') {
-        rawVal = '';
-    } else if (val === 'DEL') {
-        rawVal = rawVal.slice(0, -1);
-    } else {
-        rawVal += val;
-    }
-
-    if (isNumericField && rawVal !== '') {
-        const num = parseInt(rawVal, 10);
-        activeInput.value = !isNaN(num) ? num.toLocaleString('ru-RU') : '';
-    } else {
-        activeInput.value = rawVal;
-    }
-};
-
-window.closeQeNumpad = function() {
-    const numpad = document.getElementById('custom-numpad');
-    if (numpad) numpad.style.display = 'none';
-    document.querySelectorAll('.qe-active-input').forEach(i => i.classList.remove('qe-active-input'));
-};
-
-// ==========================================
-// 2. УПРАВЛЕНИЕ ВЫПАДАЮЩИМИ СПИСКАМИ И ФОКУСОМ
-// ==========================================
-window.closeAllQeDropdowns = function() {
-    const catDropdown = document.getElementById('qe-category-dropdown');
-    const supDropdown = document.getElementById('qe-supplier-dropdown');
-    const catArrow = document.getElementById('qe-cat-arrow');
-    const supArrow = document.getElementById('qe-sup-arrow');
-    
-    if (catDropdown) catDropdown.style.display = 'none';
-    if (supDropdown) supDropdown.style.display = 'none';
-    if (catArrow) catArrow.style.transform = 'rotate(0deg)';
-    if (supArrow) supArrow.style.transform = 'rotate(0deg)';
-
-    const catInput = document.getElementById('qe-category-input');
-    if (catInput && catInput.style.display === 'block' && catInput.value.trim() === '') {
-        catInput.style.display = 'none';
-        document.getElementById('qe-category-trigger').style.display = 'flex';
-        document.getElementById('qe-category').value = '0';
-        document.getElementById('qe-category-display').textContent = 'Без категории';
-    }
-
-    const supInput = document.getElementById('qe-supplier-input');
-    if (supInput && supInput.style.display === 'block' && supInput.value.trim() === '') {
-        supInput.style.display = 'none';
-        document.getElementById('qe-supplier-trigger').style.display = 'flex';
-        document.getElementById('qe-receive-supplier').value = '';
-        document.getElementById('qe-supplier-display').textContent = 'Выберите поставщика...';
-    }
-};
-
-window.toggleCustomDropdown = function(e) {
-    if (e) e.stopPropagation();
-    const dropdown = document.getElementById('qe-category-dropdown');
-    const isOpen = dropdown && dropdown.style.display === 'block';
-    window.closeAllQeDropdowns();
-    if (!isOpen && dropdown) {
-        dropdown.style.display = 'block';
-        const arrow = document.getElementById('qe-cat-arrow');
-        if (arrow) arrow.style.transform = 'rotate(180deg)';
-    }
-};
-
-window.toggleSupplierDropdown = function(e) {
-    if (e) e.stopPropagation();
-    const dropdown = document.getElementById('qe-supplier-dropdown');
-    const isOpen = dropdown && dropdown.style.display === 'block';
-    window.closeAllQeDropdowns();
-    if (!isOpen && dropdown) {
-        dropdown.style.display = 'block';
-        const arrow = document.getElementById('qe-sup-arrow');
-        if (arrow) arrow.style.transform = 'rotate(180deg)';
-    }
-};
-
-window.handleQeCatClick = function(el, e) {
-    if (e) e.stopPropagation();
-    const val = el.getAttribute('data-val');
-    const text = el.getAttribute('data-text');
-    const trigger = document.getElementById('qe-category-trigger');
-    const input = document.getElementById('qe-category-input');
-    const hidden = document.getElementById('qe-category');
-    const display = document.getElementById('qe-category-display');
-    
-    window.closeAllQeDropdowns();
-    if (val === 'new') {
-        trigger.style.display = 'none';
-        input.style.display = 'block';
-        input.value = '';
-        input.focus();
-        hidden.value = '__NEW__';
-    } else {
-        trigger.style.display = 'flex';
-        input.style.display = 'none';
-        display.textContent = text;
-        hidden.value = val;
-    }
-};
-
-window.handleSupplierClick = function(el, e) {
-    if (e) e.stopPropagation();
-    const val = el.getAttribute('data-val');
-    const text = el.getAttribute('data-text');
-    const trigger = document.getElementById('qe-supplier-trigger');
-    const input = document.getElementById('qe-supplier-input');
-    const hidden = document.getElementById('qe-receive-supplier');
-    const display = document.getElementById('qe-supplier-display');
-    
-    window.closeAllQeDropdowns();
-    if (val === 'new') {
-        trigger.style.display = 'none';
-        input.style.display = 'block';
-        input.value = '';
-        input.focus();
-        hidden.value = '__NEW__';
-    } else {
-        trigger.style.display = 'flex';
-        input.style.display = 'none';
-        display.textContent = text;
-        hidden.value = val;
-    }
-};
-
-window.handleInputFocus = function(el) {
-    setTimeout(() => {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 300);
-};
-
-window.triggerCameraScan = function(e) {
-    if (e) e.stopPropagation();
-    if (typeof window.startQuaggaScanner === 'function') {
-        window.startQuaggaScanner();
-    } else {
-        alert('Функция startQuaggaScanner не найдена в текущем окружении.');
-    }
-};
-
-// ==========================================
-// 3. ПЕРЕКЛЮЧЕНИЕ РЕЖИМА ПРИХОДА
-// ==========================================
-window.toggleQeReceiveMode = function(showReceive) {
-    window.closeAllQeDropdowns();
-    const mainFields = document.getElementById('qe-main-fields');
-    const receiveBlock = document.getElementById('qe-receive-block');
-    const btnReceiveToggle = document.getElementById('qe-btn-receive-toggle');
-    
-    if (showReceive) {
-        if (mainFields) {
-            mainFields.style.opacity = '0.35';
-            mainFields.style.pointerEvents = 'none';
-        }
-        receiveBlock.style.display = 'block';
-        btnReceiveToggle.textContent = 'СВЕРНУТЬ ПРИХОД';
-        btnReceiveToggle.style.color = '#888';
-        btnReceiveToggle.style.borderColor = 'rgba(128,128,128,0.3)';
-        btnReceiveToggle.onclick = () => window.toggleQeReceiveMode(false);
-    } else {
-        if (mainFields) {
-            mainFields.style.opacity = '1';
-            mainFields.style.pointerEvents = 'auto';
-        }
-        receiveBlock.style.display = 'none';
-        btnReceiveToggle.textContent = '+ БЫСТРЫЙ ПРИХОД';
-        btnReceiveToggle.style.color = '#2e7d32';
-        btnReceiveToggle.style.borderColor = '#2e7d32';
-        btnReceiveToggle.onclick = () => window.toggleQeReceiveMode(true);
-        window.closeQeNumpad();
-    }
-};
-
-// ==========================================
-// 4. СОХРАНЕНИЕ ДАННЫХ
-// ==========================================
-window.saveQuickEdit = function(id) {
-    const item = db.find(i => String(i.id) === String(id));
-    if (!item) return;
-
-    const nameVal = document.getElementById('qe-name').value.trim();
-    const barcodeVal = document.getElementById('qe-barcode').value.trim();
-    
-    // Принудительно очищаем от пробелов для правильной конвертации
-    const priceVal = parseInt(document.getElementById('qe-price').value.replace(/\s/g, ''), 10) || 0;
-    const minStockVal = parseInt(document.getElementById('qe-minstock').value.replace(/\s/g, ''), 10) || 0;
-
-    let catVal = document.getElementById('qe-category').value;
-    if (catVal === '__NEW__') {
-        catVal = document.getElementById('qe-category-input').value.trim() || '0';
-    }
-
-    item.name = nameVal;
-    item.barcode = barcodeVal;
-    item.price = priceVal;
-    item.min_stock = minStockVal;
-    item.category = catVal;
-
-    const receiveBlock = document.getElementById('qe-receive-block');
-    if (receiveBlock && receiveBlock.style.display !== 'none') {
-        const qtyVal = parseInt(document.getElementById('qe-receive-qty').value.replace(/\s/g, ''), 10) || 0;
-        const costVal = parseInt(document.getElementById('qe-receive-cost').value.replace(/\s/g, ''), 10) || 0;
-        
-        let supVal = document.getElementById('qe-receive-supplier').value;
-        if (supVal === '__NEW__') {
-            supVal = document.getElementById('qe-supplier-input').value.trim();
-        }
-
-        if (qtyVal > 0) {
-            item.stock = (Number(item.stock) || 0) + qtyVal;
-            if (costVal > 0) item.cost = costVal;
-            
-            if (typeof window.addIncomeRecord === 'function') {
-                window.addIncomeRecord({
-                    itemId: item.id,
-                    itemName: item.name,
-                    qty: qtyVal,
-                    cost: costVal,
-                    supplier: supVal,
-                    date: new Date().toISOString()
-                });
-            }
-        }
-    }
-
-    if (typeof saveDb === 'function') saveDb();
-    if (typeof render === 'function') render();
-    if (typeof renderProducts === 'function') renderProducts();
-    if (typeof loadData === 'function') loadData();
-
-    const modal = document.getElementById('quickEditModal');
-    if (modal) modal.remove();
-};
-
-// ==========================================
-// 5. ОСНОВНАЯ МОДАЛКА
-// ==========================================
-window.openQuickEditModal = function(id) {
-    const item = db.find(i => String(i.id) === String(id));
-    if (!item) return;
-
-    const existingModal = document.getElementById('quickEditModal');
-    if (existingModal) existingModal.remove();
-
-    const escapeHtml = (str) => String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-
-    const uniqueCats = [...new Set(db.map(i => i.category).filter(Boolean))];
-    let currentCatText = (!item.category || item.category === '0') ? 'Без категории' : item.category;
-    let currentCatValue = (!item.category || item.category === '0') ? '0' : item.category;
-
-    let customDropdownHtml = `<div data-val="0" data-text="Без категории" onclick="window.handleQeCatClick(this, event)" style="padding: 10px; cursor: pointer; border-bottom: 1px solid rgba(128,128,128,0.2);">Без категории</div>`;
-    uniqueCats.forEach(cat => {
-        if (cat !== '0' && cat !== 'Без категории') {
-            const safeCat = escapeHtml(cat);
-            customDropdownHtml += `<div data-val="${safeCat}" data-text="${safeCat}" onclick="window.handleQeCatClick(this, event)" style="padding: 10px; cursor: pointer; border-bottom: 1px solid rgba(128,128,128,0.2);">${safeCat}</div>`;
-        }
-    });
-    customDropdownHtml += `<div data-val="new" data-text="+ Новая категория" onclick="window.handleQeCatClick(this, event)" style="padding: 10px; cursor: pointer; color: #4caf50; font-weight: bold;">+ Новая категория</div>`;
-
-    // Пока убираем сложную логику подтягивания поставщиков для стабильности теста
-    let suppliersDropdownHtml = `<div data-val="new" data-text="+ Новый поставщик" onclick="window.handleSupplierClick(this, event)" style="padding: 10px; cursor: pointer; color: #4caf50; font-weight: bold;">+ Новый поставщик</div>`;
-
-    const minStockVal = item.min_stock !== undefined ? item.min_stock : 1;
-    const currentStock = Number(item.stock) || 0;
-    const rawPrice = Number(item.price || 0);
-    const formattedPrice = rawPrice > 0 ? rawPrice.toLocaleString('ru-RU') : '0';
-
-    const modalHtml = `
-        <div id="quickEditModal" onclick="if(event.target.id === 'quickEditModal') { window.closeAllQeDropdowns(); window.closeQeNumpad(); }" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: flex-start; padding-top: 2vh; font-family: 'Roboto', sans-serif;">
-            
-            <style>
-                .no-spinners::-webkit-outer-spin-button, .no-spinners::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-                .no-spinners { -moz-appearance: textfield; }
-                #quickEditModal .qe-container { background: #1e1e1e; color: #ffffff; border: 1px solid #333333; }
-                #quickEditModal input { background: #000000; color: #ffffff; border: 1px solid #333333; border-radius: 4px; padding: 8px; font-size: 15px; box-sizing: border-box; outline: none; }
-                #quickEditModal input:focus { border-color: #2e7d32; }
-                #quickEditModal label { font-size: 10px; color: #888888; text-transform: uppercase; margin-bottom: 2px; display: block; letter-spacing: 0.5px; }
-                .np-btn { background: #2a2a2a; color: #ffffff; border: 1px solid #444444; border-radius: 6px; height: 42px; font-size: 18px; font-weight: bold; cursor: pointer; user-select: none; }
-                .np-btn-action { background: #333333; color: #ff9800; }
-                .qe-active-input { border-color: #2e7d32 !important; box-shadow: 0 0 8px rgba(46, 125, 50, 0.4); }
-                .custom-dropdown-trigger { background: #000000; color: #ffffff; border: 1px solid #333333; }
-                .custom-dropdown-list { background: #1e1e1e; border: 1px solid #333333; }
-                .dropdown-arrow { transition: transform 0.2s ease; display: inline-block; }
-            </style>
-
-            <div class="qe-container" onclick="window.closeAllQeDropdowns()" style="padding: 12px; border-radius: 8px; width: 92%; max-width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); max-height: 94vh; overflow-y: auto;">
-                
-                <div style="position: relative; margin-bottom: 10px; border-bottom: 1px solid rgba(128,128,128,0.2); padding-bottom: 6px; text-align: center;">
-                    <h3 style="margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Быстрое редактирование</h3>
-                </div>
-                
-                <div id="qe-main-fields" style="position: relative; transition: opacity 0.3s ease;">
-                    <div style="margin-bottom: 8px;">
-                        <label>Наименование</label>
-                        <input type="text" id="qe-name" value="${escapeHtml(item.name)}" style="width: 100%;" onclick="event.stopPropagation()">
-                    </div>
-                    
-                    <div style="margin-bottom: 8px;">
-                        <label>Категория</label>
-                        <div style="position: relative; width: 100%;">
-                            <input type="hidden" id="qe-category" value="${escapeHtml(currentCatValue)}">
-                            
-                            <div id="qe-category-trigger" class="custom-dropdown-trigger" onclick="window.toggleCustomDropdown(event)" style="width: 100%; border-radius: 4px; padding: 8px; font-size: 14px; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                                <span id="qe-category-display" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(currentCatText)}</span>
-                                <span id="qe-cat-arrow" class="dropdown-arrow" style="font-size: 12px;">▼</span>
-                            </div>
-
-                            <input type="text" id="qe-category-input" placeholder="Введите новую категорию..." onclick="event.stopPropagation()" onfocus="window.handleInputFocus(this)" style="display: none; width: 100%; border-color: #2e7d32; background: #000; color: #fff; padding: 8px; font-size: 14px; box-sizing: border-box;">
-
-                            <div id="qe-category-dropdown" class="custom-dropdown-list" style="display: none; position: relative; width: 100%; max-height: 180px; overflow-y: auto; border-radius: 4px; z-index: 100; margin-top: 4px; border: 1px solid #333;">
-                                ${customDropdownHtml}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="margin-bottom: 8px;">
-                        <label>Штрихкод</label>
-                        <div style="position: relative; width: 100%;">
-                            <input type="text" id="qe-barcode" value="${item.barcode || ''}" placeholder="Штрихкод" inputmode="none" readonly onclick="event.stopPropagation(); window.setQeActive(this)" style="width: 100%; padding-right: 35px;">
-                            <span onclick="window.triggerCameraScan(event)" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 20px; user-select: none;">📷</span>
-                        </div>
-                    </div>
-
-                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <div style="flex: 1;">
-                            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2px;">
-                                <label style="margin-bottom: 0;">Цена (₸)</label>
-                                <span style="font-size: 10px; color: #2e7d32; font-weight: bold;">Тек: ${formattedPrice}</span>
-                            </div>
-                            <input type="text" class="no-spinners" id="qe-price" value="${formattedPrice}" inputmode="none" readonly onclick="event.stopPropagation(); window.setQeActive(this)" style="width: 100%;">
-                        </div>
-                        <div style="flex: 1;">
-                            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2px;">
-                                <label style="margin-bottom: 0;">Мин. остаток</label>
-                                <span style="font-size: 10px; color: #2e7d32; font-weight: bold;">Факт: ${currentStock}</span>
-                            </div>
-                            <input type="text" class="no-spinners" id="qe-minstock" value="${minStockVal}" inputmode="none" readonly onclick="event.stopPropagation(); window.setQeActive(this)" style="width: 100%;">
-                        </div>
-                    </div>
-                </div> 
-
-                <!-- ПОДМОДАЛКА ПРИХОД -->
-                <div id="qe-receive-block" style="display: none; padding: 10px; background: rgba(46, 125, 50, 0.15); border: 1px dashed #2e7d32; border-radius: 6px; margin-bottom: 10px;">
-                    <div style="color: #2e7d32; font-size: 11px; font-weight: bold; margin-bottom: 8px; text-transform: uppercase;">📦 Быстрый приход</div>
-                    
-                    <div style="margin-bottom: 8px;">
-                        <label style="font-size: 9px; color: #888; display: block; margin-bottom: 2px;">ПОСТАВЩИК</label>
-                        <div style="position: relative; width: 100%;">
-                            <input type="hidden" id="qe-receive-supplier" value="">
-                            
-                            <div id="qe-supplier-trigger" class="custom-dropdown-trigger" onclick="window.toggleSupplierDropdown(event)" style="width: 100%; border-color: #2e7d32; border-radius: 4px; padding: 8px; font-size: 14px; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
-                                <span id="qe-supplier-display" style="color: #bbb; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Выберите поставщика...</span>
-                                <span id="qe-sup-arrow" class="dropdown-arrow" style="font-size: 12px;">▼</span>
-                            </div>
-                            
-                            <input type="text" id="qe-supplier-input" placeholder="Введите название..." onclick="event.stopPropagation()" onfocus="window.handleInputFocus(this)" style="display: none; width: 100%; border-color: #2e7d32; background: #000; color: #fff; padding: 8px; font-size: 14px; box-sizing: border-box;">
-                            
-                            <div id="qe-supplier-dropdown" class="custom-dropdown-list" style="display: none; position: relative; width: 100%; max-height: 150px; overflow-y: auto; border-radius: 4px; z-index: 100; margin-top: 4px; border: 1px solid #333;">
-                                ${suppliersDropdownHtml}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="display: flex; gap: 8px;">
-                        <div style="flex: 1;">
-                            <label style="font-size: 9px; color: #888;">ПРИШЛО (КОЛ-ВО)</label>
-                            <input type="text" class="no-spinners" id="qe-receive-qty" placeholder="0" inputmode="none" readonly onclick="event.stopPropagation(); window.setQeActive(this)" style="width: 100%; text-align: center; font-weight: bold; border-color: #333;">
-                        </div>
-                        <div style="flex: 1;">
-                            <label style="font-size: 9px; color: #888;">ЦЕНА ЗАКУПА</label>
-                            <input type="text" class="no-spinners" id="qe-receive-cost" value="${item.cost || ''}" placeholder="0" inputmode="none" readonly onclick="event.stopPropagation(); window.setQeActive(this)" style="width: 100%; text-align: center; font-weight: bold; border-color: #333;">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- NUMPAD -->
-                <div id="custom-numpad" onclick="event.stopPropagation()" style="display: none; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-bottom: 10px;">
-                    <button type="button" class="np-btn" onclick="window.qeNumpad('1', event)">1</button>
-                    <button type="button" class="np-btn" onclick="window.qeNumpad('2', event)">2</button>
-                    <button type="button" class="np-btn" onclick="window.qeNumpad('3', event)">3</button>
-                    <button type="button" class="np-btn" onclick="window.qeNumpad('4', event)">4</button>
-                    <button type="button" class="np-btn" onclick="window.qeNumpad('5', event)">5</button>
-                    <button type="button" class="np-btn" onclick="window.qeNumpad('6', event)">6</button>
-                    <button type="button" class="np-btn" onclick="window.qeNumpad('7', event)">7</button>
-                    <button type="button" class="np-btn" onclick="window.qeNumpad('8', event)">8</button>
-                    <button type="button" class="np-btn" onclick="window.qeNumpad('9', event)">9</button>
-                    <button type="button" class="np-btn np-btn-action" onclick="window.qeNumpad('C', event)">C</button>
-                    <button type="button" class="np-btn" onclick="window.qeNumpad('0', event)">0</button>
-                    <button type="button" class="np-btn np-btn-action" onclick="window.qeNumpad('DEL', event)">⌫</button>
-                </div>
-
-                <!-- КНОПКИ -->
-                <div id="qe-buttons-main" onclick="event.stopPropagation()" style="display: flex; flex-direction: column; gap: 8px;">
-                    <div style="display: flex; gap: 8px;">
-                        <button type="button" onclick="window.saveQuickEdit('${item.id}')" style="flex: 2; padding: 10px; border: none; background: #2e7d32; color: #fff; border-radius: 4px; font-weight: bold; font-size: 14px; text-transform: uppercase; cursor: pointer;">СОХРАНИТЬ</button>
-                        <button type="button" onclick="document.getElementById('quickEditModal').remove()" style="flex: 1; padding: 10px; border: none; background: #c62828; color: #fff; border-radius: 4px; font-weight: bold; font-size: 16px; cursor: pointer;">✖</button>
-                    </div>
-                    <button type="button" id="qe-btn-receive-toggle" onclick="window.toggleQeReceiveMode(true)" style="width: 100%; padding: 8px; background: transparent; border: 1px solid #2e7d32; color: #2e7d32; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px;">+ БЫСТРЫЙ ПРИХОД</button>
-                </div>
-
-            </div>
-        </div>
-    `;
-    
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-};
