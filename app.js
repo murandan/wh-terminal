@@ -422,11 +422,11 @@ window.openQuickEditModal = function(id) {
     const uniqueCats = [...new Set(db.map(i => i.category).filter(Boolean))];
     const escapeHtml = (str) => String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
+    // Формируем список категорий
     let currentCatText = (!item.category || item.category === '0') ? t('qe_no_category') : item.category;
     let currentCatValue = (!item.category || item.category === '0') ? '0' : item.category;
 
     let customDropdownHtml = `<div data-val="0" data-text="${escapeHtml(t('qe_no_category'))}" onclick="window.handleQeCatClick(this)" style="padding: 10px; cursor: pointer; border-bottom: 1px solid rgba(128,128,128,0.2);">${escapeHtml(t('qe_no_category'))}</div>`;
-    
     uniqueCats.forEach(cat => {
         if (cat !== '0' && cat !== 'Без категории') {
             const safeCat = escapeHtml(cat);
@@ -435,14 +435,14 @@ window.openQuickEditModal = function(id) {
     });
     customDropdownHtml += `<div data-val="new" data-text="${escapeHtml(t('qe_new_category'))}" onclick="window.handleQeCatClick(this)" style="padding: 10px; cursor: pointer; color: #4caf50; font-weight: bold;">${escapeHtml(t('qe_new_category'))}</div>`;
 
-    // ФОРМИРУЕМ СПИСОК ПОСТАВЩИКОВ
-    let suppliersHtml = '<option value="" disabled selected>Выберите поставщика...</option>';
+    // Формируем список поставщиков (аналогично категориями)
     const suppliers = window.suppliersList || [];
+    let suppliersDropdownHtml = '';
     suppliers.forEach(sup => {
         const safeSup = escapeHtml(sup);
-        suppliersHtml += `<option value="${safeSup}">${safeSup}</option>`;
+        suppliersDropdownHtml += `<div data-val="${safeSup}" data-text="${safeSup}" onclick="window.handleSupplierClick(this)" style="padding: 10px; cursor: pointer; border-bottom: 1px solid rgba(128,128,128,0.2);">${safeSup}</div>`;
     });
-    suppliersHtml += `<option value="__NEW__" style="color: #4caf50; font-weight: bold;">+ Новый поставщик</option>`;
+    suppliersDropdownHtml += `<div data-val="new" data-text="+ Новый поставщик" onclick="window.handleSupplierClick(this)" style="padding: 10px; cursor: pointer; color: #4caf50; font-weight: bold;">+ Новый поставщик</div>`;
 
     const minStockVal = item.min_stock !== undefined ? item.min_stock : 1;
     const currentStock = Number(item.stock) || 0;
@@ -450,35 +450,26 @@ window.openQuickEditModal = function(id) {
     const formattedPrice = rawPrice > 0 ? rawPrice.toLocaleString('ru-RU') : '0';
 
     const modalHtml = `
-        <div id="quickEditModal" onclick="if(event.target.id === 'quickEditModal') window.closeQeNumpad()" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: flex-start; padding-top: 3vh; font-family: 'Roboto', sans-serif;">
+        <div id="quickEditModal" onclick="if(event.target.id === 'quickEditModal') { window.closeQeNumpad(); const sd = document.getElementById('qe-supplier-dropdown'); if(sd) sd.style.display = 'none'; }" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: flex-start; padding-top: 3vh; font-family: 'Roboto', sans-serif;">
             
             <style>
-                .no-spinners::-webkit-outer-spin-button,
-                .no-spinners::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+                .no-spinners::-webkit-outer-spin-button, .no-spinners::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
                 .no-spinners { -moz-appearance: textfield; }
                 #quickEditModal .qe-container { background: #1e1e1e; color: #ffffff; border: 1px solid #333333; }
-                #quickEditModal input, #quickEditModal select { background: #000000; color: #ffffff; border: 1px solid #333333; border-radius: 4px; padding: 8px; font-size: 15px; box-sizing: border-box; outline: none; }
-                #quickEditModal input:focus, #quickEditModal select:focus { border-color: #2e7d32; }
+                #quickEditModal input { background: #000000; color: #ffffff; border: 1px solid #333333; border-radius: 4px; padding: 8px; font-size: 15px; box-sizing: border-box; outline: none; }
+                #quickEditModal input:focus { border-color: #2e7d32; }
                 #quickEditModal label { font-size: 10px; color: #888888; text-transform: uppercase; margin-bottom: 2px; display: block; letter-spacing: 0.5px; }
                 .np-btn { background: #2a2a2a; color: #ffffff; border: 1px solid #444444; border-radius: 6px; height: 45px; font-size: 20px; font-weight: bold; cursor: pointer; user-select: none; }
                 .np-btn-action { background: #333333; color: #ff9800; }
                 .qe-active-input { border-color: #2e7d32 !important; box-shadow: 0 0 8px rgba(46, 125, 50, 0.4); }
                 .custom-dropdown-trigger { background: #000000; color: #ffffff; border: 1px solid #333333; }
                 .custom-dropdown-list { background: #1e1e1e; border: 1px solid #333333; }
-                @keyframes smoothBlink { 0% {opacity: 0.2;} 50% {opacity: 1;} 100% {opacity: 0.2;} }
-                .qe-syncing { display: flex !important; animation: smoothBlink 1.5s infinite ease-in-out; color: #4caf50; stroke: #4caf50; }
             </style>
 
             <div class="qe-container" style="padding: 15px; border-radius: 8px; width: 90%; max-width: 350px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); max-height: 90vh; overflow-y: auto;">
                 
                 <div style="position: relative; margin-bottom: 12px; border-bottom: 1px solid rgba(128,128,128,0.2); padding-bottom: 8px; text-align: center; display: flex; justify-content: center; align-items: center; min-height: 24px;">
                     <h3 style="margin: 0; font-size: 15px; text-transform: uppercase; letter-spacing: 1px;">${t('qe_title')}</h3>
-                    <div id="qe-sync-indicator" style="position: absolute; right: 0; display: none; align-items: center; gap: 4px; color: #a0a0a0;">
-                        <span id="qe-sync-count" style="font-size: 12px; font-weight: bold; padding-top: 2px;">0</span>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
-                        </svg>
-                    </div>
                 </div>
                 
                 <div id="qe-main-fields" style="position: relative; transition: opacity 0.3s ease;">
@@ -495,7 +486,7 @@ window.openQuickEditModal = function(id) {
                             <input type="hidden" id="qe-category" value="${escapeHtml(currentCatValue)}">
                             <div id="qe-category-trigger" class="custom-dropdown-trigger" onclick="window.toggleCustomDropdown()" style="width: 100%; border-radius: 4px; padding: 8px; font-size: 15px; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
                                 <span id="qe-category-display" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(currentCatText)}</span>
-                                <span id="qe-cat-arrow" style="font-size: 12px;">▼</span>
+                                <span style="font-size: 12px;">▼</span>
                             </div>
                             <div id="qe-category-dropdown" class="custom-dropdown-list" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; max-height: 45vh; overflow-y: auto; border-radius: 4px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.5); margin-top: 4px;">
                                 ${customDropdownHtml}
@@ -505,9 +496,7 @@ window.openQuickEditModal = function(id) {
 
                     <div style="margin-bottom: 10px;">
                         <label style="display: block; font-size: 10px; margin-bottom: 2px;">${t('qe_barcode')}</label>
-                        <div style="display: flex; margin-bottom: 8px;">
-                            <input type="text" id="qe-barcode" value="${item.barcode || ''}" placeholder="${t('qe_barcode_placeholder')}" inputmode="none" readonly onclick="window.setQeActive(this)" style="flex: 1; border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: none;">
-                        </div>
+                        <input type="text" id="qe-barcode" value="${item.barcode || ''}" placeholder="${t('qe_barcode_placeholder')}" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%;">
                     </div>
 
                     <div style="display: flex; gap: 12px; margin-bottom: 12px;">
@@ -528,25 +517,37 @@ window.openQuickEditModal = function(id) {
                     </div>
                 </div> 
 
-                <!-- ОБНОВЛЕННЫЙ БЛОК БЫСТРОГО ПРИХОДА С ПОСТАВЩИКОМ -->
+                <!-- ОБНОВЛЕННЫЙ БЛОК ПРИХОДА -->
                 <div id="qe-receive-block" style="display: none; padding: 10px; background: rgba(46, 125, 50, 0.15); border: 1px dashed #2e7d32; border-radius: 6px; margin-bottom: 12px;">
                     <div style="color: #2e7d32; font-size: 11px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase;">📦 Быстрый приход</div>
                     
+                    <!-- ПОСТАВЩИК (Аналог категории) -->
                     <div style="margin-bottom: 10px;">
                         <label style="font-size: 9px; color: #888; display: block; margin-bottom: 4px;">ПОСТАВЩИК</label>
-                        <select id="qe-receive-supplier-select" onchange="window.handleSupplierChange(this)" style="width: 100%; border-color: #2e7d32; background: #000; color: #fff; padding: 8px; font-size: 14px; outline: none; -webkit-appearance: none; -moz-appearance: none; appearance: none;">
-                            ${suppliersHtml}
-                        </select>
-                        <input type="text" id="qe-receive-supplier-new" placeholder="Название нового поставщика" 
-                            onfocus="window.handleSupplierFocus(this)" 
-                            onkeypress="window.handleSupplierKeyPress(event)" 
-                            style="display: none; width: 100%; margin-top: 6px; border-color: #2e7d32; background: #000; color: #fff; padding: 8px; font-size: 14px; outline: none;">
+                        <div style="position: relative; width: 100%;">
+                            <input type="hidden" id="qe-receive-supplier" value="">
+                            
+                            <!-- Выпадашка -->
+                            <div id="qe-supplier-trigger" class="custom-dropdown-trigger" onclick="window.toggleSupplierDropdown()" style="width: 100%; border-color: #2e7d32; border-radius: 4px; padding: 8px; font-size: 14px; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+                                <span id="qe-supplier-display" style="color: #bbb; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Выберите поставщика...</span>
+                                <span style="font-size: 12px;">▼</span>
+                            </div>
+                            
+                            <!-- Поле ввода для нового (скрыто по умолчанию) -->
+                            <input type="text" id="qe-supplier-input" class="qe-input" placeholder="Введите название..." onkeypress="window.handleSupplierKeyPress(event)" style="display: none; width: 100%; border-color: #2e7d32; background: #000; color: #fff; padding: 8px; font-size: 14px; box-sizing: border-box;">
+                            
+                            <!-- Список вариантов -->
+                            <div id="qe-supplier-dropdown" class="custom-dropdown-list" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; max-height: 35vh; overflow-y: auto; border-radius: 4px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.5); margin-top: 4px;">
+                                ${suppliersDropdownHtml}
+                            </div>
+                        </div>
                     </div>
 
+                    <!-- ПОЛЯ КОЛ-ВО И ЦЕНА (УБРАЛИ ПЛЮС) -->
                     <div style="display: flex; gap: 8px;">
                         <div style="flex: 1;">
                             <label style="font-size: 9px; color: #888;">ПРИШЛО (КОЛ-ВО)</label>
-                            <input type="text" class="no-spinners" id="qe-receive-qty" placeholder="+0" inputmode="none" readonly onclick="window.activateReceiveNumpad(this)" style="width: 100%; text-align: center; font-weight: bold; border-color: #333;">
+                            <input type="text" class="no-spinners" id="qe-receive-qty" placeholder="0" inputmode="none" readonly onclick="window.activateReceiveNumpad(this)" style="width: 100%; text-align: center; font-weight: bold; border-color: #333;">
                         </div>
                         <div style="flex: 1;">
                             <label style="font-size: 9px; color: #888;">ЦЕНА ЗАКУПА</label>
@@ -558,6 +559,7 @@ window.openQuickEditModal = function(id) {
                 <div id="custom-numpad" style="display: none; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 12px;">
                     <button type="button" class="np-btn" onclick="window.qeNumpad('1', event)">1</button>
                     <button type="button" class="np-btn" onclick="window.qeNumpad('2', event)">2</button>
+                    <!-- ... остальные кнопки NumPad без изменений ... -->
                     <button type="button" class="np-btn" onclick="window.qeNumpad('3', event)">3</button>
                     <button type="button" class="np-btn" onclick="window.qeNumpad('4', event)">4</button>
                     <button type="button" class="np-btn" onclick="window.qeNumpad('5', event)">5</button>
@@ -1054,6 +1056,57 @@ window.stopScanner = function() {
     }
 };
 
+// Открытие/закрытие списка поставщиков
+window.toggleSupplierDropdown = function() {
+    const dropdown = document.getElementById('qe-supplier-dropdown');
+    if (dropdown) {
+        dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+    }
+};
+
+// Обработка клика по пункту в списке поставщиков
+window.handleSupplierClick = function(el) {
+    const val = el.getAttribute('data-val');
+    const text = el.getAttribute('data-text');
+    
+    const trigger = document.getElementById('qe-supplier-trigger');
+    const input = document.getElementById('qe-supplier-input');
+    const hidden = document.getElementById('qe-receive-supplier');
+    const display = document.getElementById('qe-supplier-display');
+    const dropdown = document.getElementById('qe-supplier-dropdown');
+    
+    dropdown.style.display = 'none';
+    
+    if (val === 'new') {
+        // Скрываем триггер, показываем текстовое поле на его месте
+        trigger.style.display = 'none';
+        input.style.display = 'block';
+        input.value = '';
+        input.focus(); // Вызываем клавиатуру
+        hidden.value = '__NEW__';
+        
+        // Слегка прокручиваем, чтобы кнопки были видны над клавиатурой
+        setTimeout(() => {
+            const receiveBtns = document.getElementById('qe-buttons-receive');
+            if (receiveBtns) receiveBtns.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }, 300);
+    } else {
+        // Обычный выбор существующего
+        trigger.style.display = 'flex';
+        input.style.display = 'none';
+        display.textContent = text;
+        hidden.value = val;
+    }
+};
+
+// Обработка кнопки Готово/Enter при вводе нового поставщика
+window.handleSupplierKeyPress = function(e) {
+    if (e.key === 'Enter' || e.keyCode === 13) {
+        e.preventDefault();
+        e.target.blur(); // Скрывает системную клавиатуру
+    }
+};
+
 // Добавлен второй параметр isReceive
 window.saveQuickEdit = function(id, isReceive = false) {
     const item = db.find(i => String(i.id) === String(id));
@@ -1078,12 +1131,13 @@ window.saveQuickEdit = function(id, isReceive = false) {
         receiveQty = parseFloat(String(getLatestValue('qe-receive-qty')).replace(/[\s+]/g, '').replace(',', '.')) || 0;
         receiveCost = parseFloat(String(getLatestValue('qe-receive-cost')).replace(/\s/g, '').replace(',', '.')) || 0;
         
-        // Считываем поставщика
-        const selectEl = document.getElementById('qe-receive-supplier-select');
-        if (selectEl) {
-            supplierName = selectEl.value;
-            if (supplierName === '__NEW__') {
-                supplierName = getLatestValue('qe-receive-supplier-new').trim();
+        // --- НОВАЯ логика считывания поставщика ---
+        const hiddenSupplier = document.getElementById('qe-receive-supplier');
+        if (hiddenSupplier) {
+            if (hiddenSupplier.value === '__NEW__') {
+                supplierName = document.getElementById('qe-supplier-input').value.trim();
+            } else {
+                supplierName = hiddenSupplier.value.trim();
             }
         }
     }
