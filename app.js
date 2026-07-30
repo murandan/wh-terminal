@@ -4445,6 +4445,60 @@ window.openQuickEditModal = function(id) {
 // БЛОК УПРАВЛЕНИЯ МОДАЛЬНЫМ ОКНОМ И СКАНЕРОМ
 // ==========================================
 
+// // Открытие модального окна
+// window.openModal = function(modalId) {
+//     const modal = document.getElementById(modalId);
+//     if (modal) {
+//         modal.style.display = 'flex';
+//         modal.classList.add('active');
+//     }
+// };
+
+// // Закрытие модального окна
+// window.closeModal = function(modalId) {
+//     const modal = document.getElementById(modalId);
+//     if (modal) {
+//         modal.style.display = 'none';
+//         modal.classList.remove('active');
+//         window.stopScanner();
+//     }
+// };
+
+// // Единый обработчик распознавания штрихкода Quagga
+// window.handleQuaggaDetection = function(result) {
+//     if (result && result.codeResult) {
+//         const code = result.codeResult.code;
+//         console.log("Штрихкод успешно распознан:", code);
+//         if (typeof window.onBarcodeScanned === 'function') {
+//             window.onBarcodeScanned(code);
+//         }
+//     }
+// };
+
+// // Остановка сканера Quagga
+// window.stopQuaggaScanner = function() {
+//     if (typeof Quagga !== 'undefined') {
+//         Quagga.stop();
+//         console.log("Сканер Quagga остановлен.");
+//     }
+// };
+
+// // Общая функция остановки сканера и скрытия контейнера
+// window.stopScanner = function() {
+//     window.stopQuaggaScanner();
+//     const scannerContainer = document.getElementById('interactive');
+//     if (scannerContainer) {
+//         scannerContainer.style.display = 'none';
+//     }
+// };
+
+// // Автоматическое закрытие модального окна при клике вне его области
+// window.addEventListener('click', function(event) {
+//     if (event.target.classList.contains('modal')) {
+//         event.target.style.display = 'none';
+//         window.stopScanner();
+//     }
+// });
 // Открытие модального окна
 window.openModal = function(modalId) {
     const modal = document.getElementById(modalId);
@@ -4453,49 +4507,3 @@ window.openModal = function(modalId) {
         modal.classList.add('active');
     }
 };
-
-// Закрытие модального окна
-window.closeModal = function(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'none';
-        modal.classList.remove('active');
-        window.stopScanner();
-    }
-};
-
-// Единый обработчик распознавания штрихкода Quagga
-window.handleQuaggaDetection = function(result) {
-    if (result && result.codeResult) {
-        const code = result.codeResult.code;
-        console.log("Штрихкод успешно распознан:", code);
-        if (typeof window.onBarcodeScanned === 'function') {
-            window.onBarcodeScanned(code);
-        }
-    }
-};
-
-// Остановка сканера Quagga
-window.stopQuaggaScanner = function() {
-    if (typeof Quagga !== 'undefined') {
-        Quagga.stop();
-        console.log("Сканер Quagga остановлен.");
-    }
-};
-
-// Общая функция остановки сканера и скрытия контейнера
-window.stopScanner = function() {
-    window.stopQuaggaScanner();
-    const scannerContainer = document.getElementById('interactive');
-    if (scannerContainer) {
-        scannerContainer.style.display = 'none';
-    }
-};
-
-// Автоматическое закрытие модального окна при клике вне его области
-window.addEventListener('click', function(event) {
-    if (event.target.classList.contains('modal')) {
-        event.target.style.display = 'none';
-        window.stopScanner();
-    }
-});
