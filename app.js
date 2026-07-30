@@ -3711,16 +3711,16 @@ window.closeModal = function(modalId) {
     }
 };
 
-// // Единый обработчик распознавания штрихкода Quagga
-// window.handleQuaggaDetection = function(result) {
-//     if (result && result.codeResult) {
-//         const code = result.codeResult.code;
-//         console.log("Штрихкод успешно распознан:", code);
-//         if (typeof window.onBarcodeScanned === 'function') {
-//             window.onBarcodeScanned(code);
-//         }
-//     }
-// };
+// Единый обработчик распознавания штрихкода Quagga
+window.handleQuaggaDetection = function(result) {
+    if (result && result.codeResult) {
+        const code = result.codeResult.code;
+        console.log("Штрихкод успешно распознан:", code);
+        if (typeof window.onBarcodeScanned === 'function') {
+            window.onBarcodeScanned(code);
+        }
+    }
+};
 
 // // Остановка сканера Quagga
 // window.stopQuaggaScanner = function() {
