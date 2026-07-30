@@ -3739,18 +3739,10 @@ window.closeModal = function(modalId) {
 //     }
 // };
 
-// // Автоматическое закрытие модального окна при клике вне его области
-// window.addEventListener('click', function(event) {
-//     if (event.target.classList.contains('modal')) {
-//         event.target.style.display = 'none';
-//         window.stopScanner();
-//     }
-// });
-// Открытие модального окна
-// window.openModal = function(modalId) {
-//     const modal = document.getElementById(modalId);
-//     if (modal) {
-//         modal.style.display = 'flex';
-//         modal.classList.add('active');
-//     }
-// };
+// Автоматическое закрытие модального окна при клике вне его области
+window.addEventListener('click', function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+        window.stopScanner();
+    }
+});
