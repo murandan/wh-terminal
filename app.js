@@ -4502,8 +4502,8 @@ window.openQuickEditModal = function(id) {
 // Открытие модального окна
 window.openModal = function(modalId) {
     const modal = document.getElementById(modalId);
-    if (modal) {
-        // modal.style.display = 'flex';
-        modal.classList.add('active');
-    }
+    // if (modal) {
+    //     modal.style.display = 'flex';
+    //     modal.classList.add('active');
+    // }
 };
