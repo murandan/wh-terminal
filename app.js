@@ -3688,192 +3688,170 @@ document.addEventListener('click', function(e) {
     }
 });
 
-/// ==========================================
-// МОДУЛЬ "БЫСТРЫЙ ПРИХОД" (Безопасное расширение)
+// ==========================================
+// МОДУЛЬ "БЫСТРЫЙ ПРИХОД" (Надежная инъекция)
 // ==========================================
 
-// 1. Внедряем стили для шторки и защиты от зума одним куском
 (function injectQuickReceiveStyles() {
     if (document.getElementById('qr-dynamic-styles')) return;
     const style = document.createElement('style');
     style.id = 'qr-dynamic-styles';
     style.innerHTML = `
-        /* Стили подмодалки Быстрого прихода */
         #qr-sheet-container {
-            position: absolute;
-            left: 0; right: 0; bottom: -100%;
-            background: #1e1e1e;
-            border-top: 2px solid #2e7d32;
-            border-radius: 16px 16px 0 0;
-            padding: 16px;
-            z-index: 100;
+            position: absolute; left: 0; right: 0; bottom: -100%;
+            background: #1e1e1e; border-top: 2px solid #2e7d32;
+            border-radius: 16px 16px 0 0; padding: 16px; z-index: 100;
             transition: bottom 0.3s cubic-bezier(0.25, 1, 0.5, 1);
             box-shadow: 0 -8px 25px rgba(0,0,0,0.9);
-            padding-bottom: 24px;
-            box-sizing: border-box;
+            padding-bottom: 24px; box-sizing: border-box;
         }
         #qr-sheet-container.active { bottom: 0; }
-        
-        /* Защита от случайного зума на мобилках */
         #qr-sheet-container button, #qr-sheet-container input {
-            touch-action: manipulation;
-            user-select: none;
+            touch-action: manipulation; user-select: none;
         }
-        
-        /* Блокировщик верхних полей */
         #qr-fields-blocker {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 50;
-            display: none;
-            border-radius: 12px;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 50; display: none; border-radius: 12px;
+        }
+        .qr-active-input {
+            border-color: #4caf50 !important;
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.4);
         }
     `;
     document.head.appendChild(style);
 })();
 
-// 2. Перехватываем оригинальную функцию открытия модалки, чтобы встроить кнопку и шторку
 if (typeof window.openQuickEditModal === 'function' && !window._originalOpenQuickEditModal) {
     window._originalOpenQuickEditModal = window.openQuickEditModal;
     
     window.openQuickEditModal = function(id) {
-        // Вызываем оригинальный метод генерации модалки
+        // Запускаем твою родную функцию
         window._originalOpenQuickEditModal(id);
         
-        // После отрисовки модалки в DOM добавляем элементы прихода
+        // Даем DOM дереву 150мс на полную отрисовку перед внедрением
         setTimeout(() => {
-            const modal = document.getElementById('modal-quick-edit') || document.querySelector('.modal-quick-edit') || document.querySelector('[id*="quick-edit"]');
+            const modal = document.getElementById('modal-quick-edit');
             if (!modal) return;
             
-            // Проверяем, не внедрена ли уже шторка
-            if (document.getElementById('qr-sheet-container')) return;
+            // Если кнопка уже есть — выходим
+            if (document.getElementById('btn-open-qr')) return;
 
-            // Делаем контейнер позиционируемым для абсолютного позиционирования шторки внутри него
-            if (window.getComputedStyle(modal).position === 'static') {
-                modal.style.position = 'relative';
-            }
+            modal.style.position = 'relative';
             modal.style.overflow = 'hidden';
 
-            // Добавляем блокировщик верха внутрь модалки
-            const blocker = document.createElement('div');
-            blocker.id = 'qr-fields-blocker';
-            modal.appendChild(blocker);
+            // Ищем контейнер с кнопками СОХРАНИТЬ и ✖ по тексту
+            let buttonsContainer = null;
+            const allButtons = modal.querySelectorAll('button');
+            allButtons.forEach(btn => {
+                if (btn.innerText.trim().toUpperCase() === 'СОХРАНИТЬ') {
+                    buttonsContainer = btn.parentNode; 
+                }
+            });
 
-            // Ищем блок с основными кнопками (Сохранить / Закрыть)
-            const mainButtons = modal.querySelector('button[onclick*="saveQuickEdit"]') ? modal.querySelector('button[onclick*="saveQuickEdit"]').parentNode : modal.querySelector('.modal-buttons') || modal.lastElementChild;
+            if (!buttonsContainer) return; // Если не нашли, прерываем инъекцию
 
-            // Добавляем кнопку вызова Быстрого прихода прямо над кнопкой Сохранить
+            // Создаем блокировщик
+            if (!document.getElementById('qr-fields-blocker')) {
+                const blocker = document.createElement('div');
+                blocker.id = 'qr-fields-blocker';
+                modal.appendChild(blocker);
+            }
+
+            // Внедряем кнопку вызова прихода ПЕРЕД блоком с кнопкой Сохранить
             const btnQuickReceive = document.createElement('button');
             btnQuickReceive.type = 'button';
             btnQuickReceive.id = 'btn-open-qr';
             btnQuickReceive.innerText = '+ БЫСТРЫЙ ПРИХОД';
-            btnQuickReceive.style.cssText = 'width: 100%; margin-bottom: 10px; padding: 10px; background: transparent; border: 1px solid #2e7d32; color: #2e7d32; border-radius: 6px; font-weight: bold; cursor: pointer; touch-action: manipulation;';
+            btnQuickReceive.style.cssText = 'width: 100%; margin-bottom: 15px; padding: 12px; background: transparent; border: 1px solid #2e7d32; color: #2e7d32; border-radius: 6px; font-weight: bold; cursor: pointer; touch-action: manipulation;';
             btnQuickReceive.onclick = (e) => {
                 e.stopPropagation();
-                openQuickReceiveSheet(id);
+                window.openQuickReceiveSheet(id);
             };
             
-            if (mainButtons) {
-                mainButtons.parentNode.insertBefore(btnQuickReceive, mainButtons);
+            buttonsContainer.parentNode.insertBefore(btnQuickReceive, buttonsContainer);
+
+            // Внедряем шторку
+            if (!document.getElementById('qr-sheet-container')) {
+                const sheet = document.createElement('div');
+                sheet.id = 'qr-sheet-container';
+                sheet.innerHTML = `
+                    <div style="width: 36px; height: 4px; background: #555; border-radius: 2px; margin: 0 auto 12px auto;"></div>
+                    <div style="color: #4caf50; font-size: 11px; font-weight: bold; margin-bottom: 12px; text-transform: uppercase; text-align: center;">
+                        📦 Оприходование товара
+                    </div>
+
+                    <div style="margin-bottom: 10px; position: relative;">
+                        <label style="font-size: 10px; color: #888; display: block; margin-bottom: 2px;">ПОСТАВЩИК</label>
+                        <div id="qr-supplier-selector" onclick="window.toggleQrSupplierDropdown()" style="background: #000; border: 1px solid #333; padding: 10px; border-radius: 4px; cursor: pointer; display: flex; justify-content: space-between; font-size: 14px;">
+                            <span id="qr-selected-supplier" style="color: #888;">Выберите поставщика...</span>
+                            <span>▼</span>
+                        </div>
+                        <div id="qr-supplier-dropdown" style="display: none; position: absolute; width: 100%; max-height: 120px; overflow-y: auto; background: #121212; border: 1px solid #333; border-radius: 4px; z-index: 120; margin-top: 2px;">
+                            <div onclick="window.selectQrSupplier('ТОО Основной Поставщик')" style="padding: 10px; cursor: pointer; border-bottom: 1px solid #222; font-size: 14px;">ТОО Основной Поставщик</div>
+                            <div onclick="window.selectQrSupplier('ИП Склад Алматы')" style="padding: 10px; cursor: pointer; border-bottom: 1px solid #222; font-size: 14px;">ИП Склад Алматы</div>
+                            <div onclick="window.selectQrSupplier('NEW')" style="padding: 10px; cursor: pointer; color: #4caf50; font-weight: bold; font-size: 14px;">+ Новый поставщик</div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                        <div style="flex: 1;">
+                            <label style="font-size: 10px; color: #888; display: block; margin-bottom: 2px;">КОЛИЧЕСТВО</label>
+                            <input type="text" id="qr-qty" readonly placeholder="0" onclick="window.setQrActiveField('qr-qty')" style="background: #000; color: #fff; border: 1px solid #333; border-radius: 4px; padding: 10px; font-size: 16px; width: 100%; text-align: center; box-sizing: border-box;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label style="font-size: 10px; color: #888; display: block; margin-bottom: 2px;">ЦЕНА ЗАКУПА</label>
+                            <input type="text" id="qr-cost" readonly placeholder="0" onclick="window.setQrActiveField('qr-cost')" style="background: #000; color: #fff; border: 1px solid #333; border-radius: 4px; padding: 10px; font-size: 16px; width: 100%; text-align: center; box-sizing: border-box;">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" onclick="window.saveQuickReceive('${id}')" style="flex: 2; background: #2e7d32; color: #fff; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;">ОПРИХОДОВАТЬ</button>
+                        <button type="button" onclick="window.closeQuickReceiveSheet()" style="flex: 1; background: #333; color: #aaa; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-size: 14px;">Отмена</button>
+                    </div>
+                `;
+                modal.appendChild(sheet);
             }
-
-            // Создаем саму выезжающую шторку прихода
-            const sheet = document.createElement('div');
-            sheet.id = 'qr-sheet-container';
-            sheet.innerHTML = `
-                <div style="width: 36px; height: 4px; background: #555; border-radius: 2px; margin: 0 auto 12px auto;"></div>
-                <div style="color: #4caf50; font-size: 11px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; text-align: center;">
-                    📦 Оприходование товара
-                </div>
-
-                <!-- Поставщик -->
-                <div style="margin-bottom: 8px; position: relative;">
-                    <label style="font-size: 10px; color: #888; display: block; margin-bottom: 2px;">ПОСТАВЩИК</label>
-                    <div id="qr-supplier-selector" onclick="window.toggleQrSupplierDropdown()" style="background: #000; border: 1px solid #333; padding: 8px; border-radius: 4px; cursor: pointer; display: flex; justify-content: space-between; font-size: 13px;">
-                        <span id="qr-selected-supplier" style="color: #888;">Выберите поставщика...</span>
-                        <span>▼</span>
-                    </div>
-                    <div id="qr-supplier-dropdown" style="display: none; position: absolute; width: 100%; max-height: 120px; overflow-y: auto; background: #121212; border: 1px solid #333; border-radius: 4px; z-index: 120; margin-top: 2px;">
-                        <div class="qr-supp-item" onclick="window.selectQrSupplier('ТОО Основной Поставщик')" style="padding: 8px; cursor: pointer; border-bottom: 1px solid #222; font-size: 12px;">ТОО Основной Поставщик</div>
-                        <div class="qr-supp-item" onclick="window.selectQrSupplier('ИП Склад Алматы')" style="padding: 8px; cursor: pointer; border-bottom: 1px solid #222; font-size: 12px;">ИП Склад Алматы</div>
-                        <div class="qr-supp-item" onclick="window.selectQrSupplier('NEW')" style="padding: 8px; cursor: pointer; color: #4caf50; font-weight: bold; font-size: 12px;">+ Новый поставщик</div>
-                    </div>
-                </div>
-
-                <!-- Количество и Цена -->
-                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                    <div style="flex: 1;">
-                        <label style="font-size: 10px; color: #888; display: block; margin-bottom: 2px;">КОЛИЧЕСТВО</label>
-                        <input type="text" id="qr-qty" readonly placeholder="0" onclick="window.setQrActiveField('qr-qty')" style="background: #000; color: #fff; border: 1px solid #333; border-radius: 4px; padding: 8px; font-size: 15px; width: 100%; text-align: center; box-sizing: border-box;">
-                    </div>
-                    <div style="flex: 1;">
-                        <label style="font-size: 10px; color: #888; display: block; margin-bottom: 2px;">ЦЕНА ЗАКУПА</label>
-                        <input type="text" id="qr-cost" readonly placeholder="0" onclick="window.setQrActiveField('qr-cost')" style="background: #000; color: #fff; border: 1px solid #333; border-radius: 4px; padding: 8px; font-size: 15px; width: 100%; text-align: center; box-sizing: border-box;">
-                    </div>
-                </div>
-
-                <!-- Кнопки шторки снизу -->
-                <div style="display: flex; gap: 8px;">
-                    <button type="button" onclick="window.saveQuickReceive('${id}')" style="flex: 2; background: #2e7d32; color: #fff; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px;">ОПРИХОДОВАТЬ</button>
-                    <button type="button" onclick="window.closeQuickReceiveSheet()" style="flex: 1; background: #333; color: #aaa; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-size: 13px;">Отмена</button>
-                </div>
-            `;
-            modal.appendChild(sheet);
-
-        }, 80);
+        }, 150); // Ждем 150мс для гарантии отрисовки окна
     };
 }
 
-// 3. Логика управления шторкой и кастомным Numpad
 window.currentQrField = null;
 window.qrClearNextInput = false;
 window._storedSupplier = "";
 
 window.openQuickReceiveSheet = function(id) {
-    const sheet = document.getElementById('qr-sheet-container');
-    const blocker = document.getElementById('qr-fields-blocker');
-    const btnOpen = document.getElementById('btn-open-qr');
+    document.getElementById('qr-sheet-container').classList.add('active');
+    document.getElementById('qr-fields-blocker').style.display = 'block';
+    document.getElementById('btn-open-qr').style.display = 'none';
     
-    if (sheet) sheet.classList.add('active');
-    if (blocker) blocker.style.display = 'block';
-    if (btnOpen) btnOpen.style.display = 'none'; // Скрываем кнопку вызова
-    
-    // Сбрасываем поля
     document.getElementById('qr-qty').value = '';
     document.getElementById('qr-cost').value = '';
     window.setQrActiveField('qr-qty');
 };
 
 window.closeQuickReceiveSheet = function() {
-    const sheet = document.getElementById('qr-sheet-container');
-    const blocker = document.getElementById('qr-fields-blocker');
-    const btnOpen = document.getElementById('btn-open-qr');
-    
-    if (sheet) sheet.classList.remove('active');
-    if (blocker) blocker.style.display = 'none';
-    if (btnOpen) btnOpen.style.display = 'block';
+    document.getElementById('qr-sheet-container').classList.remove('active');
+    document.getElementById('qr-fields-blocker').style.display = 'none';
+    document.getElementById('btn-open-qr').style.display = 'block';
     window.closeQrDropdown();
     window.currentQrField = null;
 };
 
 window.setQrActiveField = function(fieldId) {
-    // Убираем фокус с прошлых полей шторки
     ['qr-qty', 'qr-cost'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.borderColor = '#333';
+        document.getElementById(id).classList.remove('qr-active-input');
     });
     
     window.currentQrField = fieldId;
-    window.qrClearNextInput = true; // При первом нажатии старое стерется
+    window.qrClearNextInput = true;
     
     const activeEl = document.getElementById(fieldId);
     if (activeEl) {
-        activeEl.style.borderColor = '#4caf50';
-        activeEl.style.boxShadow = '0 0 5px rgba(76, 175, 80, 0.4)';
+        activeEl.classList.add('qr-active-input');
+        // Поднимаем окно, чтобы клавиатура не перекрыла инпут
+        activeEl.scrollIntoView({ behavior: "smooth", block: "center" });
     }
     
-    // Синхронизируем с системным стейтом numpad, если он используется в проекте
     if (typeof window.activeQeFieldId !== 'undefined') {
         window.activeQeFieldId = fieldId;
     }
@@ -3881,46 +3859,34 @@ window.setQrActiveField = function(fieldId) {
 
 window.toggleQrSupplierDropdown = function() {
     const dd = document.getElementById('qr-supplier-dropdown');
-    if (dd) dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
+    dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
 };
 
 window.closeQrDropdown = function() {
-    const dd = document.getElementById('qr-supplier-dropdown');
-    if (dd) dd.style.display = 'none';
+    document.getElementById('qr-supplier-dropdown').style.display = 'none';
 };
 
 window.selectQrSupplier = function(name) {
     if (name === 'NEW') {
         const customName = prompt('Введите название нового поставщика:');
-        if (customName && customName.trim() !== '') {
-            name = customName.trim();
-        } else {
-            window.closeQrDropdown();
-            return;
-        }
+        if (customName && customName.trim() !== '') name = customName.trim();
+        else { window.closeQrDropdown(); return; }
     }
     window._storedSupplier = name;
-    const lbl = document.getElementById('qr-selected-supplier');
-    if (lbl) {
-        lbl.innerText = name;
-        lbl.style.color = '#fff';
-    }
+    document.getElementById('qr-selected-supplier').innerText = name;
+    document.getElementById('qr-selected-supplier').style.color = '#fff';
     window.closeQrDropdown();
 };
 
-// Интеграция с разделителем тысяч и вашим NumPad
 if (typeof window.qeNumpad === 'function' && !window._originalQeNumpad) {
     window._originalQeNumpad = window.qeNumpad;
     
     window.qeNumpad = function(val, event) {
-        // Если активное поле принадлежит нашему быстрому приходу
         if (window.currentQrField) {
             const input = document.getElementById(window.currentQrField);
             if (!input) return;
             
-            // Очищаем от пробелов текущее значение
             let rawVal = input.value.replace(/\s+/g, '');
-            
             if (window.qrClearNextInput) {
                 rawVal = '';
                 window.qrClearNextInput = false;
@@ -3929,27 +3895,18 @@ if (typeof window.qeNumpad === 'function' && !window._originalQeNumpad) {
             if (val === 'backspace' || val === 'DEL') {
                 rawVal = rawVal.slice(0, -1);
             } else if (val !== undefined && val !== null && val !== '') {
-                // Ограничиваем длину и предотвращаем минус
-                if (rawVal.length < 9) {
-                    rawVal += val;
-                }
+                if (rawVal.length < 9) rawVal += val;
             }
             
-            // Форматируем с пробелами (разделитель тысяч)
             if (rawVal === '' || rawVal === '0') {
                 input.value = '';
             } else {
                 let num = parseInt(rawVal, 10);
-                if (!isNaN(num)) {
-                    input.value = num.toLocaleString('ru-RU');
-                } else {
-                    input.value = '';
-                }
+                if (!isNaN(num)) input.value = num.toLocaleString('ru-RU');
+                else input.value = '';
             }
             return;
         }
-        
-        // Иначе вызываем оригинальный numpad для старых полей
         return window._originalQeNumpad(val, event);
     };
 }
@@ -3967,7 +3924,6 @@ window.saveQuickReceive = function(itemId) {
         return;
     }
     
-    // Формируем payload по стандартам архитектурного меморандума
     const payload = {
         doc_no: 'QR-' + Date.now().toString().slice(-6),
         supplier: supplier,
@@ -3978,13 +3934,11 @@ window.saveQuickReceive = function(itemId) {
     
     console.log('Отправка прихода:', payload);
     
-    // Вызываем вашу бэкенд функцию или логику сохранения, если она доступна
     if (typeof window.processIncomes === 'function') {
         window.processIncomes(payload);
     } else {
-        alert('Приход успешно подготовлен! (Функция processIncomes ожидает отправку)');
+        alert('Приход сформирован: ' + qty + ' шт. по ' + cost + ' ₸');
     }
     
-    // Закрываем шторку, оставляя основное окно открытым
     window.closeQuickReceiveSheet();
 };
