@@ -4500,10 +4500,10 @@ window.openQuickEditModal = function(id) {
 //     }
 // });
 // Открытие модального окна
-window.openNewStyleModal = function(modalId) {
+window.openModal = function(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
         modal.style.display = 'flex';
-        modal.classList.add('active');
+        // modal.classList.add('active');
     }
 };
