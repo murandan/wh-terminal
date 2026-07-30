@@ -3692,24 +3692,24 @@ document.addEventListener('click', function(e) {
 // БЛОК УПРАВЛЕНИЯ МОДАЛЬНЫМ ОКНОМ И СКАНЕРОМ
 // ==========================================
 
-// // Открытие модального окна
-// window.openModal = function(modalId) {
-//     const modal = document.getElementById(modalId);
-//     if (modal) {
-//         modal.style.display = 'flex';
-//         modal.classList.add('active');
-//     }
-// };
+// Открытие модального окна
+window.openModal = function(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.classList.add('active');
+    }
+};
 
-// // Закрытие модального окна
-// window.closeModal = function(modalId) {
-//     const modal = document.getElementById(modalId);
-//     if (modal) {
-//         modal.style.display = 'none';
-//         modal.classList.remove('active');
-//         window.stopScanner();
-//     }
-// };
+// Закрытие модального окна
+window.closeModal = function(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('active');
+        window.stopScanner();
+    }
+};
 
 // // Единый обработчик распознавания штрихкода Quagga
 // window.handleQuaggaDetection = function(result) {
@@ -3747,10 +3747,10 @@ document.addEventListener('click', function(e) {
 //     }
 // });
 // Открытие модального окна
-window.openModal = function(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'flex';
-        modal.classList.add('active');
-    }
-};
+// window.openModal = function(modalId) {
+//     const modal = document.getElementById(modalId);
+//     if (modal) {
+//         modal.style.display = 'flex';
+//         modal.classList.add('active');
+//     }
+// };
