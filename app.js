@@ -4503,7 +4503,7 @@ window.openQuickEditModal = function(id) {
 window.openModal = function(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
-        modal.style.display = 'flex';
-        // modal.classList.add('active');
+        // modal.style.display = 'flex';
+        modal.classList.add('active');
     }
 };
