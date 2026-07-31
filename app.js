@@ -588,14 +588,60 @@ window.openQuickEditModal = function(id) {
                 </div>
 
                 <!-- === БЛОК ПРИХОДА (Скрыт по умолчанию) === -->
-                <div id="qe-receive-block" style="display: none; background: var(--bg-color, #2a2a2a); padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px solid var(--border-color, #333);">
+                <!-- === БЛОК ПРИХОДА === -->
+                <div id="qe-receive-block" style="display: none; background: var(--bg-color, #222); padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px solid #333;">
                     <h4 data-i18n="qe_receive_title" style="margin: 0 0 10px 0; color: #2e7d32; font-size: 14px; text-transform: uppercase;">${t('qe_receive_title')}</h4>
                     
-                    <label data-i18n="qe_receive_qty" style="font-size: 10px; color: var(--text-muted, #888); text-transform: uppercase; display: block; margin-bottom: 4px;">${t('qe_receive_qty')}</label>
-                    <input type="number" id="qe-receive-qty" value="1" style="width: 100%; background: var(--input-bg, #000); color: var(--text-color, #fff); border: 1px solid var(--border-color, #444); border-radius: 4px; padding: 10px; margin-bottom: 12px; box-sizing: border-box; outline: none; touch-action: manipulation;">
-                    
-                    <label data-i18n="qe_receive_price" style="font-size: 10px; color: var(--text-muted, #888); text-transform: uppercase; display: block; margin-bottom: 4px;">${t('qe_receive_price')}</label>
-                    <input type="number" id="qe-receive-price" value="${item.purchase_price || item.price || 0}" style="width: 100%; background: var(--input-bg, #000); color: var(--text-color, #fff); border: 1px solid var(--border-color, #444); border-radius: 4px; padding: 10px; box-sizing: border-box; outline: none; touch-action: manipulation;">
+                    <!-- 1. ПОСТАВЩИК -->
+                    <div style="margin-bottom: 12px;">
+                        <label data-i18n="qe_receive_supplier" style="font-size: 10px; color: #888; text-transform: uppercase; display: block; margin-bottom: 4px;">${t('qe_receive_supplier')}</label>
+                        
+                        <!-- Выпадающий список -->
+                        <select id="qe-receive-supplier" style="width: 100%; background: #000; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 10px; box-sizing: border-box; outline: none; touch-action: manipulation;">
+                            <option value="">${t('qe_select_supplier')}</option>
+                            <option value="NEW_SUPPLIER" style="color: #4CAF50;">+ Новый поставщик</option>
+                            ${(window.suppliers || []).map(s => `<option value="${s}">${s}</option>`).join('')}
+                        </select>
+                        
+                        <!-- Скрытый инпут для ручного ввода нового поставщика (системная клавиатура) -->
+                        <input type="text" id="qe-new-supplier-input" placeholder="Введите название..." style="display: none; width: 100%; background: #000; color: #fff; border: 1px solid #4CAF50; border-radius: 4px; padding: 10px; box-sizing: border-box; outline: none;">
+                    </div>
+
+                    <!-- 2. КОЛ-ВО И ЦЕНА (В один ряд) -->
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <div style="flex: 1;">
+                            <label data-i18n="qe_receive_qty" style="font-size: 10px; color: #888; text-transform: uppercase; display: block; margin-bottom: 4px;">${t('qe_receive_qty')}</label>
+                            <!-- readonly блокирует вызов системной клавиатуры -->
+                            <input type="text" id="qe-receive-qty" value="1" readonly style="width: 100%; background: #000; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 10px; box-sizing: border-box; text-align: center; font-size: 16px; font-weight: bold; outline: none;">
+                        </div>
+                        <div style="flex: 1;">
+                            <label data-i18n="qe_receive_price" style="font-size: 10px; color: #888; text-transform: uppercase; display: block; margin-bottom: 4px;">${t('qe_receive_price')}</label>
+                            <!-- readonly блокирует вызов системной клавиатуры -->
+                            <input type="text" id="qe-receive-price" value="${item.purchase_price || item.price || 0}" readonly style="width: 100%; background: #000; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 10px; box-sizing: border-box; text-align: center; font-size: 16px; font-weight: bold; outline: none;">
+                        </div>
+                    </div>
+
+                    <!-- 3. КАСТОМНАЯ КЛАВИАТУРА -->
+                    <div class="numpad-grid" id="qe-custom-numpad">
+                        <button class="numpad-btn" data-val="1">1</button>
+                        <button class="numpad-btn" data-val="2">2</button>
+                        <button class="numpad-btn" data-val="3">3</button>
+                        <button class="numpad-btn" data-val="4">4</button>
+                        <button class="numpad-btn" data-val="5">5</button>
+                        <button class="numpad-btn" data-val="6">6</button>
+                        <button class="numpad-btn" data-val="7">7</button>
+                        <button class="numpad-btn" data-val="8">8</button>
+                        <button class="numpad-btn" data-val="9">9</button>
+                        <button class="numpad-btn action-btn" data-action="clear">C</button>
+                        <button class="numpad-btn" data-val="0">0</button>
+                        <button class="numpad-btn action-btn" data-action="backspace">⌫</button>
+                    </div>
+
+                    <!-- 4. КНОПКИ В ОДИН РЯД (66% / 33%) -->
+                    <div style="display: flex; gap: 10px;">
+                        <button id="btn-submit-receive" style="flex: 2; background: #2e7d32; color: white; border: none; padding: 12px; border-radius: 4px; font-weight: bold; text-transform: uppercase;">${t('qe_submit_receive')}</button>
+                        <button id="btn-cancel-receive" style="flex: 1; background: #d32f2f; color: white; border: none; padding: 12px; border-radius: 4px; font-weight: bold; text-transform: uppercase;">${t('qe_btn_back')}</button>
+                    </div>
                 </div>
 
                 <hr style="border: 0; border-top: 1px solid var(--border-color, #333); margin: 15px 0;">

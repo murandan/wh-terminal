@@ -419,3 +419,42 @@
 .date-wrap { flex: 1; position: relative; background: var(--bg-hover); border: 1px solid var(--border-main); border-radius: 4px; overflow: hidden; }
 .date-wrap input { width: 100%; padding: 6px 8px; background: transparent; border: none; color: var(--text-main); font-family: var(--font); font-size: 13px; outline: none; }
 .date-wrap input::-webkit-calendar-picker-indicator { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+
+/* === СТИЛИ ДЛЯ БЫСТРОГО ПРИХОДА === */
+
+/* 1. Затемнение и блокировка верхнего блока в модалке */
+.form-disabled {
+    opacity: 0.4;
+    pointer-events: none; 
+    transition: opacity 0.2s ease;
+}
+
+/* 2. Сетка для кастомной цифровой клавиатуры (3 колонки) */
+.numpad-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+/* 3. Кнопки кастомной клавиатуры */
+.numpad-btn {
+    background: #333;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 15px 0;
+    font-size: 20px;
+    font-weight: bold;
+    /* touch-action убирает задержку в 300ms при тапе на экране iPhone */
+    touch-action: manipulation; 
+}
+
+.numpad-btn:active {
+    background: #555;
+}
+
+/* 4. Акцентный цвет для кнопок "С" и "⌫" */
+.numpad-btn.action-btn {
+    color: #ff9800; 
+}
