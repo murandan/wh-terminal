@@ -605,6 +605,9 @@ window.openQuickEditModal = function(id) {
                 </div>
             </div>
         </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
 
         // Сбрасываем состояния прихода при каждом открытии окна
     const receiveBlock = document.getElementById('qe-receive-block');
@@ -615,9 +618,6 @@ window.openQuickEditModal = function(id) {
     if (numpad) numpad.style.display = 'none';
     if (topSection) topSection.classList.remove('form-disabled');
     window.activeQeFieldId = null; // Сбрасываем глобальный стейт фокуса
-    `;
-    
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
 };
 
 // Открывает/закрывает наш кастомный список
