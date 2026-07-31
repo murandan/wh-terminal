@@ -3832,23 +3832,13 @@ window.submitQeReceive = function(id) {
     }
 };
 
-// === ЛОГИКА ИНТЕРФЕЙСА БЫСТРОГО ПРИХОДА ===
+// === ЛОГИКА ИНТЕРФЕЙСА БЫСТРОГО ПРИХОДА (БЕЗОПАСНАЯ ВЕРСИЯ) ===
 
-// 1. Инициализация переменных и элементов
-let activeNumpadInput = null; // Поле, в которое сейчас вводим данные
-let isNewInput = false;       // Флаг для затирания старых данных при первом нажатии
+let activeNumpadInput = null;
+let isNewInput = false;
 
-const topSection = document.getElementById('qe-top-section'); // Верхние окна для затемнения
-const receiveBlock = document.getElementById('qe-receive-block');
-const numpad = document.getElementById('qe-custom-numpad');
-const qtyInput = document.getElementById('qe-receive-qty');
-const priceInput = document.getElementById('qe-receive-price');
-const supplierSelect = document.getElementById('qe-receive-supplier');
-const newSupplierInput = document.getElementById('qe-new-supplier-input');
-
-// 2. Вспомогательные функции для цифр (пробелы для тысяч)
 function formatWithSpaces(value) {
-    let num = value.toString().replace(/\D/g, ''); // Удаляем всё, кроме цифр
+    let num = value.toString().replace(/\D/g, '');
     if (!num) return '0';
     return parseInt(num, 10).toLocaleString('ru-RU').replace(/,/g, ' ');
 }
@@ -3857,130 +3847,147 @@ function getCleanNumber(value) {
     return parseInt(value.toString().replace(/\D/g, ''), 10) || 0;
 }
 
-// 3. Открытие и закрытие подмодалки прихода
+// Функцию openReceiveBlock нужно будет вызывать при нажатии на кнопку "Оформить приход"
 function openReceiveBlock() {
-    receiveBlock.style.display = 'block';
-    numpad.style.display = 'none'; // Клавиатура закрыта при открытии
-    topSection.classList.add('form-disabled'); // Затемняем и блокируем верхние окна
+    const receiveBlock = document.getElementById('qe-receive-block');
+    const numpad = document.getElementById('qe-custom-numpad');
+    const topSection = document.getElementById('qe-top-section'); // Убедись, что этот id есть в HTML у верхнего блока
+    const qtyInput = document.getElementById('qe-receive-qty');
+    const priceInput = document.getElementById('qe-receive-price');
+
+    if (receiveBlock) receiveBlock.style.display = 'block';
+    if (numpad) numpad.style.display = 'none';
+    if (topSection) topSection.classList.add('form-disabled');
     
-    // Форматируем текущие значения сразу при открытии
-    qtyInput.value = formatWithSpaces(qtyInput.value);
-    priceInput.value = formatWithSpaces(priceInput.value);
+    if (qtyInput) qtyInput.value = formatWithSpaces(qtyInput.value);
+    if (priceInput) priceInput.value = formatWithSpaces(priceInput.value);
 }
 
 function closeReceiveBlock() {
-    receiveBlock.style.display = 'none';
-    numpad.style.display = 'none';
-    topSection.classList.remove('form-disabled'); // Снимаем затемнение
+    const receiveBlock = document.getElementById('qe-receive-block');
+    const numpad = document.getElementById('qe-custom-numpad');
+    const topSection = document.getElementById('qe-top-section');
+    const qtyInput = document.getElementById('qe-receive-qty');
+    const priceInput = document.getElementById('qe-receive-price');
+
+    if (receiveBlock) receiveBlock.style.display = 'none';
+    if (numpad) numpad.style.display = 'none';
+    if (topSection) topSection.classList.remove('form-disabled');
     activeNumpadInput = null;
     
-    // Сбрасываем визуальное выделение рамок
-    qtyInput.style.borderColor = '#444';
-    priceInput.style.borderColor = '#444';
+    if (qtyInput) qtyInput.style.borderColor = '#444';
+    if (priceInput) priceInput.style.borderColor = '#444';
 }
 
-// 4. Логика перехвата фокуса на инпуты (открытие клавиатуры)
 function setActiveInput(inputElement) {
+    const numpad = document.getElementById('qe-custom-numpad');
+    const qtyInput = document.getElementById('qe-receive-qty');
+    const priceInput = document.getElementById('qe-receive-price');
+
     activeNumpadInput = inputElement;
-    isNewInput = true; // При первом тапе включаем режим "перезаписи"
-    numpad.style.display = 'grid'; // Показываем кастомную клавиатуру
+    isNewInput = true; 
+    if (numpad) numpad.style.display = 'grid'; 
     
-    // Визуально подсвечиваем активное окно зеленой рамкой
-    qtyInput.style.borderColor = '#444';
-    priceInput.style.borderColor = '#444';
-    inputElement.style.borderColor = '#4CAF50';
+    if (qtyInput) qtyInput.style.borderColor = '#444';
+    if (priceInput) priceInput.style.borderColor = '#444';
+    if (inputElement) inputElement.style.borderColor = '#4CAF50';
 }
 
-qtyInput.addEventListener('click', () => setActiveInput(qtyInput));
-priceInput.addEventListener('click', () => setActiveInput(priceInput));
+// ГЛОБАЛЬНЫЙ ПЕРЕХВАТ КЛИКОВ (Не ломается, если элементов еще нет на странице)
+document.addEventListener('click', function(e) {
+    
+    // 1. Клик по полям ввода
+    if (e.target && e.target.id === 'qe-receive-qty') setActiveInput(e.target);
+    if (e.target && e.target.id === 'qe-receive-price') setActiveInput(e.target);
 
-// 5. Обработка нажатий кастомной клавиатуры
-document.querySelectorAll('.numpad-btn').forEach(btn => {
-    btn.addEventListener('click', function(e) {
+    // 2. Клик по кнопкам отмены и подтверждения
+    if (e.target && e.target.id === 'btn-cancel-receive') {
         e.preventDefault();
-        if (!activeNumpadInput) return; // Если не выбрано поле, ничего не делаем
+        closeReceiveBlock();
+    }
+    
+    if (e.target && e.target.id === 'btn-submit-receive') {
+        e.preventDefault();
+        const qtyInput = document.getElementById('qe-receive-qty');
+        const priceInput = document.getElementById('qe-receive-price');
+        const supplierSelect = document.getElementById('qe-receive-supplier');
+        const newSupplierInput = document.getElementById('qe-new-supplier-input');
 
-        const val = this.getAttribute('data-val');
-        const action = this.getAttribute('data-action');
+        const finalQty = qtyInput ? getCleanNumber(qtyInput.value) : 0;
+        const finalPrice = priceInput ? getCleanNumber(priceInput.value) : 0;
+        
+        let finalSupplier = '';
+        if (newSupplierInput && newSupplierInput.style.display === 'block') {
+            finalSupplier = newSupplierInput.value;
+        } else if (supplierSelect) {
+            finalSupplier = supplierSelect.value;
+        }
+
+        if (finalQty <= 0 || finalPrice < 0 || !finalSupplier) {
+            alert("Заполните все поля корректно");
+            return;
+        }
+
+        console.log({ action: 'receiveItem', qty: finalQty, purchasePrice: finalPrice, supplier: finalSupplier });
+        closeReceiveBlock();
+    }
+
+    // 3. Клик по кастомной клавиатуре
+    if (e.target && e.target.classList.contains('numpad-btn')) {
+        e.preventDefault();
+        if (!activeNumpadInput) return; 
+
+        const val = e.target.getAttribute('data-val');
+        const action = e.target.getAttribute('data-action');
         let currentClean = getCleanNumber(activeNumpadInput.value).toString();
 
         if (action === 'clear') {
-            currentClean = '0'; // Сброс в ноль
+            currentClean = '0';
             isNewInput = false;
         } else if (action === 'backspace') {
             if (isNewInput) {
                 currentClean = '0';
                 isNewInput = false;
             } else {
-                // Удаляем последнюю цифру
                 currentClean = currentClean.length > 1 ? currentClean.slice(0, -1) : '0';
             }
         } else if (val !== null) {
             if (isNewInput || currentClean === '0') {
-                currentClean = val; // Затираем старые данные новой цифрой
+                currentClean = val; 
                 isNewInput = false;
             } else {
-                currentClean += val; // Дописываем цифру в конец
+                currentClean += val;
             }
         }
-        
-        // Сразу форматируем с пробелами и выводим
         activeNumpadInput.value = formatWithSpaces(currentClean);
-    });
-});
-
-// 6. Архитектура выбора поставщика (вызов системной клавиатуры iOS)
-supplierSelect.addEventListener('change', function() {
-    if (this.value === 'NEW_SUPPLIER') {
-        this.style.display = 'none'; // Прячем выпадающий список
-        newSupplierInput.style.display = 'block'; // Показываем текстовое поле
-        newSupplierInput.focus(); // Вызываем системную клавиатуру
-        
-        // Плавная прокрутка, чтобы системная клавиатура не перекрыла окно ввода
-        setTimeout(() => {
-            newSupplierInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 300);
     }
 });
 
-// Возврат к списку, если поле очистили и убрали фокус (по кнопке "Готово")
-newSupplierInput.addEventListener('blur', function() {
-    if (this.value.trim() === '') {
-        this.style.display = 'none';
-        supplierSelect.style.display = 'block';
-        supplierSelect.value = '';
+// ГЛОБАЛЬНЫЙ ПЕРЕХВАТ ВЫБОРА ПОСТАВЩИКА
+document.addEventListener('change', function(e) {
+    if (e.target && e.target.id === 'qe-receive-supplier') {
+        if (e.target.value === 'NEW_SUPPLIER') {
+            e.target.style.display = 'none'; 
+            const newSupplierInput = document.getElementById('qe-new-supplier-input');
+            if (newSupplierInput) {
+                newSupplierInput.style.display = 'block';
+                newSupplierInput.focus();
+                setTimeout(() => newSupplierInput.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+            }
+        }
     }
 });
 
-// 7. Подтверждение и отмена
-document.getElementById('btn-cancel-receive').addEventListener('click', (e) => {
-    e.preventDefault();
-    closeReceiveBlock();
-});
-
-document.getElementById('btn-submit-receive').addEventListener('click', (e) => {
-    e.preventDefault();
-    
-    // Получаем чистые числовые значения без пробелов для отправки в базу
-    const finalQty = getCleanNumber(qtyInput.value);
-    const finalPrice = getCleanNumber(priceInput.value); // Цена берется строго из интерфейса
-    
-    const finalSupplier = newSupplierInput.style.display === 'block' ? newSupplierInput.value : supplierSelect.value;
-    
-    if (finalQty <= 0 || finalPrice < 0 || !finalSupplier) {
-        alert("Заполните все поля корректно");
-        return;
+// ГЛОБАЛЬНЫЙ ПЕРЕХВАТ СНЯТИЯ ФОКУСА С ПОЛЯ НОВОГО ПОСТАВЩИКА
+document.addEventListener('focusout', function(e) {
+    if (e.target && e.target.id === 'qe-new-supplier-input') {
+        if (e.target.value.trim() === '') {
+            e.target.style.display = 'none';
+            const supplierSelect = document.getElementById('qe-receive-supplier');
+            if (supplierSelect) {
+                supplierSelect.style.display = 'block';
+                supplierSelect.value = '';
+            }
+        }
     }
-    
-    // Здесь формируем пакет данных для Google Apps Script. 
-    // finalPrice улетит напрямую в колонку G.
-    console.log({
-        action: 'receiveItem',
-        qty: finalQty,
-        purchasePrice: finalPrice, 
-        supplier: finalSupplier
-    });
-    
-    // После успешной отправки закрываем блок
-    closeReceiveBlock();
 });
