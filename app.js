@@ -129,7 +129,15 @@
                 qe_min_stock: "Мин. остаток",
                 qe_fact: "Факт",
                 qe_save: "СОХРАНИТЬ",
-                qe_close: "Закрыть ✖"
+                qe_close: "Закрыть ✖",
+                qe_btn_quick_receive: "+ БЫСТРЫЙ ПРИХОД",
+                qe_receive_title: "Оформление прихода",
+                qe_receive_qty: "Количество",
+                qe_receive_price: "Цена закупа",
+                qe_receive_supplier: "Поставщик",
+                qe_select_supplier: "Выберите поставщика",
+                qe_submit_receive: "ВНЕСТИ ПРИХОД",
+                qe_btn_back: "НАЗАД"
             },
             kz: {
                 btn_sale: "САТУ", btn_return: "ҚАЙТАРУ", search_placeholder: "ІЗДЕУ...",
@@ -261,7 +269,15 @@
                 qe_min_stock: "Мин. қалдық",
                 qe_fact: "Нақты",
                 qe_save: "САҚТАУ",
-                qe_close: "Жабу ✖"
+                qe_close: "Жабу ✖",
+                qe_btn_quick_receive: "+ ЖЫЛДАМ КІРІС",
+                qe_receive_title: "Тауар кірісін рәсімдеу",
+                qe_receive_qty: "Саны",
+                qe_receive_price: "Сатып алу бағасы",
+                qe_receive_supplier: "Жеткізуші",
+                qe_select_supplier: "Жеткізушіні таңдаңыз",
+                qe_submit_receive: "КІРІСТІ ЕНГІЗУ",
+                qe_btn_back: "АРТҚА"
             }
         };
 
@@ -571,9 +587,34 @@ window.openQuickEditModal = function(id) {
                     <button type="button" class="np-btn np-btn-action" onclick="window.qeNumpad('DEL', event)">⌫</button>
                 </div>
 
-                <div style="display: flex; gap: 8px;">
-                    <button type="button" data-i18n="qe_save" onclick="window.saveQuickEdit('${item.id}')" style="flex: 2; padding: 10px; border: none; background: #2e7d32; color: #fff; border-radius: 4px; font-weight: bold; font-size: 14px; text-transform: uppercase; cursor: pointer;">${t('qe_save')}</button>
-                    <button type="button" onclick="document.getElementById('quickEditModal').remove()" style="flex: 1; padding: 10px; border: none; background: #c62828; color: #fff; border-radius: 4px; font-weight: bold; font-size: 16px; cursor: pointer;">✖</button>
+                <!-- === БЛОК ПРИХОДА (Скрыт по умолчанию) === -->
+                <div id="qe-receive-block" style="display: none; background: var(--bg-color, #2a2a2a); padding: 15px; border-radius: 8px; margin-top: 15px; border: 1px solid var(--border-color, #333);">
+                    <h4 data-i18n="qe_receive_title" style="margin: 0 0 10px 0; color: #2e7d32; font-size: 14px; text-transform: uppercase;">${t('qe_receive_title')}</h4>
+                    
+                    <label data-i18n="qe_receive_qty" style="font-size: 10px; color: var(--text-muted, #888); text-transform: uppercase; display: block; margin-bottom: 4px;">${t('qe_receive_qty')}</label>
+                    <input type="number" id="qe-receive-qty" value="1" style="width: 100%; background: var(--input-bg, #000); color: var(--text-color, #fff); border: 1px solid var(--border-color, #444); border-radius: 4px; padding: 10px; margin-bottom: 12px; box-sizing: border-box; outline: none; touch-action: manipulation;">
+                    
+                    <label data-i18n="qe_receive_price" style="font-size: 10px; color: var(--text-muted, #888); text-transform: uppercase; display: block; margin-bottom: 4px;">${t('qe_receive_price')}</label>
+                    <input type="number" id="qe-receive-price" value="${item.purchase_price || item.price || 0}" style="width: 100%; background: var(--input-bg, #000); color: var(--text-color, #fff); border: 1px solid var(--border-color, #444); border-radius: 4px; padding: 10px; box-sizing: border-box; outline: none; touch-action: manipulation;">
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid var(--border-color, #333); margin: 15px 0;">
+
+                <!-- === КНОПКИ УПРАВЛЕНИЯ === -->
+                <!-- Основные кнопки (Редактирование) -->
+                <div id="qe-buttons-main" style="display: flex; flex-direction: column; gap: 8px;">
+                    <button type="button" data-i18n="qe_btn_quick_receive" onclick="window.toggleQeReceiveMode(true)" style="width: 100%; padding: 10px; background: transparent; border: 1px solid #2e7d32; color: #2e7d32; border-radius: 4px; font-weight: bold; font-size: 14px; cursor: pointer; touch-action: manipulation;">${t('qe_btn_quick_receive')}</button>
+                    
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" data-i18n="qe_save" onclick="window.saveQuickEdit('${item.id}')" style="flex: 2; padding: 10px; border: none; background: #2e7d32; color: #fff; border-radius: 4px; font-weight: bold; font-size: 14px; text-transform: uppercase; cursor: pointer;">${t('qe_save')}</button>
+                        <button type="button" onclick="document.getElementById('quickEditModal').remove()" style="flex: 1; padding: 10px; border: none; background: #c62828; color: #fff; border-radius: 4px; font-weight: bold; font-size: 16px; cursor: pointer;">✖</button>
+                    </div>
+                </div>
+
+                <!-- Кнопки режима прихода (Скрыты по умолчанию) -->
+                <div id="qe-buttons-receive" style="display: none; gap: 8px;">
+                    <button type="button" id="qe-submit-receive-btn" data-i18n="qe_submit_receive" onclick="window.submitQeReceive('${item.id}')" style="flex: 2; padding: 10px; background: #2e7d32; color: #fff; border: none; border-radius: 4px; font-weight: bold; font-size: 14px; text-transform: uppercase; touch-action: manipulation; cursor: pointer;">${t('qe_submit_receive')}</button>
+                    <button type="button" data-i18n="qe_btn_back" onclick="window.toggleQeReceiveMode(false)" style="flex: 1; padding: 10px; background: #c62828; color: #fff; border: none; border-radius: 4px; font-weight: bold; font-size: 14px; text-transform: uppercase; touch-action: manipulation; cursor: pointer;">${t('qe_btn_back')}</button>
                 </div>
             </div>
         </div>
@@ -3687,3 +3728,60 @@ document.addEventListener('click', function(e) {
         el.focus();
     }
 });
+
+// === ЛОГИКА БЫСТРОГО ПРИХОДА (ВНУТРИ МОДАЛКИ) ===
+window.toggleQeReceiveMode = function(showReceive) {
+    // Если есть функция закрытия списков - вызываем ее
+    if (typeof window.closeAllQeDropdowns === 'function') window.closeAllQeDropdowns();
+    
+    const receiveBlock = document.getElementById('qe-receive-block');
+    const mainBtns = document.getElementById('qe-buttons-main');
+    const recBtns = document.getElementById('qe-buttons-receive');
+    const modalBody = document.getElementById('qe-modal-body'); // Для прокрутки вниз
+
+    if (showReceive) {
+        if (receiveBlock) receiveBlock.style.display = 'block';
+        if (mainBtns) mainBtns.style.display = 'none';
+        if (recBtns) recBtns.style.display = 'flex';
+        // Прокручиваем окно вниз, чтобы блок прихода был сразу виден
+        if (modalBody) modalBody.scrollTop = modalBody.scrollHeight;
+    } else {
+        if (receiveBlock) receiveBlock.style.display = 'none';
+        if (mainBtns) mainBtns.style.display = 'flex';
+        if (recBtns) recBtns.style.display = 'none';
+    }
+};
+
+window.submitQeReceive = function(id) {
+    const qtyInput = document.getElementById('qe-receive-qty');
+    const priceInput = document.getElementById('qe-receive-price');
+    
+    const qty = Number(qtyInput ? qtyInput.value : 0);
+    const price = Number(priceInput ? priceInput.value : 0); // Цена пойдет в колонку G
+
+    if (qty <= 0) {
+        alert('Введите корректное количество прихода');
+        return;
+    }
+
+    const submitBtn = document.getElementById('qe-submit-receive-btn');
+    if (submitBtn) submitBtn.innerText = 'Загрузка...';
+
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+            .withSuccessHandler(() => {
+                const modal = document.getElementById('quickEditModal');
+                if (modal) modal.remove();
+                if (typeof loadTable === 'function') loadTable();
+            })
+            .withFailureHandler(err => {
+                alert('Ошибка при сохранении: ' + (err.message || err));
+                if (submitBtn) submitBtn.innerText = 'СОХРАНИТЬ ПРИХОД';
+            })
+            .saveQuickReceiveData(id, qty, price); // Метод на бэкенде
+    } else {
+        console.log('Приход (отладка):', { id, qty, price });
+        const modal = document.getElementById('quickEditModal');
+        if (modal) modal.remove();
+    }
+};
