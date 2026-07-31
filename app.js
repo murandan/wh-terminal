@@ -3831,3 +3831,156 @@ window.submitQeReceive = function(id) {
         if (modal) modal.remove();
     }
 };
+
+// === ЛОГИКА ИНТЕРФЕЙСА БЫСТРОГО ПРИХОДА ===
+
+// 1. Инициализация переменных и элементов
+let activeNumpadInput = null; // Поле, в которое сейчас вводим данные
+let isNewInput = false;       // Флаг для затирания старых данных при первом нажатии
+
+const topSection = document.getElementById('qe-top-section'); // Верхние окна для затемнения
+const receiveBlock = document.getElementById('qe-receive-block');
+const numpad = document.getElementById('qe-custom-numpad');
+const qtyInput = document.getElementById('qe-receive-qty');
+const priceInput = document.getElementById('qe-receive-price');
+const supplierSelect = document.getElementById('qe-receive-supplier');
+const newSupplierInput = document.getElementById('qe-new-supplier-input');
+
+// 2. Вспомогательные функции для цифр (пробелы для тысяч)
+function formatWithSpaces(value) {
+    let num = value.toString().replace(/\D/g, ''); // Удаляем всё, кроме цифр
+    if (!num) return '0';
+    return parseInt(num, 10).toLocaleString('ru-RU').replace(/,/g, ' ');
+}
+
+function getCleanNumber(value) {
+    return parseInt(value.toString().replace(/\D/g, ''), 10) || 0;
+}
+
+// 3. Открытие и закрытие подмодалки прихода
+function openReceiveBlock() {
+    receiveBlock.style.display = 'block';
+    numpad.style.display = 'none'; // Клавиатура закрыта при открытии
+    topSection.classList.add('form-disabled'); // Затемняем и блокируем верхние окна
+    
+    // Форматируем текущие значения сразу при открытии
+    qtyInput.value = formatWithSpaces(qtyInput.value);
+    priceInput.value = formatWithSpaces(priceInput.value);
+}
+
+function closeReceiveBlock() {
+    receiveBlock.style.display = 'none';
+    numpad.style.display = 'none';
+    topSection.classList.remove('form-disabled'); // Снимаем затемнение
+    activeNumpadInput = null;
+    
+    // Сбрасываем визуальное выделение рамок
+    qtyInput.style.borderColor = '#444';
+    priceInput.style.borderColor = '#444';
+}
+
+// 4. Логика перехвата фокуса на инпуты (открытие клавиатуры)
+function setActiveInput(inputElement) {
+    activeNumpadInput = inputElement;
+    isNewInput = true; // При первом тапе включаем режим "перезаписи"
+    numpad.style.display = 'grid'; // Показываем кастомную клавиатуру
+    
+    // Визуально подсвечиваем активное окно зеленой рамкой
+    qtyInput.style.borderColor = '#444';
+    priceInput.style.borderColor = '#444';
+    inputElement.style.borderColor = '#4CAF50';
+}
+
+qtyInput.addEventListener('click', () => setActiveInput(qtyInput));
+priceInput.addEventListener('click', () => setActiveInput(priceInput));
+
+// 5. Обработка нажатий кастомной клавиатуры
+document.querySelectorAll('.numpad-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (!activeNumpadInput) return; // Если не выбрано поле, ничего не делаем
+
+        const val = this.getAttribute('data-val');
+        const action = this.getAttribute('data-action');
+        let currentClean = getCleanNumber(activeNumpadInput.value).toString();
+
+        if (action === 'clear') {
+            currentClean = '0'; // Сброс в ноль
+            isNewInput = false;
+        } else if (action === 'backspace') {
+            if (isNewInput) {
+                currentClean = '0';
+                isNewInput = false;
+            } else {
+                // Удаляем последнюю цифру
+                currentClean = currentClean.length > 1 ? currentClean.slice(0, -1) : '0';
+            }
+        } else if (val !== null) {
+            if (isNewInput || currentClean === '0') {
+                currentClean = val; // Затираем старые данные новой цифрой
+                isNewInput = false;
+            } else {
+                currentClean += val; // Дописываем цифру в конец
+            }
+        }
+        
+        // Сразу форматируем с пробелами и выводим
+        activeNumpadInput.value = formatWithSpaces(currentClean);
+    });
+});
+
+// 6. Архитектура выбора поставщика (вызов системной клавиатуры iOS)
+supplierSelect.addEventListener('change', function() {
+    if (this.value === 'NEW_SUPPLIER') {
+        this.style.display = 'none'; // Прячем выпадающий список
+        newSupplierInput.style.display = 'block'; // Показываем текстовое поле
+        newSupplierInput.focus(); // Вызываем системную клавиатуру
+        
+        // Плавная прокрутка, чтобы системная клавиатура не перекрыла окно ввода
+        setTimeout(() => {
+            newSupplierInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+    }
+});
+
+// Возврат к списку, если поле очистили и убрали фокус (по кнопке "Готово")
+newSupplierInput.addEventListener('blur', function() {
+    if (this.value.trim() === '') {
+        this.style.display = 'none';
+        supplierSelect.style.display = 'block';
+        supplierSelect.value = '';
+    }
+});
+
+// 7. Подтверждение и отмена
+document.getElementById('btn-cancel-receive').addEventListener('click', (e) => {
+    e.preventDefault();
+    closeReceiveBlock();
+});
+
+document.getElementById('btn-submit-receive').addEventListener('click', (e) => {
+    e.preventDefault();
+    
+    // Получаем чистые числовые значения без пробелов для отправки в базу
+    const finalQty = getCleanNumber(qtyInput.value);
+    const finalPrice = getCleanNumber(priceInput.value); // Цена берется строго из интерфейса
+    
+    const finalSupplier = newSupplierInput.style.display === 'block' ? newSupplierInput.value : supplierSelect.value;
+    
+    if (finalQty <= 0 || finalPrice < 0 || !finalSupplier) {
+        alert("Заполните все поля корректно");
+        return;
+    }
+    
+    // Здесь формируем пакет данных для Google Apps Script. 
+    // finalPrice улетит напрямую в колонку G.
+    console.log({
+        action: 'receiveItem',
+        qty: finalQty,
+        purchasePrice: finalPrice, 
+        supplier: finalSupplier
+    });
+    
+    // После успешной отправки закрываем блок
+    closeReceiveBlock();
+});
