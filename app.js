@@ -550,51 +550,67 @@ window.openQuickEditModal = function(id) {
                 <!-- === КОНЕЦ ОБЕРТКИ (qe-top-section) === -->
 
                 <!-- === НОВЫЙ БЛОК: ОФОРМЛЕНИЕ ПРИХОДА === -->
-                <div id="qe-receive-block" style="display: none; padding: 12px; background: rgba(46,125,50,0.05); border: 1px solid #2e7d32; border-radius: 6px; margin-bottom: 15px;">
-                    <h4 style="margin: 0 0 10px 0; font-size: 12px; text-align: center; color: #4CAF50; text-transform: uppercase;">Оформление прихода</h4>
-                    
-                    <label>Поставщик</label>
-                    <select id="qe-receive-supplier" style="width: 100%; margin-bottom: 10px; background: #000; color: #fff; border: 1px solid #333; padding: 8px;">
-                        <option value="">Выберите поставщика...</option>
-                        <option value="Поставщик 1">Поставщик 1</option>
-                        <option value="Поставщик 2">Поставщик 2</option>
-                    </select>
-                    
-                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <div style="flex: 1;">
-                            <label>Количество</label>
-                            <input type="text" id="qe-receive-qty" value="1" inputmode="none" readonly style="width: 100%; text-align: center;">
-                        </div>
-                        <div style="flex: 1;">
-                            <label>Цена закупа</label>
-                            <input type="text" id="qe-receive-price" value="0" inputmode="none" readonly style="width: 100%; text-align: center;">
-                        </div>
-                    </div>
+<div id="qe-receive-block" style="display: none; padding: 12px; background: rgba(46,125,50,0.05); border: 1px solid #2e7d32; border-radius: 6px; margin-bottom: 15px;">
+    <h4 style="margin: 0 0 10px 0; font-size: 12px; text-align: center; color: #4CAF50; text-transform: uppercase;">Оформление прихода</h4>
+    
+    <!-- ПОСТАВЩИК (Аналог категории с переворотом стрелки) -->
+    <label style="font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 2px; display: block;">Поставщик</label>
+    <div style="position: relative; width: 100%; margin-bottom: 10px;">
+        <input type="hidden" id="qe-supplier-hidden" value="">
+        <div id="qe-supplier-trigger" onclick="window.toggleSupplierDropdown()" style="width: 100%; border-radius: 4px; padding: 8px; font-size: 15px; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #000; border: 1px solid #333; color: #fff;">
+            <span id="qe-supplier-display" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Выберите поставщика...</span>
+            <span id="qe-supplier-arrow" style="font-size: 12px; transition: transform 0.2s;">▼</span>
+        </div>
+        
+        <div id="qe-supplier-dropdown" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; max-height: 30vh; overflow-y: auto; border-radius: 4px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.5); margin-top: 4px; background: #1e1e1e; border: 1px solid #333; color: #fff;">
+            <div onclick="window.selectSupplier('Поставщик 1')" style="padding: 10px; border-bottom: 1px solid #333; cursor: pointer;">Поставщик 1</div>
+            <div onclick="window.selectSupplier('Поставщик 2')" style="padding: 10px; border-bottom: 1px solid #333; cursor: pointer;">Поставщик 2</div>
+            <div onclick="window.selectSupplier('NEW')" style="padding: 10px; color: #ff9800; font-weight: bold; cursor: pointer;">+ Новый поставщик</div>
+        </div>
+        
+        <!-- Поле для ввода нового поставщика (вызывает системную клавиатуру) -->
+        <div id="qe-new-supplier-wrapper" style="display: none; width: 100%; gap: 5px; margin-top: 5px;">
+            <input type="text" id="qe-new-supplier-input" placeholder="Имя поставщика..." style="flex: 1; width: 100%; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
+            <button type="button" onclick="window.cancelNewSupplier()" style="background: #c62828; color: #fff; border: none; border-radius: 4px; padding: 0 12px; font-weight: bold; cursor: pointer;">✖</button>
+        </div>
+    </div>
 
-                    <div style="display: flex; gap: 8px;">
-                        <button type="button" id="btn-submit-receive" style="flex: 2; padding: 10px; border: none; background: #2e7d32; color: #fff; border-radius: 4px; font-weight: bold;">ВНЕСТИ ПРИХОД</button>
-                        <button type="button" id="btn-cancel-receive" style="flex: 1; padding: 10px; border: none; background: #c62828; color: #fff; border-radius: 4px; font-weight: bold;">НАЗАД</button>
-                    </div>
-                </div>
-                <!-- === КОНЕЦ БЛОКА ПРИХОДА === -->
+    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+        <div style="flex: 1;">
+            <label style="font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 2px; display: block;">Количество</label>
+            <input type="text" id="qe-receive-qty" value="1" inputmode="none" readonly onclick="window.activateReceiveField(this)" style="width: 100%; text-align: center; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
+        </div>
+        <div style="flex: 1;">
+            <label style="font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 2px; display: block;">Цена закупа</label>
+            <input type="text" id="qe-receive-price" value="0" inputmode="none" readonly onclick="window.activateReceiveField(this)" style="width: 100%; text-align: center; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
+        </div>
+    </div>
 
-                <!-- БЛОК NUMPAD -->
-                <div id="custom-numpad" style="display: none; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 15px;">
-                    <button type="button" class="np-btn" onclick="window.qeNumpad('1', event)">1</button>
-                    <button type="button" class="np-btn" onclick="window.qeNumpad('2', event)">2</button>
-                    <button type="button" class="np-btn" onclick="window.qeNumpad('3', event)">3</button>
-                    <button type="button" class="np-btn" onclick="window.qeNumpad('4', event)">4</button>
-                    <button type="button" class="np-btn" onclick="window.qeNumpad('5', event)">5</button>
-                    <button type="button" class="np-btn" onclick="window.qeNumpad('6', event)">6</button>
-                    <button type="button" class="np-btn" onclick="window.qeNumpad('7', event)">7</button>
-                    <button type="button" class="np-btn" onclick="window.qeNumpad('8', event)">8</button>
-                    <button type="button" class="np-btn" onclick="window.qeNumpad('9', event)">9</button>
-                    <button type="button" class="np-btn np-btn-action" onclick="window.qeNumpad('C', event)">C</button>
-                    <button type="button" class="np-btn" onclick="window.qeNumpad('0', event)">0</button>
-                    <button type="button" class="np-btn np-btn-action" onclick="window.qeNumpad('DEL', event)">⌫</button>
-                </div>
+            <!-- ВНУТРЕННИЙ NUMPAD ДЛЯ ПРИХОДА (уменьшена высота кнопок до 40px) -->
+            <div id="receive-numpad" style="display: none; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 15px;">
+                <button type="button" class="np-btn" style="height: 40px;" onclick="window.receiveNumpad('1', event)">1</button>
+                <button type="button" class="np-btn" style="height: 40px;" onclick="window.receiveNumpad('2', event)">2</button>
+                <button type="button" class="np-btn" style="height: 40px;" onclick="window.receiveNumpad('3', event)">3</button>
+                <button type="button" class="np-btn" style="height: 40px;" onclick="window.receiveNumpad('4', event)">4</button>
+                <button type="button" class="np-btn" style="height: 40px;" onclick="window.receiveNumpad('5', event)">5</button>
+                <button type="button" class="np-btn" style="height: 40px;" onclick="window.receiveNumpad('6', event)">6</button>
+                <button type="button" class="np-btn" style="height: 40px;" onclick="window.receiveNumpad('7', event)">7</button>
+                <button type="button" class="np-btn" style="height: 40px;" onclick="window.receiveNumpad('8', event)">8</button>
+                <button type="button" class="np-btn" style="height: 40px;" onclick="window.receiveNumpad('9', event)">9</button>
+                <button type="button" class="np-btn np-btn-action" style="height: 40px;" onclick="window.receiveNumpad('C', event)">C</button>
+                <button type="button" class="np-btn" style="height: 40px;" onclick="window.receiveNumpad('0', event)">0</button>
+                <button type="button" class="np-btn np-btn-action" style="height: 40px;" onclick="window.receiveNumpad('DEL', event)">⌫</button>
+            </div>
 
-                <!-- НИЖНИЕ КНОПКИ (Сохранить, ПРИХОД, Закрыть) -->
+            <!-- КНОПКИ ПРИХОДА (теперь они всегда под клавиатурой) -->
+            <div style="display: flex; gap: 8px;">
+                <button type="button" id="btn-submit-receive" style="flex: 2; padding: 10px; border: none; background: #2e7d32; color: #fff; border-radius: 4px; font-weight: bold; cursor: pointer;">ВНЕСТИ ПРИХОД</button>
+                <button type="button" id="btn-cancel-receive" style="flex: 1; padding: 10px; border: none; background: #c62828; color: #fff; border-radius: 4px; font-weight: bold; cursor: pointer;">НАЗАД</button>
+            </div>
+        </div>
+        <!-- === КОНЕЦ БЛОКА ПРИХОДА === -->
+
+                        <!-- НИЖНИЕ КНОПКИ (Сохранить, ПРИХОД, Закрыть) -->
                 <div id="qe-bottom-buttons" style="display: flex; gap: 8px;">
                     <button type="button" data-i18n="qe_save" onclick="window.saveQuickEdit('${item.id}')" style="flex: 2; padding: 10px; border: none; background: #2e7d32; color: #fff; border-radius: 4px; font-weight: bold; font-size: 14px; text-transform: uppercase; cursor: pointer;">${t('qe_save')}</button>
                     
@@ -3783,5 +3799,96 @@ document.addEventListener('click', function(e) {
 
         // Закрываем блок
         document.getElementById('btn-cancel-receive').click(); 
+    }
+});
+
+// === ЛОГИКА ДЛЯ НОВОГО БЛОКА ПРИХОДА ===
+
+// 1. Активация полей (Количество / Цена)
+window.activateReceiveField = function(el) {
+    window.activeQeFieldId = el.id;
+    document.getElementById('receive-numpad').style.display = 'grid'; // Открываем внутреннюю клавиатуру
+    
+    // Подсветка активного поля
+    document.querySelectorAll('#qe-receive-block input[readonly]').forEach(inp => inp.style.borderColor = '#333');
+    el.style.borderColor = '#4CAF50';
+};
+
+// 2. Ввод цифр с разделением на тысячи
+window.receiveNumpad = function(val, e) {
+    e.preventDefault();
+    if (!window.activeQeFieldId) return;
+    
+    const targetInput = document.getElementById(window.activeQeFieldId);
+    if (!targetInput) return;
+
+    // Убираем пробелы, чтобы работать с чистыми цифрами
+    let currentVal = targetInput.value.replace(/\s/g, ''); 
+    
+    if (val === 'C') {
+        currentVal = '0';
+    } else if (val === 'DEL') {
+        currentVal = currentVal.length > 1 ? currentVal.slice(0, -1) : '0';
+    } else {
+        currentVal = currentVal === '0' ? val : currentVal + val;
+    }
+
+    // Форматируем обратно с пробелами по стандартам
+    targetInput.value = Number(currentVal).toLocaleString('ru-RU').replace(/,/g, ' ');
+};
+
+// 3. Логика кастомного списка поставщиков
+window.toggleSupplierDropdown = function() {
+    const dropdown = document.getElementById('qe-supplier-dropdown');
+    const arrow = document.getElementById('qe-supplier-arrow');
+    if (dropdown.style.display === 'none') {
+        dropdown.style.display = 'block';
+        arrow.style.transform = 'rotate(180deg)'; // Переворот стрелки
+    } else {
+        dropdown.style.display = 'none';
+        arrow.style.transform = 'rotate(0deg)';
+    }
+};
+
+window.selectSupplier = function(val) {
+    document.getElementById('qe-supplier-dropdown').style.display = 'none';
+    document.getElementById('qe-supplier-arrow').style.transform = 'rotate(0deg)';
+    
+    if (val === 'NEW') {
+        // Показываем текстовое поле для вызова системной клавиатуры
+        document.getElementById('qe-supplier-trigger').style.display = 'none';
+        document.getElementById('qe-new-supplier-wrapper').style.display = 'flex';
+        document.getElementById('qe-new-supplier-input').focus(); 
+    } else {
+        // Устанавливаем выбранное значение
+        document.getElementById('qe-supplier-display').innerText = val;
+        document.getElementById('qe-supplier-hidden').value = val;
+    }
+};
+
+window.cancelNewSupplier = function() {
+    document.getElementById('qe-new-supplier-wrapper').style.display = 'none';
+    document.getElementById('qe-new-supplier-input').value = '';
+    document.getElementById('qe-supplier-trigger').style.display = 'flex';
+    document.getElementById('qe-supplier-hidden').value = '';
+    document.getElementById('qe-supplier-display').innerText = 'Выберите поставщика...';
+};
+
+// 4. Глобальный перехват открытия/закрытия блока для управления футером
+document.addEventListener('click', function(e) {
+    // Если нажали ПРИХОД (открываем блок)
+    if (e.target && e.target.id === 'btn-open-receive') {
+        document.getElementById('qe-receive-block').style.display = 'block';
+        document.getElementById('qe-bottom-buttons').style.display = 'none'; // ПРЯЧЕМ ФУТЕР
+        document.getElementById('qe-top-section').classList.add('form-disabled');
+    }
+
+    // Если нажали НАЗАД в приходе
+    if (e.target && e.target.id === 'btn-cancel-receive') {
+        document.getElementById('qe-receive-block').style.display = 'none';
+        document.getElementById('receive-numpad').style.display = 'none';
+        document.getElementById('qe-bottom-buttons').style.display = 'flex'; // ВОЗВРАЩАЕМ ФУТЕР
+        document.getElementById('qe-top-section').classList.remove('form-disabled');
+        window.activeQeFieldId = null;
     }
 });
