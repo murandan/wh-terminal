@@ -599,8 +599,10 @@ window.openQuickEditModal = function(id) {
                     </div>
                     
                     <div id="qe-new-supplier-wrapper" style="display: none; width: 100%; gap: 5px; margin-top: 5px;">
-                        <input type="text" id="qe-new-supplier-input" placeholder="${t('qe_supplier_name_placeholder')}" style="flex: 1; width: 100%; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
-                        <button type="button" onclick="window.cancelNewSupplier()" style="background: #c62828; color: #fff; border: none; border-radius: 4px; padding: 0 12px; font-weight: bold; cursor: pointer;">✖</button>
+                        <input type="text" id="qe-new-supplier-input" placeholder="${t('qe_supplier_name_placeholder')}" 
+                            onfocus="window.onSupplierFocus()" onblur="window.onSupplierBlur()"
+                            style="flex: 1; width: 100%; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
+                        <button type="button" onclick="window.cancelNewSupplier(event)" style="background: #c62828; color: #fff; border: none; border-radius: 4px; padding: 0 12px; font-weight: bold; cursor: pointer;">✖</button>
                     </div>
                 </div>
 
@@ -3924,12 +3926,49 @@ window.selectSupplier = function(val) {
     }
 };
 
-window.cancelNewSupplier = function() {
-    document.getElementById('qe-new-supplier-wrapper').style.display = 'none';
-    document.getElementById('qe-new-supplier-input').value = '';
-    document.getElementById('qe-supplier-trigger').style.display = 'flex';
-    document.getElementById('qe-supplier-hidden').value = '';
-    document.getElementById('qe-supplier-display').innerText = 'Выберите поставщика...';
+// 1. Создаем физическое пространство для выезда системной клавиатуры
+window.onSupplierFocus = function() {
+    const modal = document.getElementById('quickEditModal');
+    if (modal) {
+        modal.style.paddingBottom = '350px'; // Создаем искусственное дно для скролла
+        setTimeout(() => {
+            document.getElementById('qe-new-supplier-wrapper').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+    }
+};
+
+// Убираем пространство, когда системная клавиатура прячется
+window.onSupplierBlur = function() {
+    const modal = document.getElementById('quickEditModal');
+    if (modal) {
+        modal.style.paddingBottom = '0px'; 
+    }
+};
+
+// 2.Закрытие поля с защитой от фантомных кликов (Ghost Click)
+window.cancelNewSupplier = function(e) {
+    // 1. Останавливаем пробитие клика насквозь
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    const input = document.getElementById('qe-new-supplier-input');
+    input.blur(); // 2. Гарантированно сворачиваем системную клавиатуру
+    
+    // 3. Задержка в 200мс сохраняет кнопку на экране достаточно долго, 
+    // чтобы iOS "ударила" кликом по ней, а не по нижним слоям
+    setTimeout(() => {
+        document.getElementById('qe-new-supplier-wrapper').style.display = 'none';
+        input.value = '';
+        
+        document.getElementById('qe-supplier-trigger').style.display = 'flex';
+        document.getElementById('qe-supplier-hidden').value = '';
+        
+        // Подхватываем перевод или ставим текст по умолчанию
+        const placeholderText = typeof t === 'function' ? t('qe_supplier_placeholder') : 'Выберите поставщика...';
+        document.getElementById('qe-supplier-display').innerText = placeholderText; 
+    }, 200);
 };
 
 // 4. Глобальный перехват открытия/закрытия блока для управления футером
