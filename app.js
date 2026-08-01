@@ -138,7 +138,8 @@
                 qe_receive_qty: "Количество",
                 qe_receive_price: "Цена закупа",
                 qe_btn_submit: "ВНЕСТИ ПРИХОД",
-                qe_btn_back: "НАЗАД"
+                qe_btn_back: "НАЗАД",
+                qe_btn_open_receive: "ПРИХОД"
             },
             kz: {
                 btn_sale: "САТУ", btn_return: "ҚАЙТАРУ", search_placeholder: "ІЗДЕУ...",
@@ -279,7 +280,8 @@
                 qe_receive_qty: "Саны",
                 qe_receive_price: "Сатып алу бағасы",
                 qe_btn_submit: "КІРІСТІ ЕНГІЗУ",
-                qe_btn_back: "АРТҚА"
+                qe_btn_back: "АРТҚА",
+                qe_btn_open_receive: "КІРІС"
             }
         };
 
@@ -659,7 +661,7 @@ window.openQuickEditModal = function(id) {
                     <button type="button" data-i18n="qe_save" onclick="window.saveQuickEdit('${item.id}')" style="flex: 2; padding: 10px; border: none; background: #2e7d32; color: #fff; border-radius: 4px; font-weight: bold; font-size: 14px; text-transform: uppercase; cursor: pointer;">${t('qe_save')}</button>
                     
                     <!-- Кнопка открытия прихода -->
-                    <button type="button" id="btn-open-receive" style="flex: 2; padding: 10px; border: none; background: #ff9800; color: #fff; border-radius: 4px; font-weight: bold; font-size: 14px; text-transform: uppercase; cursor: pointer;">ПРИХОД</button>
+                    <button type="button" id="btn-open-receive" data-i18n="qe_btn_open_receive" style="flex: 1; padding: 12px; border: none; background: #ff9800; color: #fff; border-radius: 4px; font-weight: bold; font-size: 16px; cursor: pointer;">${t('qe_btn_open_receive')}</button>
                     
                     <button type="button" onclick="document.getElementById('quickEditModal').remove()" style="flex: 1; padding: 10px; border: none; background: #c62828; color: #fff; border-radius: 4px; font-weight: bold; font-size: 16px; cursor: pointer;">✖</button>
                 </div>
@@ -3906,10 +3908,16 @@ window.selectSupplier = function(val) {
         wrapper.style.display = 'flex';
         input.focus();
         
-        // Фокус на поле ввода с подъемом экрана
+        // Увеличенный таймаут для iOS и принудительная прокрутка
         setTimeout(() => {
-            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 300); 
+            input.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            
+            // Если модалка имеет свой скролл, принудительно опускаем его в самый низ
+            const modalContent = document.getElementById('quickEditModal'); 
+            if (modalContent) {
+                modalContent.scrollTop = modalContent.scrollHeight;
+            }
+        }, 500); 
     } else {
         document.getElementById('qe-supplier-display').innerText = val;
         document.getElementById('qe-supplier-hidden').value = val;
