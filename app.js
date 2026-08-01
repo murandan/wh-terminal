@@ -3930,10 +3930,9 @@ window.selectSupplier = function(val) {
 window.onSupplierFocus = function() {
     const modal = document.getElementById('quickEditModal');
     if (modal) {
-        modal.style.paddingBottom = '350px'; // Создаем искусственное дно для скролла
-        setTimeout(() => {
-            document.getElementById('qe-new-supplier-wrapper').scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 300);
+        // Добавляем плавность и сдвигаем окно вверх на 180px (можно регулировать)
+        modal.style.transition = 'transform 0.3s ease';
+        modal.style.transform = 'translateY(-180px)'; 
     }
 };
 
@@ -3941,7 +3940,8 @@ window.onSupplierFocus = function() {
 window.onSupplierBlur = function() {
     const modal = document.getElementById('quickEditModal');
     if (modal) {
-        modal.style.paddingBottom = '0px'; 
+        // Возвращаем окно на место
+        modal.style.transform = 'translateY(0)'; 
     }
 };
 
