@@ -284,7 +284,7 @@
                 qe_btn_open_receive: "+ Жаңа топтама"
             }
         };
-
+        
         // Загружаем сохраненную тему
         let currentTheme = localStorage.getItem('pos_theme') || 'dark';
         if (currentTheme === 'light') { document.body.classList.add('light-theme'); }
@@ -435,6 +435,10 @@ window.checkScannerStatus = function(el) {
 };
 
 window.openQuickEditModal = function(id) {
+    function formatNumberSpaces(num) {
+    if (num === null || num === undefined || num === '') return '';
+    return Number(num).toLocaleString('ru-RU').replace(/,/g, ' ');
+}
     const item = db.find(i => String(i.id) === String(id));
     if (!item) return;
 
@@ -565,17 +569,20 @@ window.openQuickEditModal = function(id) {
                             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2px;">
                                 <label data-i18n="qe_price" style="margin-bottom: 0;">${t('qe_price')}</label>
                                 <span style="font-size: 10px; color: #2e7d32; font-weight: bold;"><span data-i18n="qe_current">${t('qe_current')}</span>: ${formattedPrice}</span>
-                            </div>
-                            <input type="text" class="no-spinners" id="qe-price" value="${item.price || 0}" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%;">
+                        </div>
+                            <!-- Добавили formatNumberSpaces сюда -->
+                            <input type="text" class="no-spinners" id="qe-price" value="${formatNumberSpaces(item.price || 0)}" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%;">
                         </div>
                         <div style="flex: 1;">
                             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2px;">
                                 <label data-i18n="qe_min_stock" style="margin-bottom: 0;">${t('qe_min_stock')}</label>
                                 <span style="font-size: 10px; color: #2e7d32; font-weight: bold;"><span data-i18n="qe_fact">${t('qe_fact')}</span>: ${currentStock}</span>
                             </div>
-                            <input type="text" class="no-spinners" id="qe-minstock" value="${minStockVal}" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%;">
+                            <!-- И добавили formatNumberSpaces сюда -->
+                            <input type="text" class="no-spinners" id="qe-minstock" value="${formatNumberSpaces(minStockVal)}" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%;">
                         </div>
                     </div>
+                </div>
                 </div>
                 <!-- === КОНЕЦ ОБЕРТКИ (qe-top-section) === -->
 
@@ -746,13 +753,7 @@ window.cancelNewCategory = function() {
     
     if (display && defaultTextElement) {
         display.innerText = defaultTextElement.getAttribute('data-text');
-    }
-    
-    // // Сбрасываем стрелку
-    // const arrow = document.getElementById('qe-category-arrow');
-    // if (arrow) {
-    //     arrow.style.transform = 'rotate(0deg)';
-    // }
+    }    
 };
 
 // ==========================================
@@ -1064,15 +1065,15 @@ window.saveQuickEdit = function(id) {
     
     // Если выбрали создание новой категории, читаем данные из скрытого поля через твой перехватчик
     if (newCategory === 'new') {
-        newCategory = getLatestValue('qe-new-category').trim();
-        
-        // Защита от пустой строки
-        if (!newCategory || newCategory.trim() === '') {
-    newCategory = "Не выбрано";
-        }
-    } else if (newCategory === '0' || newCategory === 'Не выбрано') {
-        newCategory = "Без категории"; 
+    newCategory = getLatestValue('qe-new-category').trim();
+    
+    // Защита от пустой строки
+    if (!newCategory || newCategory.trim() === '') {
+        newCategory = "Без категории"; // Сразу ставим правильное значение здесь
     }
+} else if (newCategory === '0' || newCategory === 'Не выбрано') {
+    newCategory = "Без категории"; 
+}
     // === КОНЕЦ ПУНКТА 3 ===
 
     // 4. Формируем правильный пакет данных для бэкенда
