@@ -139,7 +139,7 @@
                 qe_receive_price: "Цена закупа",
                 qe_btn_submit: "ВНЕСТИ ПРИХОД",
                 qe_btn_back: "НАЗАД",
-                qe_btn_open_receive: "ПРИХОД"
+                qe_btn_open_receive: "+ Новая партия"
             },
             kz: {
                 btn_sale: "САТУ", btn_return: "ҚАЙТАРУ", search_placeholder: "ІЗДЕУ...",
@@ -281,7 +281,7 @@
                 qe_receive_price: "Сатып алу бағасы",
                 qe_btn_submit: "КІРІСТІ ЕНГІЗУ",
                 qe_btn_back: "АРТҚА",
-                qe_btn_open_receive: "КІРІС"
+                qe_btn_open_receive: "+ Жаңа топтама"
             }
         };
 
@@ -534,7 +534,7 @@ window.openQuickEditModal = function(id) {
                             <input type="hidden" id="qe-category" value="${escapeHtml(currentCatValue)}">
                             <div id="qe-category-trigger" class="custom-dropdown-trigger" onclick="window.toggleCustomDropdown()" style="width: 100%; border-radius: 4px; padding: 8px; font-size: 15px; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
                                 <span id="qe-category-display" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(currentCatText)}</span>
-                                <span style="font-size: 12px;">▼</span>
+                                <span id="qe-category-arrow" style="font-size: 12px; display: inline-block; transition: transform 0.2s ease;">▼</span>
                             </div>
                             <div id="qe-category-dropdown" class="custom-dropdown-list" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; max-height: 45vh; overflow-y: auto; border-radius: 4px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.5); margin-top: 4px;">
                                 ${customDropdownHtml}
@@ -687,7 +687,15 @@ window.openQuickEditModal = function(id) {
 // Открывает/закрывает наш кастомный список
 window.toggleCustomDropdown = function() {
     const dropdown = document.getElementById('qe-category-dropdown');
-    if (dropdown) dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+    const arrow = document.getElementById('qe-category-arrow');
+    
+    if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+        dropdown.style.display = 'block';
+        if (arrow) arrow.style.transform = 'rotate(180deg)';
+    } else {
+        dropdown.style.display = 'none';
+        if (arrow) arrow.style.transform = 'rotate(0deg)';
+    }
 };
 
 // Обработчик клика ТОЛЬКО для модального окна быстрых правок
@@ -715,6 +723,11 @@ window.handleQeCatClick = function(element) {
         if (hiddenInput) hiddenInput.value = value;
         if (dropdown) dropdown.style.display = 'none';
     }
+    // ДОБАВЬ ЭТОТ КОД ДЛЯ СБРОСА СТРЕЛКИ:
+    const arrow = document.getElementById('qe-category-arrow');
+    if (arrow) {
+        arrow.style.transform = 'rotate(0deg)';
+    }
 };
 
 // Кнопка отмены "крестик" для новой категории
@@ -734,6 +747,12 @@ window.cancelNewCategory = function() {
     if (display && defaultTextElement) {
         display.innerText = defaultTextElement.getAttribute('data-text');
     }
+    
+    // // Сбрасываем стрелку
+    // const arrow = document.getElementById('qe-category-arrow');
+    // if (arrow) {
+    //     arrow.style.transform = 'rotate(0deg)';
+    // }
 };
 
 // ==========================================
@@ -1048,12 +1067,8 @@ window.saveQuickEdit = function(id) {
         newCategory = getLatestValue('qe-new-category').trim();
         
         // Защита от пустой строки
-        if (!newCategory) {
-            alert('Введите название новой категории!');
-            // Находим последнее открытое поле ввода и ставим туда фокус
-            const newCatInputs = document.querySelectorAll('#qe-new-category');
-            if (newCatInputs.length > 0) newCatInputs[newCatInputs.length - 1].focus();
-            return; // Останавливаем сохранение
+        if (!newCategory || newCategory.trim() === '') {
+    newCategory = "Не выбрано";
         }
     } else if (newCategory === '0' || newCategory === 'Не выбрано') {
         newCategory = "Без категории"; 
