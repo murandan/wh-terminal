@@ -583,7 +583,6 @@ window.openQuickEditModal = function(id) {
                         </div>
                     </div>
                 </div>
-                </div>
                 <!-- === КОНЕЦ ОБЕРТКИ (qe-top-section) === -->
 
                 <!-- === НОВЫЙ БЛОК: ОФОРМЛЕНИЕ ПРИХОДА === -->
