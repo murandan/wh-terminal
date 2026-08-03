@@ -1059,27 +1059,86 @@ window.stopScanner = function() {
     }
 };
 
-window.saveQuickEdit = function(id) {
+window.saveQuickEdit = async function(id) {
     const item = db.find(i => String(i.id) === String(id));
     if (!item) return;
 
-    // 1. ФУНКЦИЯ-ПЕРЕХВАТЧИК: берет значение только из самого последнего открытого окна
+    // 1. ФУНКЦИЯ-ПЕРЕХВАТЧИК
     const getLatestValue = (elementId) => {
         const elements = document.querySelectorAll('#' + elementId);
         return elements.length > 0 ? elements[elements.length - 1].value : "";
     };
 
-    // 2. Читаем актуальные данные, игнорируя скрытые и старые окна
+    // Проверяем, открыт ли сейчас блок прихода
+    const receiveBlock = document.getElementById('qe-receive-block');
+    const isReceiveMode = receiveBlock && receiveBlock.style.display !== 'none';
+
+    // ==========================================
+    // ВЕТВКА А: ОФОРМЛЕНИЕ ПРИХОДА
+    // ==========================================
+    if (isReceiveMode) {
+        // В окне прихода поля qe-min-stock и qe-price используются для количества и цены закупа
+        const qty = parseFloat(String(getLatestValue('qe-minstock')).replace(/\s/g, '').replace(',', '.')) || 0;
+        const price = parseFloat(String(getLatestValue('qe-price')).replace(/\s/g, '').replace(',', '.')) || 0;
+        
+        const supplierDisplay = document.getElementById('qe-supplier-display');
+        const supplier = supplierDisplay ? supplierDisplay.innerText.trim() : "";
+
+        if (qty <= 0 || price <= 0 || !supplier || supplier === "Выберите поставщика...") {
+            alert("Заполните количество, цену и выберите поставщика!");
+            return;
+        }
+
+        const payload = {
+            action: "saveIncome",
+            api_key: CLIENT_API_KEY,
+            itemId: String(item.id),
+            data: {
+                item_name: item.name,
+                supplier: supplier,
+                qty: qty,
+                price: price,
+                total: qty * price
+            }
+        };
+
+        try {
+            const res = await fetch(GATEWAY_URL, {
+                method: 'POST',
+                body: JSON.stringify(payload),
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            });
+            const response = await res.json();
+
+            if (response.error) {
+                alert('Ошибка сервера: ' + response.error);
+            } else {
+                console.log('Приход успешно проведен!');
+                // Обновляем локальную базу, чтобы не перезагружать страницу
+                item.stock = response.newStock; // Бэкенд должен вернуть новый остаток
+                item.landed_cost = response.newCost; // Бэкенд должен вернуть новую себестоимость
+                
+                // Закрываем модалки и перерисовываем UI
+                document.querySelectorAll('#quickEditModal').forEach(m => m.remove());
+                if (typeof render === 'function') render();
+            }
+        } catch (err) {
+            alert('Ошибка связи с сервером: ' + err.message);
+        }
+        
+        return; // Прерываем выполнение, чтобы не пошел код обычного редактирования
+    }
+
+    // ==========================================
+    // ВЕТВКА Б: ОБЫЧНОЕ РЕДАКТИРОВАНИЕ ТОВАРА
+    // ==========================================
     const rawName = getLatestValue('qe-name');
     const rawPrice = getLatestValue('qe-price');
     const rawCategory = getLatestValue('qe-category');
     const rawBarcode = getLatestValue('qe-barcode');
     const rawMinStock = getLatestValue('qe-minstock');
 
-    // 3. Очистка и подготовка данных
     const newName = rawName.trim();
-    
-    // Если скрипт поймал пустое имя (а товар не был безымянным), блокируем отправку для защиты таблицы
     if (newName === "" && item.name !== "" && item.name !== "Без названия") {
         alert("Сработала защита: скрипт попытался сохранить пустое имя. Попробуйте еще раз.");
         return; 
@@ -1088,23 +1147,14 @@ window.saveQuickEdit = function(id) {
     const newPrice = parseFloat(String(rawPrice).replace(/\s/g, '').replace(',', '.')) || 0;
     const newMinStock = parseFloat(String(rawMinStock).replace(/\s/g, '').replace(',', '.')) || 0;
 
-    // === НАЧАЛО ПУНКТА 3 ===
     let newCategory = rawCategory;
-    
-    // Если выбрали создание новой категории, читаем данные из скрытого поля через твой перехватчик
     if (newCategory === 'new') {
-    newCategory = getLatestValue('qe-new-category').trim();
-    
-    // Защита от пустой строки
-    if (!newCategory || newCategory.trim() === '') {
-        newCategory = "Без категории"; // Сразу ставим правильное значение здесь
+        newCategory = getLatestValue('qe-new-category').trim();
+        if (!newCategory || newCategory.trim() === '') newCategory = "Без категории";
+    } else if (newCategory === '0' || newCategory === 'Не выбрано') {
+        newCategory = "Без категории"; 
     }
-} else if (newCategory === '0' || newCategory === 'Не выбрано') {
-    newCategory = "Без категории"; 
-}
-    // === КОНЕЦ ПУНКТА 3 ===
 
-    // 4. Формируем правильный пакет данных для бэкенда
     const payload = {
         action: "update_single_item",
         api_key: CLIENT_API_KEY,
@@ -1118,9 +1168,6 @@ window.saveQuickEdit = function(id) {
         }
     };
 
-    console.log("Улетает на сервер:", payload);
-
-    // 5. Мгновенно обновляем интерфейс приложения
     item.name = newName;
     item.item_name = newName;
     item.price = newPrice;
@@ -1128,11 +1175,9 @@ window.saveQuickEdit = function(id) {
     item.min_stock = newMinStock;
     item.barcode = rawBarcode.trim();
 
-    // ЖЕСТКАЯ ОЧИСТКА: удаляем вообще все окна редактирования из кода, чтобы не плодить дубликаты
     document.querySelectorAll('#quickEditModal').forEach(m => m.remove());
     if (typeof render === 'function') render();
 
-    // 6. Отправляем в Google Таблицу
     fetch(GATEWAY_URL, {
         method: 'POST',
         body: JSON.stringify(payload),
@@ -1140,15 +1185,9 @@ window.saveQuickEdit = function(id) {
     })
     .then(res => res.json())
     .then(response => {
-        if (response && response.error) {
-            alert('Ошибка сервера: ' + response.error);
-        } else {
-            console.log('Успешно записано в таблицу!');
-        }
+        if (response && response.error) alert('Ошибка сервера: ' + response.error);
     })
-    .catch(err => {
-        alert('Ошибка связи с сервером: ' + err.message);
-    });
+    .catch(err => alert('Ошибка связи: ' + err.message));
 };
 
 // === (Конец П1) ===
