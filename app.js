@@ -434,6 +434,19 @@ window.checkScannerStatus = function(el) {
     }
 };
 
+// Вспомогательная функция отрисовки списка поставщиков
+window.renderSupplierList = function() {
+    const container = document.getElementById('qe-supplier-dropdown');
+    if (!container) return;
+    
+    const suppliers = window.suppliersList || [];
+    
+    let html = suppliers.map(s => `<div class="cat-btn" onclick="window.selectSupplier('${s}')">${s}</div>`).join('');
+    html += `<div class="cat-btn" style="color: #ff9800;" onclick="window.selectSupplier('NEW')" data-i18n="qe_supplier_new">+ Новый поставщик</div>`;
+    
+    container.innerHTML = html;
+};
+
 window.openQuickEditModal = function(id) {
     function formatNumberSpaces(num) {
     if (num === null || num === undefined || num === '') return '';
@@ -1466,6 +1479,11 @@ async function handleAutoLogin(val) {
                 
                 if (data.synonyms && Object.keys(data.synonyms).length > 0) {
                     invoiceSynonyms = data.synonyms;
+                }
+
+                if (data.suppliers) {
+                    window.suppliersList = data.suppliers;
+                    localStorage.setItem('suppliers_cache', JSON.stringify(data.suppliers));
                 }
                 
                 const t = data.totals || { cash: 0, qr_kaspi: 0, installment: 0, pos_terminal: 0, transfer: 0 };
@@ -3905,6 +3923,7 @@ window.toggleSupplierDropdown = function() {
     const dropdown = document.getElementById('qe-supplier-dropdown');
     const arrow = document.getElementById('qe-supplier-arrow');
     if (dropdown.style.display === 'none') {
+        window.renderSupplierList();
         dropdown.style.display = 'block';
         arrow.style.transform = 'rotate(180deg)'; // Переворот стрелки
     } else {
