@@ -443,8 +443,22 @@ window.renderSupplierList = function() {
     
     const suppliers = window.suppliersList || [];
     
-    let html = suppliers.map(s => `<div class="cat-btn" onclick="window.selectSupplier('${s}')">${s}</div>`).join('');
-    html += `<div class="cat-btn" style="color: #ff9800;" onclick="window.selectSupplier('NEW')" data-i18n="qe_supplier_new">+ Новый поставщик</div>`;
+    // Динамически получаем перевод из словаря, используя глобальные переменные языка
+    const newBtnText = translations[currentLang].qe_supplier_new || "+ Новый поставщик";
+    
+    // Формируем вертикальный список поставщиков (display: block и рамка снизу)
+    let html = suppliers.map(s => `
+        <div onclick="window.selectSupplier('${s}')" style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); cursor: pointer; display: block; text-align: left;">
+            ${s}
+        </div>
+    `).join('');
+    
+    // Добавляем кнопку "+ Новый поставщик" в конец списка
+    html += `
+        <div onclick="window.selectSupplier('NEW')" style="padding: 12px; color: #ff9800; cursor: pointer; display: block; text-align: left; font-weight: bold;">
+            ${newBtnText}
+        </div>
+    `;
     
     container.innerHTML = html;
 };
