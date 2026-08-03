@@ -294,6 +294,8 @@
             localStorage.setItem('pos_theme', isLight ? 'light' : 'dark');
         }
 
+        window.suppliersList = JSON.parse(localStorage.getItem('suppliers_cache') || '[]');
+
         let currentLang = localStorage.getItem('pos_lang') || 'ru';
         let db = [], cart = [], mode = 'sale', pendingMethod = null;
         let staffList = [], currentUser = null;
