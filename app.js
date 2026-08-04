@@ -3947,9 +3947,14 @@ document.addEventListener('click', function(e) {
 
 // === ЛОГИКА ДЛЯ НОВОГО БЛОКА ПРИХОДА ===
 
+// Добавляем глобальный флаг для подмодального окна
+window.receiveNeedsClear = false; 
+
 // 1. Активация полей (Количество / Цена)
 window.activateReceiveField = function(el) {
     window.activeQeFieldId = el.id;
+    window.receiveNeedsClear = true; // <-- ДОБАВЛЕНО: Даем команду стереть при первом вводе
+    
     document.getElementById('receive-numpad').style.display = 'grid'; // Открываем внутреннюю клавиатуру
     
     // Подсветка активного поля
@@ -3959,7 +3964,7 @@ window.activateReceiveField = function(el) {
 
 // 2. Ввод цифр с разделением на тысячи
 window.receiveNumpad = function(val, e) {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault(); // Добавил проверку на наличие e, на всякий случай
     if (!window.activeQeFieldId) return;
     
     const targetInput = document.getElementById(window.activeQeFieldId);
@@ -3968,6 +3973,12 @@ window.receiveNumpad = function(val, e) {
     // Убираем пробелы, чтобы работать с чистыми цифрами
     let currentVal = targetInput.value.replace(/\s/g, ''); 
     
+    // <-- ДОБАВЛЕНО: Если это первое нажатие (и это не удаление), сбрасываем старое значение
+    if (window.receiveNeedsClear && val !== 'C' && val !== 'DEL') {
+        currentVal = '0';
+    }
+    window.receiveNeedsClear = false; // <-- ДОБАВЛЕНО: Сразу выключаем флаг, чтобы следующие цифры дописывались
+
     if (val === 'C') {
         currentVal = '0';
     } else if (val === 'DEL') {
