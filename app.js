@@ -351,15 +351,7 @@ window.currentQeInput = null;
 window.qeNeedsClear = false;
 
 window.setQeActive = function(el, event) {
-    // Жестко перехватываем событие и останавливаем его
-    const e = event || window.event;
-    if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-    
-    // Глушим системную клавиатуру
-    el.blur(); 
+    if (event) event.stopPropagation();
     
     const numpad = document.getElementById('custom-numpad');
     if (numpad) numpad.style.display = 'grid';
@@ -371,12 +363,12 @@ window.setQeActive = function(el, event) {
     window.currentQeInput = el;
     el.classList.add('qe-active-input');
 
-    // Нативное выделение
+    // 1. Нативное выделение (чтобы сканер сразу затирал выделенный штрихкод)
     setTimeout(() => {
         el.setSelectionRange(0, el.value.length);
     }, 10);
 
-    // Ставим флаг для Numpad
+    // 2. Ставим флаг для Numpad: первое нажатие сотрет старые данные
     window.qeNeedsClear = true;
 };
 
@@ -608,7 +600,7 @@ window.openQuickEditModal = function(id) {
                                 <span style="font-size: 10px; color: #2e7d32; font-weight: bold;"><span data-i18n="qe_current">${t('qe_current')}</span>: ${formattedPrice}</span>
                         </div>
                             <!-- Добавили formatNumberSpaces сюда -->
-                            <input type="text" class="no-spinners" id="qe-price" value="${formatNumberSpaces(item.price || 0)}" inputmode="none" readonly onclick="window.setQeActive(this, event)" style="width: 100%;">
+                            <input type="text" class="no-spinners" id="qe-price" value="${formatNumberSpaces(item.price || 0)}" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%;">
                         </div>
                         <div style="flex: 1;">
                             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2px;">
@@ -616,7 +608,7 @@ window.openQuickEditModal = function(id) {
                                 <span style="font-size: 10px; color: #2e7d32; font-weight: bold;"><span data-i18n="qe_fact">${t('qe_fact')}</span>: ${currentStock}</span>
                             </div>
                             <!-- И добавили formatNumberSpaces сюда -->
-                            <input type="text" class="no-spinners" id="qe-minstock" value="${formatNumberSpaces(minStockVal)}" inputmode="none" readonly onclick="window.setQeActive(this, event)" style="width: 100%;">
+                            <input type="text" class="no-spinners" id="qe-minstock" value="${formatNumberSpaces(minStockVal)}" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%;">
                         </div>
                     </div>
                 </div>
@@ -1067,123 +1059,52 @@ window.stopScanner = function() {
     }
 };
 
-window.saveQuickEdit = async function(id) {
+window.saveQuickEdit = function(id) {
     const item = db.find(i => String(i.id) === String(id));
     if (!item) return;
 
-    // Безопасное получение значений из элементов по ID без использования CSS-селекторов со значком '#'
-    const getValue = (elementId) => {
-        // Ищем все элементы с нужным ID через безопасный селектор атрибута
-        const elements = document.querySelectorAll(`[id="${elementId}"]`);
-        // Берем значение строго из самого последнего (видимого) модального окна
+    // 1. ФУНКЦИЯ-ПЕРЕХВАТЧИК: берет значение только из самого последнего открытого окна
+    const getLatestValue = (elementId) => {
+        const elements = document.querySelectorAll('#' + elementId);
         return elements.length > 0 ? elements[elements.length - 1].value : "";
     };
 
-    const receiveBlock = document.getElementById('qe-receive-block');
-    const isReceiveMode = !!(receiveBlock && window.getComputedStyle(receiveBlock).display !== 'none');
+    // 2. Читаем актуальные данные, игнорируя скрытые и старые окна
+    const rawName = getLatestValue('qe-name');
+    const rawPrice = getLatestValue('qe-price');
+    const rawCategory = getLatestValue('qe-category');
+    const rawBarcode = getLatestValue('qe-barcode');
+    const rawMinStock = getLatestValue('qe-minstock');
 
-    const receiveBlock = document.getElementById('qe-receive-block');
-
-    console.log("--- ОТЛАДКА РЕЖИМА ---");
-    console.log("1. Найден ли блок в HTML?:", receiveBlock);
-    if (receiveBlock) {
-        console.log("2. Какой у него display?:", window.getComputedStyle(receiveBlock).display);
-    }
-    const isReceiveMode = !!(receiveBlock && window.getComputedStyle(receiveBlock).display !== 'none');
-    console.log("3. Итоговый isReceiveMode:", isReceiveMode);
-    console.log("----------------------");
-
-    // ==========================================
-    // ВЕТВКА А: ОФОРМЛЕНИЕ ПРИХОДА
-    // ==========================================
-    if (isReceiveMode) {
-        // 1. Исправляем селектор (добавляем дефис qe-min-stock)
-            const qty = parseFloat(String(getLatestValue('qe-min-stock')).replace(/\s/g, '').replace(',', '.')) || 0;
-            const price = parseFloat(String(getLatestValue('qe-price')).replace(/\s/g, '').replace(',', '.')) || 0;
-
-            const supplierDisplay = document.getElementById('qe-supplier-display');
-            const supplier = supplierDisplay ? supplierDisplay.innerText.trim() : "";
-
-            if (qty <= 0 || price <= 0 || !supplier || supplier === "Выберите поставщика...") {
-                alert("Заполните количество, цену и выберите поставщика!");
-                return;
-            }
-
-            // 2. Формируем payload строго по контракту меморандума
-            const payload = {
-                action: "processIncomes",
-                api_key: CLIENT_API_KEY,
-                currency: "KZT",
-                data: [
-                    {
-                        doc_no: "QE-" + Date.now(),
-                        supplier: supplier,
-                        item_id: String(item.id),
-                        item_name: item.name,
-                        qty: qty,
-                        price_curr: price,
-                        cbm: 0,
-                        weight: 0
-                    }
-                ]
-            };
-
-        try {
-            const res = await fetch(GATEWAY_URL, {
-                method: 'POST',
-                body: JSON.stringify(payload),
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-            });
-            const response = await res.json();
-
-            if (response.error) throw new Error(response.error);
-
-            console.log('Приход успешно проведен!');
-            item.stock = response.newStock; 
-            item.landed_cost = response.newCost; 
-            
-            closeAndRender();
-        } catch (err) {
-            alert('Ошибка сервера/связи: ' + err.message);
-        }
-        return; 
-    }
-
-    // ==========================================
-    // ВЕТВКА Б: ОБЫЧНОЕ РЕДАКТИРОВАНИЕ ТОВАРА
-    // ==========================================
-    const rawName = getValue('qe-name');
+    // 3. Очистка и подготовка данных
     const newName = rawName.trim();
     
+    // Если скрипт поймал пустое имя (а товар не был безымянным), блокируем отправку для защиты таблицы
     if (newName === "" && item.name !== "" && item.name !== "Без названия") {
-        alert("Сработала защита: попытка сохранить пустое имя. Попробуйте еще раз.");
+        alert("Сработала защита: скрипт попытался сохранить пустое имя. Попробуйте еще раз.");
         return; 
     }
 
-    const newPrice = parseFloat(String(getValue('qe-price')).replace(/\s/g, '').replace(',', '.')) || 0;
-    const newMinStock = parseFloat(String(getValue('qe-minstock')).replace(/\s/g, '').replace(',', '.')) || 0;
-    const newBarcode = getValue('qe-barcode').trim();
+    const newPrice = parseFloat(String(rawPrice).replace(/\s/g, '').replace(',', '.')) || 0;
+    const newMinStock = parseFloat(String(rawMinStock).replace(/\s/g, '').replace(',', '.')) || 0;
 
-    let newCategory = getValue('qe-category');
+    // === НАЧАЛО ПУНКТА 3 ===
+    let newCategory = rawCategory;
+    
+    // Если выбрали создание новой категории, читаем данные из скрытого поля через твой перехватчик
     if (newCategory === 'new') {
-        newCategory = getValue('qe-new-category').trim() || "Без категории";
-    } else if (newCategory === '0' || newCategory === 'Не выбрано') {
-        newCategory = "Без категории"; 
+    newCategory = getLatestValue('qe-new-category').trim();
+    
+    // Защита от пустой строки
+    if (!newCategory || newCategory.trim() === '') {
+        newCategory = "Без категории"; // Сразу ставим правильное значение здесь
     }
+} else if (newCategory === '0' || newCategory === 'Не выбрано') {
+    newCategory = "Без категории"; 
+}
+    // === КОНЕЦ ПУНКТА 3 ===
 
-    // Store original state for potential rollback
-    const originalState = { ...item };
-
-    // Optimistic UI Update
-    item.name = newName;
-    item.item_name = newName;
-    item.price = newPrice;
-    item.category = newCategory;
-    item.min_stock = newMinStock;
-    item.barcode = newBarcode;
-
-    closeAndRender();
-
+    // 4. Формируем правильный пакет данных для бэкенда
     const payload = {
         action: "update_single_item",
         api_key: CLIENT_API_KEY,
@@ -1193,31 +1114,41 @@ window.saveQuickEdit = async function(id) {
             price: newPrice,
             category: newCategory,
             min_stock: newMinStock,
-            barcode: newBarcode
+            barcode: rawBarcode.trim()
         }
     };
 
-    try {
-        const res = await fetch(GATEWAY_URL, {
-            method: 'POST',
-            body: JSON.stringify(payload),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-        });
-        const response = await res.json();
-        
-        if (response && response.error) throw new Error(response.error);
-    } catch (err) {
-        // Rollback on failure so UI matches the backend
-        Object.assign(item, originalState);
-        if (typeof render === 'function') render();
-        alert('Ошибка при сохранении, изменения отменены: ' + err.message);
-    }
+    console.log("Улетает на сервер:", payload);
 
-    // Helper function to clean up DOM and refresh UI
-    function closeAndRender() {
-        document.querySelectorAll('#quickEditModal').forEach(m => m.remove());
-        if (typeof render === 'function') render();
-    }
+    // 5. Мгновенно обновляем интерфейс приложения
+    item.name = newName;
+    item.item_name = newName;
+    item.price = newPrice;
+    item.category = newCategory;
+    item.min_stock = newMinStock;
+    item.barcode = rawBarcode.trim();
+
+    // ЖЕСТКАЯ ОЧИСТКА: удаляем вообще все окна редактирования из кода, чтобы не плодить дубликаты
+    document.querySelectorAll('#quickEditModal').forEach(m => m.remove());
+    if (typeof render === 'function') render();
+
+    // 6. Отправляем в Google Таблицу
+    fetch(GATEWAY_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+    })
+    .then(res => res.json())
+    .then(response => {
+        if (response && response.error) {
+            alert('Ошибка сервера: ' + response.error);
+        } else {
+            console.log('Успешно записано в таблицу!');
+        }
+    })
+    .catch(err => {
+        alert('Ошибка связи с сервером: ' + err.message);
+    });
 };
 
 // === (Конец П1) ===
@@ -3982,7 +3913,7 @@ window.activateReceiveField = function(el) {
 
 // 2. Ввод цифр с разделением на тысячи
 window.receiveNumpad = function(val, e) {
-    if (e && e.preventDefault) e.preventDefault();
+    e.preventDefault();
     if (!window.activeQeFieldId) return;
     
     const targetInput = document.getElementById(window.activeQeFieldId);
@@ -3991,12 +3922,6 @@ window.receiveNumpad = function(val, e) {
     // Убираем пробелы, чтобы работать с чистыми цифрами
     let currentVal = targetInput.value.replace(/\s/g, ''); 
     
-    // Если установлен флаг первого ввода — обнуляем значение перед вводом
-    if (window.qeNeedsClear && val !== 'C' && val !== 'DEL') {
-        currentVal = '0';
-    }
-    window.qeNeedsClear = false; // Сбрасываем флаг
-
     if (val === 'C') {
         currentVal = '0';
     } else if (val === 'DEL') {
