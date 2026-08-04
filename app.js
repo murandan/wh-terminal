@@ -351,7 +351,15 @@ window.currentQeInput = null;
 window.qeNeedsClear = false;
 
 window.setQeActive = function(el, event) {
-    if (event) event.stopPropagation();
+    // Жестко перехватываем событие и останавливаем его
+    const e = event || window.event;
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    // Глушим системную клавиатуру
+    el.blur(); 
     
     const numpad = document.getElementById('custom-numpad');
     if (numpad) numpad.style.display = 'grid';
@@ -363,12 +371,12 @@ window.setQeActive = function(el, event) {
     window.currentQeInput = el;
     el.classList.add('qe-active-input');
 
-    // 1. Нативное выделение (чтобы сканер сразу затирал выделенный штрихкод)
+    // Нативное выделение
     setTimeout(() => {
         el.setSelectionRange(0, el.value.length);
     }, 10);
 
-    // 2. Ставим флаг для Numpad: первое нажатие сотрет старые данные
+    // Ставим флаг для Numpad
     window.qeNeedsClear = true;
 };
 
@@ -600,7 +608,7 @@ window.openQuickEditModal = function(id) {
                                 <span style="font-size: 10px; color: #2e7d32; font-weight: bold;"><span data-i18n="qe_current">${t('qe_current')}</span>: ${formattedPrice}</span>
                         </div>
                             <!-- Добавили formatNumberSpaces сюда -->
-                            <input type="text" class="no-spinners" id="qe-price" value="${formatNumberSpaces(item.price || 0)}" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%;">
+                            <input type="text" class="no-spinners" id="qe-price" value="${formatNumberSpaces(item.price || 0)}" inputmode="none" readonly onclick="window.setQeActive(this, event)" style="width: 100%;">
                         </div>
                         <div style="flex: 1;">
                             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2px;">
@@ -608,7 +616,7 @@ window.openQuickEditModal = function(id) {
                                 <span style="font-size: 10px; color: #2e7d32; font-weight: bold;"><span data-i18n="qe_fact">${t('qe_fact')}</span>: ${currentStock}</span>
                             </div>
                             <!-- И добавили formatNumberSpaces сюда -->
-                            <input type="text" class="no-spinners" id="qe-minstock" value="${formatNumberSpaces(minStockVal)}" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%;">
+                            <input type="text" class="no-spinners" id="qe-minstock" value="${formatNumberSpaces(minStockVal)}" inputmode="none" readonly onclick="window.setQeActive(this, event)" style="width: 100%;">
                         </div>
                     </div>
                 </div>
