@@ -1069,21 +1069,15 @@ window.stopScanner = function() {
 
 window.saveQuickEdit = async function(id) {
     const item = db.find(i => String(i.id) === String(id));
-    if (!item) {
-        console.error(`Item with id ${id} not found in local db.`);
-        return;
-    }
+    if (!item) return;
 
-    // Target the specific active modal to avoid querying hidden/zombie DOM elements
-    const activeModal = document.querySelector('#quickEditModal') || document; 
-    
-    // Safer value extractor scoping to the active modal
+    // Безопасное получение значений из элементов по ID без использования CSS-селекторов со значком '#'
     const getValue = (elementId) => {
-        const el = activeModal.querySelector('#' + elementId);
+        const el = document.getElementById(elementId);
         return el ? el.value : "";
     };
 
-    const receiveBlock = activeModal.querySelector('#qe-receive-block');
+    const receiveBlock = document.getElementById('qe-receive-block');
     const isReceiveMode = receiveBlock && receiveBlock.style.display !== 'none';
 
     // ==========================================
