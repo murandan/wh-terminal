@@ -1082,6 +1082,17 @@ window.saveQuickEdit = async function(id) {
     const receiveBlock = document.getElementById('qe-receive-block');
     const isReceiveMode = !!(receiveBlock && window.getComputedStyle(receiveBlock).display !== 'none');
 
+    const receiveBlock = document.getElementById('qe-receive-block');
+
+    console.log("--- ОТЛАДКА РЕЖИМА ---");
+    console.log("1. Найден ли блок в HTML?:", receiveBlock);
+    if (receiveBlock) {
+        console.log("2. Какой у него display?:", window.getComputedStyle(receiveBlock).display);
+    }
+    const isReceiveMode = !!(receiveBlock && window.getComputedStyle(receiveBlock).display !== 'none');
+    console.log("3. Итоговый isReceiveMode:", isReceiveMode);
+    console.log("----------------------");
+
     // ==========================================
     // ВЕТВКА А: ОФОРМЛЕНИЕ ПРИХОДА
     // ==========================================
