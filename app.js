@@ -1073,8 +1073,10 @@ window.saveQuickEdit = async function(id) {
 
     // Безопасное получение значений из элементов по ID без использования CSS-селекторов со значком '#'
     const getValue = (elementId) => {
-        const el = document.getElementById(elementId);
-        return el ? el.value : "";
+        // Ищем все элементы с нужным ID через безопасный селектор атрибута
+        const elements = document.querySelectorAll(`[id="${elementId}"]`);
+        // Берем значение строго из самого последнего (видимого) модального окна
+        return elements.length > 0 ? elements[elements.length - 1].value : "";
     };
 
     const receiveBlock = document.getElementById('qe-receive-block');
