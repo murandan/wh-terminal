@@ -1090,35 +1090,36 @@ window.saveQuickEdit = async function(id) {
     // ВЕТВКА А: ОФОРМЛЕНИЕ ПРИХОДА
     // ==========================================
     if (isReceiveMode) {
-        const qty = parseFloat(String(getValue('qe-minstock')).replace(/\s/g, '').replace(',', '.')) || 0;
-        const price = parseFloat(String(getValue('qe-price')).replace(/\s/g, '').replace(',', '.')) || 0;
-        
-        const supplierDisplay = activeModal.querySelector('#qe-supplier-display');
-        const supplier = supplierDisplay ? supplierDisplay.innerText.trim() : "";
+        // 1. Исправляем селектор (добавляем дефис qe-min-stock)
+            const qty = parseFloat(String(getLatestValue('qe-min-stock')).replace(/\s/g, '').replace(',', '.')) || 0;
+            const price = parseFloat(String(getLatestValue('qe-price')).replace(/\s/g, '').replace(',', '.')) || 0;
 
-        if (qty <= 0 || price <= 0 || !supplier || supplier === "Выберите поставщика...") {
-            alert("Заполните количество, цену и выберите поставщика!");
-            return;
-        }
+            const supplierDisplay = document.getElementById('qe-supplier-display');
+            const supplier = supplierDisplay ? supplierDisplay.innerText.trim() : "";
 
-        const payload = {
-            action: "processIncomes",
-            api_key: CLIENT_API_KEY, 
-            currency: "KZT", 
-            data: [
-                {
-                    item_id: String(item.id),
-                    item_name: item.name,
-                    supplier: supplier,
-                    qty: qty,
-                    price_curr: price, 
-                    total: qty * price,
-                    doc_no: "QE-" + Date.now(), 
-                    cbm: 0,
-                    weight: 0
-                }
-            ]
-        };
+            if (qty <= 0 || price <= 0 || !supplier || supplier === "Выберите поставщика...") {
+                alert("Заполните количество, цену и выберите поставщика!");
+                return;
+            }
+
+            // 2. Формируем payload строго по контракту меморандума
+            const payload = {
+                action: "processIncomes",
+                api_key: CLIENT_API_KEY,
+                currency: "KZT",
+                data: [
+                    {
+                        doc_no: "QE-" + Date.now(),
+                        supplier: supplier,
+                        item_id: String(item.id),
+                        item_name: item.name,
+                        qty: qty,
+                        price_curr: price,
+                        cbm: 0,
+                        weight: 0
+                    }
+                ]
+            };
 
         try {
             const res = await fetch(GATEWAY_URL, {
