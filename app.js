@@ -1070,8 +1070,10 @@ window.saveQuickEdit = function(id) {
     };
 
     // --- НОВОЕ: ОПРЕДЕЛЯЕМ РЕЖИМ (Приход или Редактирование) ---
-    const receiveBlock = document.getElementById('qe-receive-block');
-    const isReceiveMode = !!(receiveBlock && window.getComputedStyle(receiveBlock).display !== 'none');
+    // Определяем режим по видимости выпадающего списка поставщика
+        const supplierTriggers = document.querySelectorAll('#qe-supplier-trigger');
+        // Если элемент существует и виден на экране (offsetParent !== null), значит открыта "Новая партия"
+        const isReceiveMode = supplierTriggers.length > 0 && supplierTriggers[supplierTriggers.length - 1].offsetParent !== null;
     
     let payload; // Объявляем пустую переменную для пакета данных
 
