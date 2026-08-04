@@ -1080,7 +1080,7 @@ window.saveQuickEdit = async function(id) {
     };
 
     const receiveBlock = document.getElementById('qe-receive-block');
-    const isReceiveMode = receiveBlock && receiveBlock.style.display !== 'none';
+    const isReceiveMode = !!(receiveBlock && window.getComputedStyle(receiveBlock).display !== 'none');
 
     // ==========================================
     // ВЕТВКА А: ОФОРМЛЕНИЕ ПРИХОДА
