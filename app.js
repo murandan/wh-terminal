@@ -2678,13 +2678,27 @@ function setReportView(view) {
                 if (header) header.classList.remove('active');
             }
             // 4. Кнопка "Внести приход" (Связываем с главной функцией сохранения)
-            if (e.target && e.target.closest('#btn-submit-receive')) {
-                e.preventDefault();
+            if (event.target && event.target.closest('#btn-submit-receive')) {
+                event.preventDefault();
                 
-                // Вызываем нашу главную функцию, которая сама разберется, 
-                // что мы находимся в режиме прихода
+                let itemId = null;
+                // Ищем обычную кнопку "Сохранить" по ее уникальному атрибуту
+                const mainSaveBtn = document.querySelector('[data-i18n="qe_save"]');
+                
+                if (mainSaveBtn && mainSaveBtn.getAttribute('onclick')) {
+                    // Вытаскиваем цифры из строки вида window.saveQuickEdit('7')
+                    const match = mainSaveBtn.getAttribute('onclick').match(/saveQuickEdit\(['"]?(\d+)['"]?\)/);
+                    if (match) {
+                        itemId = match[1];
+                    }
+                }
+
                 if (typeof window.saveQuickEdit === 'function') {
-                    window.saveQuickEdit();
+                    if (itemId) {
+                        window.saveQuickEdit(itemId); // Запускаем сохранение с найденным ID
+                    } else {
+                        alert('Ошибка: Не удалось найти ID товара для оформления прихода!');
+                    }
                 }
             }
         });
