@@ -1069,64 +1069,125 @@ window.saveQuickEdit = function(id) {
         return elements.length > 0 ? elements[elements.length - 1].value : "";
     };
 
-    // 2. Читаем актуальные данные, игнорируя скрытые и старые окна
-    const rawName = getLatestValue('qe-name');
-    const rawPrice = getLatestValue('qe-price');
-    const rawCategory = getLatestValue('qe-category');
-    const rawBarcode = getLatestValue('qe-barcode');
-    const rawMinStock = getLatestValue('qe-minstock');
-
-    // 3. Очистка и подготовка данных
-    const newName = rawName.trim();
+    // --- НОВОЕ: ОПРЕДЕЛЯЕМ РЕЖИМ (Приход или Редактирование) ---
+    const receiveBlock = document.getElementById('qe-receive-block');
+    const isReceiveMode = !!(receiveBlock && window.getComputedStyle(receiveBlock).display !== 'none');
     
-    // Если скрипт поймал пустое имя (а товар не был безымянным), блокируем отправку для защиты таблицы
-    if (newName === "" && item.name !== "" && item.name !== "Без названия") {
-        alert("Сработала защита: скрипт попытался сохранить пустое имя. Попробуйте еще раз.");
-        return; 
-    }
+    let payload; // Объявляем пустую переменную для пакета данных
 
-    const newPrice = parseFloat(String(rawPrice).replace(/\s/g, '').replace(',', '.')) || 0;
-    const newMinStock = parseFloat(String(rawMinStock).replace(/\s/g, '').replace(',', '.')) || 0;
+    if (isReceiveMode) {
+        // =========================================================
+        // ВЕТКА А: НОВАЯ ПАРТИЯ (ОПРИХОДОВАНИЕ)
+        // =========================================================
+        
+        // Читаем данные для прихода (внимание на ID полей: qe-qty и qe-price)
+        const rawQty = getLatestValue('qe-receive-qty');
+        const rawPrice = getLatestValue('qe-receive-price'); 
+        
+        // Читаем поставщика из вашего div (qe-supplier-trigger), беря последний открытый
+        const supplierElements = document.querySelectorAll('#qe-supplier-trigger');
+        let supplier = supplierElements.length > 0 ? supplierElements[supplierElements.length - 1].innerText.trim() : "";
 
-    // === НАЧАЛО ПУНКТА 3 ===
-    let newCategory = rawCategory;
-    
-    // Если выбрали создание новой категории, читаем данные из скрытого поля через твой перехватчик
-    if (newCategory === 'new') {
-    newCategory = getLatestValue('qe-new-category').trim();
-    
-    // Защита от пустой строки
-    if (!newCategory || newCategory.trim() === '') {
-        newCategory = "Без категории"; // Сразу ставим правильное значение здесь
-    }
-} else if (newCategory === '0' || newCategory === 'Не выбрано') {
-    newCategory = "Без категории"; 
-}
-    // === КОНЕЦ ПУНКТА 3 ===
+        const qty = parseFloat(String(rawQty).replace(/\s/g, '').replace(',', '.')) || 0;
+        const price = parseFloat(String(rawPrice).replace(/\s/g, '').replace(',', '.')) || 0;
 
-    // 4. Формируем правильный пакет данных для бэкенда
-    const payload = {
-        action: "update_single_item",
-        api_key: CLIENT_API_KEY,
-        itemId: String(item.id),
-        data: {
-            item_name: newName,
-            price: newPrice,
-            category: newCategory,
-            min_stock: newMinStock,
-            barcode: rawBarcode.trim()
+        if (qty <= 0 || price <= 0 || !supplier || supplier === "Выберите поставщика..." || supplier === "Не выбрано") {
+            alert("Заполните количество, цену и выберите поставщика!");
+            return;
         }
-    };
+
+        // Формируем payload для прихода
+        payload = {
+            action: "processIncomes",
+            api_key: CLIENT_API_KEY,
+            currency: "KZT", // Или "USD", если нужно
+            fingerprint: "fp_" + Date.now(),
+            data: [{
+                doc_no: "AUTO-" + Date.now(),
+                supplier: supplier,
+                item_id: String(item.id),
+                item_name: item.name,
+                qty: qty,
+                price_curr: price,
+                category: item.category || "Без категории",
+                cbm: 0,
+                weight: 0
+            }]
+        };
+
+        // Мгновенно обновляем интерфейс приложения (увеличиваем остаток)
+        item.stock = (Number(item.stock) || 0) + qty;
+        item.cost = price; // Обновляем закупочную цену, если нужно
+
+    } else {
+        // =========================================================
+        // ВЕТКА Б: ОБЫЧНОЕ РЕДАКТИРОВАНИЕ КАРТОЧКИ 
+        // (Ваш оригинальный код без изменений)
+        // =========================================================
+
+        // 2. Читаем актуальные данные, игнорируя скрытые и старые окна
+        const rawName = getLatestValue('qe-name');
+        const rawPrice = getLatestValue('qe-price');
+        const rawCategory = getLatestValue('qe-category');
+        const rawBarcode = getLatestValue('qe-barcode');
+        const rawMinStock = getLatestValue('qe-minstock');
+
+        // 3. Очистка и подготовка данных
+        const newName = rawName.trim();
+        
+        // Если скрипт поймал пустое имя (а товар не был безымянным), блокируем отправку для защиты таблицы
+        if (newName === "" && item.name !== "" && item.name !== "Без названия") {
+            alert("Сработала защита: скрипт попытался сохранить пустое имя. Попробуйте еще раз.");
+            return; 
+        }
+
+        const newPrice = parseFloat(String(rawPrice).replace(/\s/g, '').replace(',', '.')) || 0;
+        const newMinStock = parseFloat(String(rawMinStock).replace(/\s/g, '').replace(',', '.')) || 0;
+
+        // === НАЧАЛО ПУНКТА 3 ===
+        let newCategory = rawCategory;
+        
+        // Если выбрали создание новой категории, читаем данные из скрытого поля через твой перехватчик
+        if (newCategory === 'new') {
+            newCategory = getLatestValue('qe-new-category').trim();
+            
+            // Защита от пустой строки
+            if (!newCategory || newCategory.trim() === '') {
+                newCategory = "Без категории"; // Сразу ставим правильное значение здесь
+            }
+        } else if (newCategory === '0' || newCategory === 'Не выбрано') {
+            newCategory = "Без категории"; 
+        }
+        // === КОНЕЦ ПУНКТА 3 ===
+
+        // 4. Формируем правильный пакет данных для бэкенда (редактирование)
+        payload = {
+            action: "update_single_item",
+            api_key: CLIENT_API_KEY,
+            itemId: String(item.id),
+            data: {
+                item_name: newName,
+                price: newPrice,
+                category: newCategory,
+                min_stock: newMinStock,
+                barcode: rawBarcode.trim()
+            }
+        };
+
+        // 5. Мгновенно обновляем интерфейс приложения
+        item.name = newName;
+        item.item_name = newName;
+        item.price = newPrice;
+        item.category = newCategory;
+        item.min_stock = newMinStock;
+        item.barcode = rawBarcode.trim();
+    }
+
+    // =========================================================
+    // ОБЩАЯ ЧАСТЬ ДЛЯ ОБЕИХ ВЕТОК (Ваш оригинальный код)
+    // =========================================================
 
     console.log("Улетает на сервер:", payload);
-
-    // 5. Мгновенно обновляем интерфейс приложения
-    item.name = newName;
-    item.item_name = newName;
-    item.price = newPrice;
-    item.category = newCategory;
-    item.min_stock = newMinStock;
-    item.barcode = rawBarcode.trim();
 
     // ЖЕСТКАЯ ОЧИСТКА: удаляем вообще все окна редактирования из кода, чтобы не плодить дубликаты
     document.querySelectorAll('#quickEditModal').forEach(m => m.remove());
