@@ -1061,27 +1061,31 @@ window.stopScanner = function() {
 
 window.saveQuickEdit = async function(id) {
     const item = db.find(i => String(i.id) === String(id));
-    if (!item) return;
+    if (!item) {
+        console.error(`Item with id ${id} not found in local db.`);
+        return;
+    }
 
-    // 1. ФУНКЦИЯ-ПЕРЕХВАТЧИК
-    const getLatestValue = (elementId) => {
-        const elements = document.querySelectorAll('#' + elementId);
-        return elements.length > 0 ? elements[elements.length - 1].value : "";
+    // Target the specific active modal to avoid querying hidden/zombie DOM elements
+    const activeModal = document.querySelector('#quickEditModal') || document; 
+    
+    // Safer value extractor scoping to the active modal
+    const getValue = (elementId) => {
+        const el = activeModal.querySelector('#' + elementId);
+        return el ? el.value : "";
     };
 
-    // Проверяем, открыт ли сейчас блок прихода
-    const receiveBlock = document.getElementById('qe-receive-block');
+    const receiveBlock = activeModal.querySelector('#qe-receive-block');
     const isReceiveMode = receiveBlock && receiveBlock.style.display !== 'none';
 
     // ==========================================
     // ВЕТВКА А: ОФОРМЛЕНИЕ ПРИХОДА
     // ==========================================
     if (isReceiveMode) {
-        // В окне прихода поля qe-min-stock и qe-price используются для количества и цены закупа
-        const qty = parseFloat(String(getLatestValue('qe-minstock')).replace(/\s/g, '').replace(',', '.')) || 0;
-        const price = parseFloat(String(getLatestValue('qe-price')).replace(/\s/g, '').replace(',', '.')) || 0;
+        const qty = parseFloat(String(getValue('qe-minstock')).replace(/\s/g, '').replace(',', '.')) || 0;
+        const price = parseFloat(String(getValue('qe-price')).replace(/\s/g, '').replace(',', '.')) || 0;
         
-        const supplierDisplay = document.getElementById('qe-supplier-display');
+        const supplierDisplay = activeModal.querySelector('#qe-supplier-display');
         const supplier = supplierDisplay ? supplierDisplay.innerText.trim() : "";
 
         if (qty <= 0 || price <= 0 || !supplier || supplier === "Выберите поставщика...") {
@@ -1110,50 +1114,53 @@ window.saveQuickEdit = async function(id) {
             });
             const response = await res.json();
 
-            if (response.error) {
-                alert('Ошибка сервера: ' + response.error);
-            } else {
-                console.log('Приход успешно проведен!');
-                // Обновляем локальную базу, чтобы не перезагружать страницу
-                item.stock = response.newStock; // Бэкенд должен вернуть новый остаток
-                item.landed_cost = response.newCost; // Бэкенд должен вернуть новую себестоимость
-                
-                // Закрываем модалки и перерисовываем UI
-                document.querySelectorAll('#quickEditModal').forEach(m => m.remove());
-                if (typeof render === 'function') render();
-            }
+            if (response.error) throw new Error(response.error);
+
+            console.log('Приход успешно проведен!');
+            item.stock = response.newStock; 
+            item.landed_cost = response.newCost; 
+            
+            closeAndRender();
         } catch (err) {
-            alert('Ошибка связи с сервером: ' + err.message);
+            alert('Ошибка сервера/связи: ' + err.message);
         }
-        
-        return; // Прерываем выполнение, чтобы не пошел код обычного редактирования
+        return; 
     }
 
     // ==========================================
     // ВЕТВКА Б: ОБЫЧНОЕ РЕДАКТИРОВАНИЕ ТОВАРА
     // ==========================================
-    const rawName = getLatestValue('qe-name');
-    const rawPrice = getLatestValue('qe-price');
-    const rawCategory = getLatestValue('qe-category');
-    const rawBarcode = getLatestValue('qe-barcode');
-    const rawMinStock = getLatestValue('qe-minstock');
-
+    const rawName = getValue('qe-name');
     const newName = rawName.trim();
+    
     if (newName === "" && item.name !== "" && item.name !== "Без названия") {
-        alert("Сработала защита: скрипт попытался сохранить пустое имя. Попробуйте еще раз.");
+        alert("Сработала защита: попытка сохранить пустое имя. Попробуйте еще раз.");
         return; 
     }
 
-    const newPrice = parseFloat(String(rawPrice).replace(/\s/g, '').replace(',', '.')) || 0;
-    const newMinStock = parseFloat(String(rawMinStock).replace(/\s/g, '').replace(',', '.')) || 0;
+    const newPrice = parseFloat(String(getValue('qe-price')).replace(/\s/g, '').replace(',', '.')) || 0;
+    const newMinStock = parseFloat(String(getValue('qe-minstock')).replace(/\s/g, '').replace(',', '.')) || 0;
+    const newBarcode = getValue('qe-barcode').trim();
 
-    let newCategory = rawCategory;
+    let newCategory = getValue('qe-category');
     if (newCategory === 'new') {
-        newCategory = getLatestValue('qe-new-category').trim();
-        if (!newCategory || newCategory.trim() === '') newCategory = "Без категории";
+        newCategory = getValue('qe-new-category').trim() || "Без категории";
     } else if (newCategory === '0' || newCategory === 'Не выбрано') {
         newCategory = "Без категории"; 
     }
+
+    // Store original state for potential rollback
+    const originalState = { ...item };
+
+    // Optimistic UI Update
+    item.name = newName;
+    item.item_name = newName;
+    item.price = newPrice;
+    item.category = newCategory;
+    item.min_stock = newMinStock;
+    item.barcode = newBarcode;
+
+    closeAndRender();
 
     const payload = {
         action: "update_single_item",
@@ -1164,30 +1171,31 @@ window.saveQuickEdit = async function(id) {
             price: newPrice,
             category: newCategory,
             min_stock: newMinStock,
-            barcode: rawBarcode.trim()
+            barcode: newBarcode
         }
     };
 
-    item.name = newName;
-    item.item_name = newName;
-    item.price = newPrice;
-    item.category = newCategory;
-    item.min_stock = newMinStock;
-    item.barcode = rawBarcode.trim();
+    try {
+        const res = await fetch(GATEWAY_URL, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        });
+        const response = await res.json();
+        
+        if (response && response.error) throw new Error(response.error);
+    } catch (err) {
+        // Rollback on failure so UI matches the backend
+        Object.assign(item, originalState);
+        if (typeof render === 'function') render();
+        alert('Ошибка при сохранении, изменения отменены: ' + err.message);
+    }
 
-    document.querySelectorAll('#quickEditModal').forEach(m => m.remove());
-    if (typeof render === 'function') render();
-
-    fetch(GATEWAY_URL, {
-        method: 'POST',
-        body: JSON.stringify(payload),
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-    })
-    .then(res => res.json())
-    .then(response => {
-        if (response && response.error) alert('Ошибка сервера: ' + response.error);
-    })
-    .catch(err => alert('Ошибка связи: ' + err.message));
+    // Helper function to clean up DOM and refresh UI
+    function closeAndRender() {
+        document.querySelectorAll('#quickEditModal').forEach(m => m.remove());
+        if (typeof render === 'function') render();
+    }
 };
 
 // === (Конец П1) ===
