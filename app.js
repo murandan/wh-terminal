@@ -1102,16 +1102,22 @@ window.saveQuickEdit = async function(id) {
         }
 
         const payload = {
-            action: "saveIncome",
-            api_key: CLIENT_API_KEY,
-            itemId: String(item.id),
-            data: {
-                item_name: item.name,
-                supplier: supplier,
-                qty: qty,
-                price: price,
-                total: qty * price
-            }
+            action: "processIncomes",
+            api_key: CLIENT_API_KEY, 
+            currency: "KZT", 
+            data: [
+                {
+                    item_id: String(item.id),
+                    item_name: item.name,
+                    supplier: supplier,
+                    qty: qty,
+                    price_curr: price, 
+                    total: qty * price,
+                    doc_no: "QE-" + Date.now(), 
+                    cbm: 0,
+                    weight: 0
+                }
+            ]
         };
 
         try {
