@@ -3974,7 +3974,7 @@ window.activateReceiveField = function(el) {
 
 // 2. Ввод цифр с разделением на тысячи
 window.receiveNumpad = function(val, e) {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (!window.activeQeFieldId) return;
     
     const targetInput = document.getElementById(window.activeQeFieldId);
@@ -3983,6 +3983,12 @@ window.receiveNumpad = function(val, e) {
     // Убираем пробелы, чтобы работать с чистыми цифрами
     let currentVal = targetInput.value.replace(/\s/g, ''); 
     
+    // Если установлен флаг первого ввода — обнуляем значение перед вводом
+    if (window.qeNeedsClear && val !== 'C' && val !== 'DEL') {
+        currentVal = '0';
+    }
+    window.qeNeedsClear = false; // Сбрасываем флаг
+
     if (val === 'C') {
         currentVal = '0';
     } else if (val === 'DEL') {
