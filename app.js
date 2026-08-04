@@ -2677,6 +2677,16 @@ function setReportView(view) {
                 const header = document.getElementById('dropdownHeader');
                 if (header) header.classList.remove('active');
             }
+            // 4. Кнопка "Внести приход" (Связываем с главной функцией сохранения)
+            if (e.target && e.target.closest('#btn-submit-receive')) {
+                e.preventDefault();
+                
+                // Вызываем нашу главную функцию, которая сама разберется, 
+                // что мы находимся в режиме прихода
+                if (typeof window.saveQuickEdit === 'function') {
+                    window.saveQuickEdit();
+                }
+            }
         });
 
         function updateFileNameCompactUI(input) {
