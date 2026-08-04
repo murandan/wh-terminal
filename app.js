@@ -1059,67 +1059,52 @@ window.stopScanner = function() {
     }
 };
 
-window.saveQuickEdit = function(id) {
-    const item = db.find(i => String(i.id) === String(id));
-    if (!item) return;
+window.saveQuickEdit = function() {
+    // 1. Проверяем, в каком мы режиме, опираясь на поле количества прихода
+    const qtyInput = document.getElementById('qe-receive-qty');
+    // Если поле существует и видимо на экране — значит открыта вкладка "Новая партия"
+    const isReceiveMode = qtyInput && qtyInput.offsetParent !== null;
 
-    // 1. ФУНКЦИЯ-ПЕРЕХВАТЧИК: берет значение только из самого последнего открытого окна
-    const getLatestValue = (elementId) => {
-        const elements = document.querySelectorAll('#' + elementId);
-        return elements.length > 0 ? elements[elements.length - 1].value : "";
-    };
-
-    // --- НОВОЕ: ОПРЕДЕЛЯЕМ РЕЖИМ (Приход или Редактирование) ---
-    // Определяем режим по видимости выпадающего списка поставщика
-        const supplierTriggers = document.querySelectorAll('#qe-supplier-trigger');
-        // Если элемент существует и виден на экране (offsetParent !== null), значит открыта "Новая партия"
-        const isReceiveMode = supplierTriggers.length > 0 && supplierTriggers[supplierTriggers.length - 1].offsetParent !== null;
-    
-    let payload; // Объявляем пустую переменную для пакета данных
+    let payload = {};
 
     if (isReceiveMode) {
-        // =========================================================
-        // ВЕТКА А: НОВАЯ ПАРТИЯ (ОПРИХОДОВАНИЕ)
-        // =========================================================
+        // ==========================================
+        // ВЕТКА А: ОФОРМЛЕНИЕ НОВОЙ ПАРТИИ (ПРИХОД)
+        // ==========================================
+        const priceInput = document.getElementById('qe-receive-price');
         
-        // Читаем данные для прихода (внимание на ID полей: qe-qty и qe-price)
-        const rawQty = getLatestValue('qe-receive-qty');
-        const rawPrice = getLatestValue('qe-receive-price'); 
+        const qty = qtyInput ? parseInt(qtyInput.value.replace(/\D/g, ''), 10) || 0 : 0;
+        const price = priceInput ? parseInt(priceInput.value.replace(/\D/g, ''), 10) || 0 : 0;
         
-        // Читаем поставщика из вашего div (qe-supplier-trigger), беря последний открытый
+        // Читаем поставщика из div (qe-supplier-trigger), берем последний открытый
         const supplierElements = document.querySelectorAll('#qe-supplier-trigger');
-        let supplier = supplierElements.length > 0 ? supplierElements[supplierElements.length - 1].innerText.trim() : "";
-
-        const qty = parseFloat(String(rawQty).replace(/\s/g, '').replace(',', '.')) || 0;
-        const price = parseFloat(String(rawPrice).replace(/\s/g, '').replace(',', '.')) || 0;
-
-        if (qty <= 0 || price <= 0 || !supplier || supplier === "Выберите поставщика..." || supplier === "Не выбрано") {
-            alert("Заполните количество, цену и выберите поставщика!");
-            return;
+        let supplier = supplierElements.length > 0 ? supplierElements[supplierElements.length - 1].innerText.trim() : "Неизвестный поставщик";
+        
+        // Валидация
+        if (qty <= 0 || price < 0) {
+            alert("Пожалуйста, заполните количество и цену корректно.");
+            return; 
         }
 
-        // Формируем payload для прихода
+        // Формируем payload по контракту NotebookLM (массив data с 1 товаром)
         payload = {
             action: "processIncomes",
-            api_key: CLIENT_API_KEY,
-            currency: "KZT", // Или "USD", если нужно
-            fingerprint: "fp_" + Date.now(),
-            data: [{
-                doc_no: "AUTO-" + Date.now(),
-                supplier: supplier,
-                item_id: String(item.id),
-                item_name: item.name,
-                qty: qty,
-                price_curr: price,
-                category: item.category || "Без категории",
-                cbm: 0,
-                weight: 0
-            }]
+            api_key: "TC-D8A33892", // Ваш API ключ
+            currency: "KZT", 
+            data: [
+                {
+                    doc_no: "AUTO-" + Date.now(), // Авто-генерация номера накладной
+                    supplier: supplier,
+                    item_id: String(item.id),
+                    item_name: item.name,
+                    qty: qty,
+                    price_curr: price,
+                    category: item.category || "Без категории",
+                    cbm: 0,
+                    weight: 0
+                }
+            ]
         };
-
-        // Мгновенно обновляем интерфейс приложения (увеличиваем остаток)
-        item.stock = (Number(item.stock) || 0) + qty;
-        item.cost = price; // Обновляем закупочную цену, если нужно
 
     } else {
         // =========================================================
@@ -3933,32 +3918,6 @@ document.addEventListener('click', function(e) {
         document.getElementById('custom-numpad').style.display = 'none';
         document.getElementById('qe-top-section').classList.remove('form-disabled');
         window.activeQeFieldId = null;
-    }
-
-    // 4. Кнопка "Внести приход"
-    if (e.target && e.target.closest('#btn-submit-receive')) {
-        e.preventDefault();
-        
-        const qtyInput = document.getElementById('qe-receive-qty');
-        const priceInput = document.getElementById('qe-receive-price');
-        // Форматируем значения (убираем пробелы)
-        const qty = qtyInput ? parseInt(qtyInput.value.replace(/\D/g, ''), 10) || 0 : 0;
-        const price = priceInput ? parseInt(priceInput.value.replace(/\D/g, ''), 10) || 0 : 0;
-
-        if (qty <= 0 || price < 0) {
-            alert("Заполните все поля корректно");
-            return;
-        }
-
-        // Отправка данных
-        console.log({
-            action: 'processIncomes', // Контракт из меморандума
-            qty: qty,
-            purchasePrice: price
-        });
-
-        // Закрываем блок
-        document.getElementById('btn-cancel-receive').click(); 
     }
 });
 
