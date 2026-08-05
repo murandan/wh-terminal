@@ -1081,9 +1081,19 @@ window.saveQuickEdit = function(id) {
         const qty = qtyInput ? parseInt(qtyInput.value.replace(/\D/g, ''), 10) || 0 : 0;
         const price = priceInput ? parseInt(priceInput.value.replace(/\D/g, ''), 10) || 0 : 0;
         
-        const supplierElements = document.querySelectorAll('#qe-supplier-trigger');
-        let supplier = supplierElements.length > 0 ? supplierElements[supplierElements.length - 1].innerText.trim() : "Неизвестный поставщик";
-        supplier = supplier.replace('▼', '').trim();
+        let supplier = "Неизвестный поставщик";
+        const customSupplier = document.getElementById('qe-new-supplier-input');
+
+        // Проверяем: если поле ввода открыто и там есть текст, берем его
+        if (customSupplier && customSupplier.offsetParent !== null && customSupplier.value.trim() !== '') {
+            supplier = customSupplier.value.trim(); 
+        } else {
+            // Иначе берем текст с кнопки и отрезаем стрелку
+            const supplierElements = document.querySelectorAll('#qe-supplier-trigger');
+            if (supplierElements.length > 0) {
+                supplier = supplierElements[supplierElements.length - 1].innerText.replace('▼', '').trim();
+            }
+        }
 
         if (qty <= 0) {
             alert("Пожалуйста, заполните количество корректно.");
@@ -1191,6 +1201,9 @@ window.saveQuickEdit = function(id) {
     // ЖЕСТКАЯ ОЧИСТКА: удаляем вообще все окна редактирования из кода, чтобы не плодить дубликаты
     document.querySelectorAll('#quickEditModal').forEach(m => m.remove());
     if (typeof render === 'function') render();
+    document.querySelectorAll('#quickEditModal').forEach(m => m.remove());
+    // НОВАЯ СТРОКА ДЛЯ ОЧИСТКИ ХВОСТОВ:
+    document.querySelectorAll('[data-tippy-root], .tippy-box, .dropdown-menu').forEach(t => t.remove());
 
     // 6. Отправляем в Google Таблицу
     fetch(GATEWAY_URL, {
