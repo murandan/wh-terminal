@@ -1059,13 +1059,6 @@ window.stopScanner = function() {
     }
 };
 
-// Восстановленная функция для чтения актуальных полей
-function getLatestValue(id) {
-    const elements = document.querySelectorAll('#' + id);
-    if (elements.length === 0) return "";
-    return elements[elements.length - 1].value || elements[elements.length - 1].innerText || "";
-}
-
 window.saveQuickEdit = function(id) {
     // 0. Находим товар в базе данных по его ID
     const item = db.find(i => String(i.id) === String(id));
@@ -1080,7 +1073,6 @@ window.saveQuickEdit = function(id) {
     let payload = {};
 
     if (isReceiveMode) {
-        // api_key: CLIENT_API_KEY, // ИСПРАВЛЕНО: Теперь используем системный ключ
         // ==========================================
         // ВЕТКА А: ОФОРМЛЕНИЕ НОВОЙ ПАРТИИ (ПРИХОД)
         // ==========================================
@@ -1089,19 +1081,11 @@ window.saveQuickEdit = function(id) {
         const qty = qtyInput ? parseInt(qtyInput.value.replace(/\D/g, ''), 10) || 0 : 0;
         const price = priceInput ? parseInt(priceInput.value.replace(/\D/g, ''), 10) || 0 : 0;
         
-        // Читаем реального поставщика из СКРЫТОГО поля (берем последнее, чтобы обойти "фантомные" окна)
-        const hiddenSuppliers = document.querySelectorAll('#qe-supplier-hidden');
-        let supplier = "Не выбран";
-        if (hiddenSuppliers.length > 0) {
-            let actualSupplier = hiddenSuppliers[hiddenSuppliers.length - 1].value.trim();
-            if (actualSupplier !== "") {
-                supplier = actualSupplier;
-            }
-        }
+        const supplierElements = document.querySelectorAll('#qe-supplier-trigger');
+        let supplier = supplierElements.length > 0 ? supplierElements[supplierElements.length - 1].innerText.trim() : "Неизвестный поставщик";
         
-        // Валидация
         if (qty <= 0) {
-            alert("Пожалуйста, укажите количество больше нуля.");
+            alert("Пожалуйста, заполните количество корректно.");
             return; 
         }
 
@@ -1109,10 +1093,9 @@ window.saveQuickEdit = function(id) {
 
         payload = {
             action: "income",
-            api_key: CLIENT_API_KEY, // Или твой рабочий ключ
+            api_key: CLIENT_API_KEY, // ИСПРАВЛЕНО: Теперь используем системный ключ
             currency: "KZT", 
             fingerprint: requestFingerprint,
-            vat: 0, // Явное указание нулевого НДС для этой партии
             data: [
                 {
                     doc_no: "AUTO-" + Date.now(), 
@@ -1120,20 +1103,20 @@ window.saveQuickEdit = function(id) {
                     item_id: String(item.id),
                     item_name: item.name,
                     qty: qty,
-                    cost: price, // ИСПРАВЛЕНО: бэкенд ожидает ключ 'cost'
+                    price_curr: price,
                     category: item.category || "Без категории",
-                    cbm: 1, 
-                    weight: 1
+                    cbm: 0,
+                    weight: 0
                 }
             ]
         };
 
-        // Мгновенное обновление локальной базы, чтобы цифры на экране изменились без перезагрузки
-        // (Если у тебя в объекте остаток называется не qty, а stock, поменяй слово qty ниже на stock)
-        item.qty = (parseInt(item.qty) || 0) + qty; 
-        if (price > 0) {
-            item.price = price;
-        }
+        // ИСПРАВЛЕНО: Мгновенно обновляем интерфейс для пользователя
+        // (Предполагается, что остаток хранится в item.stock, если у тебя item.qty - поменяй слово)
+        item.stock = (parseFloat(item.stock) || 0) + qty; 
+        if (price > 0) item.price = price; // Визуально обновим цену
+
+    } else {
         // =========================================================
         // ВЕТКА Б: ОБЫЧНОЕ РЕДАКТИРОВАНИЕ КАРТОЧКИ 
         // (Ваш оригинальный код без изменений)
