@@ -1059,7 +1059,7 @@ window.stopScanner = function() {
     }
 };
 
-window.saveQuickEdit = function() {
+window.saveQuickEdit = function(id) {
     // 0. Находим товар в базе данных по его ID
     const item = db.find(i => String(i.id) === String(id));
     if (!item) {
