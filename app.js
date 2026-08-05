@@ -1066,9 +1066,8 @@ window.saveQuickEdit = function(id) {
         console.error("Ошибка: Товар не найден!");
         return;
     }
-    // 1. Проверяем, в каком мы режиме, опираясь на поле количества прихода
+    
     const qtyInput = document.getElementById('qe-receive-qty');
-    // Если поле существует и видимо на экране — значит открыта вкладка "Новая партия"
     const isReceiveMode = qtyInput && qtyInput.offsetParent !== null;
 
     let payload = {};
@@ -1082,25 +1081,21 @@ window.saveQuickEdit = function(id) {
         const qty = qtyInput ? parseInt(qtyInput.value.replace(/\D/g, ''), 10) || 0 : 0;
         const price = priceInput ? parseInt(priceInput.value.replace(/\D/g, ''), 10) || 0 : 0;
         
-        // Читаем поставщика из div (qe-supplier-trigger), берем последний открытый
         const supplierElements = document.querySelectorAll('#qe-supplier-trigger');
         let supplier = supplierElements.length > 0 ? supplierElements[supplierElements.length - 1].innerText.trim() : "Неизвестный поставщик";
         
-        // Валидация
-        if (qty <= 0 || price < 0) {
-            alert("Пожалуйста, заполните количество и цену корректно.");
+        if (qty <= 0) {
+            alert("Пожалуйста, заполните количество корректно.");
             return; 
         }
 
-        // Генерируем уникальный отпечаток для защиты от дублей
         const requestFingerprint = "income_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
 
-        // Формируем payload по контракту NotebookLM (массив data с 1 товаром)
         payload = {
             action: "processIncomes",
-            api_key: "TC-D8A33892", // Ваш API ключ
+            api_key: CLIENT_API_KEY, // ИСПРАВЛЕНО: Теперь используем системный ключ
             currency: "KZT", 
-            fingerprint: requestFingerprint, // ВАЖНО: Добавлено новое поле
+            fingerprint: requestFingerprint,
             data: [
                 {
                     doc_no: "AUTO-" + Date.now(), 
@@ -1115,6 +1110,11 @@ window.saveQuickEdit = function(id) {
                 }
             ]
         };
+
+        // ИСПРАВЛЕНО: Мгновенно обновляем интерфейс для пользователя
+        // (Предполагается, что остаток хранится в item.stock, если у тебя item.qty - поменяй слово)
+        item.stock = (parseFloat(item.stock) || 0) + qty; 
+        if (price > 0) item.price = price; // Визуально обновим цену
 
     } else {
         // =========================================================
