@@ -1092,7 +1092,7 @@ window.saveQuickEdit = function(id) {
         const requestFingerprint = "income_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
 
         payload = {
-            action: "processIncomes",
+            action: "income",
             api_key: CLIENT_API_KEY, // ИСПРАВЛЕНО: Теперь используем системный ключ
             currency: "KZT", 
             fingerprint: requestFingerprint,
