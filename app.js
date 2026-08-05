@@ -1083,19 +1083,20 @@ window.saveQuickEdit = function(id) {
         
         const supplierElements = document.querySelectorAll('#qe-supplier-trigger');
         let supplier = supplierElements.length > 0 ? supplierElements[supplierElements.length - 1].innerText.trim() : "Неизвестный поставщик";
-        
+        supplier = supplier.replace('▼', '').trim();
+
         if (qty <= 0) {
             alert("Пожалуйста, заполните количество корректно.");
             return; 
         }
 
         const requestFingerprint = "income_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
-        supplier = supplier.replace('▼', '').trim();
-
+        
         payload = {
             action: "income",
+            api_key: CLIENT_API_KEY, 
             currency: "KZT", 
-            vat: 0, // <--- 1. Добавляем обнуление НДС для этой операции (с запятой)
+            vat: 0, // ДОБАВЛЕНО: принудительно обнуляем НДС для этой операции
             fingerprint: requestFingerprint,
             data: [
                 {
@@ -1104,10 +1105,10 @@ window.saveQuickEdit = function(id) {
                     item_id: String(item.id),
                     item_name: item.name,
                     qty: qty,
-                    cost: price, // <--- 2. Меняем price_curr на cost (с запятой)
+                    cost: price, // ИСПРАВЛЕНО: было price_curr
                     category: item.category || "Без категории",
-                    cbm: 1, 
-                    weight: 1
+                    cbm: 0,
+                    weight: 0
                 }
             ]
         };
