@@ -1092,14 +1092,18 @@ window.saveQuickEdit = function(id) {
             return; 
         }
 
+        // Генерируем уникальный отпечаток для защиты от дублей
+        const requestFingerprint = "income_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+
         // Формируем payload по контракту NotebookLM (массив data с 1 товаром)
         payload = {
             action: "processIncomes",
             api_key: "TC-D8A33892", // Ваш API ключ
             currency: "KZT", 
+            fingerprint: requestFingerprint, // ВАЖНО: Добавлено новое поле
             data: [
                 {
-                    doc_no: "AUTO-" + Date.now(), // Авто-генерация номера накладной
+                    doc_no: "AUTO-" + Date.now(), 
                     supplier: supplier,
                     item_id: String(item.id),
                     item_name: item.name,
