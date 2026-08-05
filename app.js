@@ -1090,11 +1090,12 @@ window.saveQuickEdit = function(id) {
         }
 
         const requestFingerprint = "income_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+        supplier = supplier.replace('▼', '').trim();
 
         payload = {
             action: "income",
-            api_key: CLIENT_API_KEY, // ИСПРАВЛЕНО: Теперь используем системный ключ
             currency: "KZT", 
+            vat: 0, // <--- 1. Добавляем обнуление НДС для этой операции (с запятой)
             fingerprint: requestFingerprint,
             data: [
                 {
@@ -1103,10 +1104,10 @@ window.saveQuickEdit = function(id) {
                     item_id: String(item.id),
                     item_name: item.name,
                     qty: qty,
-                    price_curr: price,
+                    cost: price, // <--- 2. Меняем price_curr на cost (с запятой)
                     category: item.category || "Без категории",
-                    cbm: 0,
-                    weight: 0
+                    cbm: 1, 
+                    weight: 1
                 }
             ]
         };
