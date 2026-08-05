@@ -1073,6 +1073,7 @@ window.saveQuickEdit = function(id) {
     let payload = {};
 
     if (isReceiveMode) {
+        // api_key: CLIENT_API_KEY, // ИСПРАВЛЕНО: Теперь используем системный ключ
         // ==========================================
         // ВЕТКА А: ОФОРМЛЕНИЕ НОВОЙ ПАРТИИ (ПРИХОД)
         // ==========================================
@@ -1081,11 +1082,19 @@ window.saveQuickEdit = function(id) {
         const qty = qtyInput ? parseInt(qtyInput.value.replace(/\D/g, ''), 10) || 0 : 0;
         const price = priceInput ? parseInt(priceInput.value.replace(/\D/g, ''), 10) || 0 : 0;
         
-        const supplierElements = document.querySelectorAll('#qe-supplier-trigger');
-        let supplier = supplierElements.length > 0 ? supplierElements[supplierElements.length - 1].innerText.trim() : "Неизвестный поставщик";
+        // Читаем реального поставщика из СКРЫТОГО поля (берем последнее, чтобы обойти "фантомные" окна)
+        const hiddenSuppliers = document.querySelectorAll('#qe-supplier-hidden');
+        let supplier = "Не выбран";
+        if (hiddenSuppliers.length > 0) {
+            let actualSupplier = hiddenSuppliers[hiddenSuppliers.length - 1].value.trim();
+            if (actualSupplier !== "") {
+                supplier = actualSupplier;
+            }
+        }
         
+        // Валидация
         if (qty <= 0) {
-            alert("Пожалуйста, заполните количество корректно.");
+            alert("Пожалуйста, укажите количество больше нуля.");
             return; 
         }
 
@@ -1093,9 +1102,10 @@ window.saveQuickEdit = function(id) {
 
         payload = {
             action: "income",
-            api_key: CLIENT_API_KEY, // ИСПРАВЛЕНО: Теперь используем системный ключ
+            api_key: CLIENT_API_KEY, // Или твой рабочий ключ
             currency: "KZT", 
             fingerprint: requestFingerprint,
+            vat: 0, // Явное указание нулевого НДС для этой партии
             data: [
                 {
                     doc_no: "AUTO-" + Date.now(), 
@@ -1103,20 +1113,20 @@ window.saveQuickEdit = function(id) {
                     item_id: String(item.id),
                     item_name: item.name,
                     qty: qty,
-                    price_curr: price,
+                    cost: price, // ИСПРАВЛЕНО: бэкенд ожидает ключ 'cost'
                     category: item.category || "Без категории",
-                    cbm: 0,
-                    weight: 0
+                    cbm: 1, 
+                    weight: 1
                 }
             ]
         };
 
-        // ИСПРАВЛЕНО: Мгновенно обновляем интерфейс для пользователя
-        // (Предполагается, что остаток хранится в item.stock, если у тебя item.qty - поменяй слово)
-        item.stock = (parseFloat(item.stock) || 0) + qty; 
-        if (price > 0) item.price = price; // Визуально обновим цену
-
-    } else {
+        // Мгновенное обновление локальной базы, чтобы цифры на экране изменились без перезагрузки
+        // (Если у тебя в объекте остаток называется не qty, а stock, поменяй слово qty ниже на stock)
+        item.qty = (parseInt(item.qty) || 0) + qty; 
+        if (price > 0) {
+            item.price = price;
+        }
         // =========================================================
         // ВЕТКА Б: ОБЫЧНОЕ РЕДАКТИРОВАНИЕ КАРТОЧКИ 
         // (Ваш оригинальный код без изменений)
