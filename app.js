@@ -1060,6 +1060,12 @@ window.stopScanner = function() {
 };
 
 window.saveQuickEdit = function() {
+    // 0. Находим товар в базе данных по его ID
+    const item = db.find(i => String(i.id) === String(id));
+    if (!item) {
+        console.error("Ошибка: Товар не найден!");
+        return;
+    }
     // 1. Проверяем, в каком мы режиме, опираясь на поле количества прихода
     const qtyInput = document.getElementById('qe-receive-qty');
     // Если поле существует и видимо на экране — значит открыта вкладка "Новая партия"
