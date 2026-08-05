@@ -1059,6 +1059,13 @@ window.stopScanner = function() {
     }
 };
 
+// Восстановленная функция для чтения актуальных полей
+function getLatestValue(id) {
+    const elements = document.querySelectorAll('#' + id);
+    if (elements.length === 0) return "";
+    return elements[elements.length - 1].value || elements[elements.length - 1].innerText || "";
+}
+
 window.saveQuickEdit = function(id) {
     // 0. Находим товар в базе данных по его ID
     const item = db.find(i => String(i.id) === String(id));
