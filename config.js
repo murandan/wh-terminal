@@ -21,6 +21,5 @@ const HELP_LINKS = {
   ru: "https://dot-leaf-a35.notion.site/POS-39d1cf6d5f4f8038841fe8104985d573?source=copy_link",
   kz: "https://dot-leaf-a35.notion.site/POS-39e1cf6d5f4f80aea32ee33e3f31bd03?source=copy_link"
 };
-
 // Динамически берем ключ из памяти телефона (он сохраняется туда после логина через Google)
 let CLIENT_API_KEY = localStorage.getItem('CLIENT_API_KEY') || "";
