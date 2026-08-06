@@ -470,8 +470,12 @@ window.renderSupplierList = function() {
     // Динамически получаем перевод из словаря, используя глобальные переменные языка
     const newBtnText = translations[currentLang].qe_supplier_new || "+ Новый поставщик";
     
-    // Формируем список опций для нативного datalist
-    let html = suppliers.map(s => `<option value="${s}">`).join('');
+    // Формируем вертикальный список поставщиков (display: block и рамка снизу)
+    let html = suppliers.map(s => `
+        <div onclick="window.selectSupplier('${s}')" style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); cursor: pointer; display: block; text-align: left;">
+            ${s}
+        </div>
+    `).join('');
     
     // Добавляем кнопку "+ Новый поставщик" в конец списка
     html += `
@@ -645,16 +649,16 @@ window.openQuickEditModal = function(id) {
                 <!-- === КОНЕЦ ОБЕРТКИ (qe-top-section) === -->
 
                 <!-- === НОВЫЙ БЛОК: ОФОРМЛЕНИЕ ПРИХОДА === -->
-                <div id="qe-receive-block" style="display: none; padding: 12px; background: rgba(46,125,50,0.05); border: 1px solid #2e7d32; border-radius: 6px; margin-bottom: 15px;">
-                    <h4 data-i18n="qe_receive_title" style="margin: 0 0 10px 0; font-size: 12px; text-align: center; color: #4CAF50; text-transform: uppercase;">${t('qe_receive_title')}</h4>
+            <div id="qe-receive-block" style="display: none; padding: 12px; background: rgba(46,125,50,0.05); border: 1px solid #2e7d32; border-radius: 6px; margin-bottom: 15px;">
+                <h4 data-i18n="qe_receive_title" style="margin: 0 0 10px 0; font-size: 12px; text-align: center; color: #4CAF50; text-transform: uppercase;">${t('qe_receive_title')}</h4>
                 
                 <!-- ПОСТАВЩИК -->
                 <label data-i18n="qe_supplier" style="font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 2px; display: block;">${t('qe_supplier')}</label>
                 <div style="position: relative; width: 100%; margin-bottom: 10px;">
-                    <input type="text" id="qe-supplier" list="qe-supplier-list" autocomplete="off" placeholder="${t('qe_supplier_placeholder')}" style="width: 100%; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px; font-size: 15px; box-sizing: border-box;">
-                    <datalist id="qe-supplier-list">
-                        ${supplierDropdownHtml}
-                    </datalist>
+                    <input type="text" id="qe-supplier-input" placeholder="${t('qe_supplier_placeholder')}" autocomplete="off" oninput="window.filterSuppliers()" onfocus="window.showSupplierDropdown()" style="width: 100%; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px; font-size: 15px; box-sizing: border-box;">
+                    
+                    <div id="qe-supplier-dropdown" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; max-height: 200px; overflow-y: auto; z-index: 9999; margin-top: 4px; background: #1e1e1e; border: 1px solid #333; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.8);">
+                    </div>
                 </div>
 
                 <!-- ПОЛЯ КОЛИЧЕСТВА И ЦЕНЫ -->
@@ -4165,5 +4169,62 @@ document.addEventListener('click', function(e) {
         document.getElementById('qe-bottom-buttons').style.display = 'flex'; // ВОЗВРАЩАЕМ ФУТЕР
         document.getElementById('qe-top-section').classList.remove('form-disabled');
         window.activeQeFieldId = null;
+    }
+});
+
+// Отрисовка и фильтрация списка
+window.renderCustomSupplierDropdown = function(filterText = '') {
+    const dropdown = document.getElementById('qe-supplier-dropdown');
+    if (!dropdown) return;
+    
+    // Если массив поставщиков пуст или не загружен
+    const suppliers = window.suppliers || [];
+    const lowerFilter = filterText.toLowerCase();
+    
+    // Оставляем только те элементы, которые содержат введенный текст
+    const filtered = suppliers.filter(s => s.toLowerCase().includes(lowerFilter));
+    
+    // Если ничего не найдено, показываем заглушку
+    if (filtered.length === 0) {
+        dropdown.innerHTML = `<div style="padding: 12px; color: #888; text-align: center; font-size: 13px;">Совпадений нет. Будет добавлен новый контрагент.</div>`;
+        return;
+    }
+    
+    // Рисуем список
+    dropdown.innerHTML = filtered.map(s => `
+        <div onclick="window.selectCustomSupplier('${s}')" style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); cursor: pointer; display: block; text-align: left; color: #fff;">
+            ${s}
+        </div>
+    `).join('');
+};
+
+// Функция срабатывает при каждом нажатии клавиши
+window.filterSuppliers = function() {
+    const input = document.getElementById('qe-supplier-input');
+    window.renderCustomSupplierDropdown(input.value);
+    document.getElementById('qe-supplier-dropdown').style.display = 'block';
+};
+
+// Функция срабатывает при клике в поле (показываем весь список, если поле пустое)
+window.showSupplierDropdown = function() {
+    const input = document.getElementById('qe-supplier-input');
+    window.renderCustomSupplierDropdown(input.value);
+    document.getElementById('qe-supplier-dropdown').style.display = 'block';
+};
+
+// Функция выбора поставщика из списка
+window.selectCustomSupplier = function(val) {
+    const input = document.getElementById('qe-supplier-input');
+    input.value = val;
+    document.getElementById('qe-supplier-dropdown').style.display = 'none';
+};
+
+// Закрытие списка при клике в любое другое место экрана
+document.addEventListener('click', function(e) {
+    const dropdown = document.getElementById('qe-supplier-dropdown');
+    const input = document.getElementById('qe-supplier-input');
+    
+    if (dropdown && input && e.target !== input && !dropdown.contains(e.target)) {
+        dropdown.style.display = 'none';
     }
 });
