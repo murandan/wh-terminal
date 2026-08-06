@@ -470,12 +470,8 @@ window.renderSupplierList = function() {
     // Динамически получаем перевод из словаря, используя глобальные переменные языка
     const newBtnText = translations[currentLang].qe_supplier_new || "+ Новый поставщик";
     
-    // Формируем вертикальный список поставщиков (display: block и рамка снизу)
-    let html = suppliers.map(s => `
-        <div onclick="window.selectSupplier('${s}')" style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); cursor: pointer; display: block; text-align: left;">
-            ${s}
-        </div>
-    `).join('');
+    // Формируем список опций для нативного datalist
+    let html = suppliers.map(s => `<option value="${s}">`).join('');
     
     // Добавляем кнопку "+ Новый поставщик" в конец списка
     html += `
@@ -649,26 +645,16 @@ window.openQuickEditModal = function(id) {
                 <!-- === КОНЕЦ ОБЕРТКИ (qe-top-section) === -->
 
                 <!-- === НОВЫЙ БЛОК: ОФОРМЛЕНИЕ ПРИХОДА === -->
-            <div id="qe-receive-block" style="display: none; padding: 12px; background: rgba(46,125,50,0.05); border: 1px solid #2e7d32; border-radius: 6px; margin-bottom: 15px;">
-                <h4 data-i18n="qe_receive_title" style="margin: 0 0 10px 0; font-size: 12px; text-align: center; color: #4CAF50; text-transform: uppercase;">${t('qe_receive_title')}</h4>
+                <div id="qe-receive-block" style="display: none; padding: 12px; background: rgba(46,125,50,0.05); border: 1px solid #2e7d32; border-radius: 6px; margin-bottom: 15px;">
+                    <h4 data-i18n="qe_receive_title" style="margin: 0 0 10px 0; font-size: 12px; text-align: center; color: #4CAF50; text-transform: uppercase;">${t('qe_receive_title')}</h4>
                 
                 <!-- ПОСТАВЩИК -->
                 <label data-i18n="qe_supplier" style="font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 2px; display: block;">${t('qe_supplier')}</label>
                 <div style="position: relative; width: 100%; margin-bottom: 10px;">
-                    <input type="hidden" id="qe-supplier" value="">
-                    <div id="qe-supplier-trigger" onclick="window.toggleSupplierDropdown()" style="width: 100%; border-radius: 4px; padding: 8px; font-size: 15px; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #000; border: 1px solid #333; color: #fff;">
-                        <span id="qe-supplier-display" data-i18n="qe_supplier_placeholder" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${t('qe_supplier_placeholder')}</span>
-                        <span id="qe-supplier-arrow" style="font-size: 12px; transition: transform 0.2s;">▼</span>
-                    </div>
-                    
-                    <div id="qe-supplier-dropdown" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; max-height: 30vh; overflow-y: auto; border-radius: 4px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.5); margin-top: 4px; background: #1e1e1e; border: 1px solid #333; color: #fff;">
+                    <input type="text" id="qe-supplier" list="qe-supplier-list" autocomplete="off" placeholder="${t('qe_supplier_placeholder')}" style="width: 100%; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px; font-size: 15px; box-sizing: border-box;">
+                    <datalist id="qe-supplier-list">
                         ${supplierDropdownHtml}
-                    </div>
-                    
-                    <div id="qe-new-supplier-wrapper" style="display: none; width: 100%; gap: 5px; margin-top: 5px;">
-                        <input type="text" id="qe-new-supplier-input" placeholder="${t('qe_supplier_name_placeholder')}" style="flex: 1; width: 100%; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
-                        <button type="button" onclick="window.cancelNewSupplier()" style="background: #c62828; color: #fff; border: none; border-radius: 4px; padding: 0 12px; font-weight: bold; cursor: pointer;">✖</button>
-                    </div>
+                    </datalist>
                 </div>
 
                 <!-- ПОЛЯ КОЛИЧЕСТВА И ЦЕНЫ -->
