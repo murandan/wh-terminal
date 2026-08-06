@@ -296,6 +296,30 @@
 
         window.suppliersList = JSON.parse(localStorage.getItem('suppliers_cache') || '[]');
 
+        // Глобальный массив для хранения списка поставщиков
+        window.suppliers = [];
+
+        // Функция запроса поставщиков с сервера
+        window.loadSuppliers = function() {
+            if (typeof GATEWAY_URL === 'undefined' || typeof CLIENT_API_KEY === 'undefined') return;
+            
+            fetch(GATEWAY_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'getSuppliers', api_key: CLIENT_API_KEY })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.success && Array.isArray(data.suppliers)) {
+                    window.suppliers = data.suppliers;
+                }
+            })
+            .catch(err => console.error('Ошибка загрузки поставщиков:', err));
+        };
+
+        // Запускаем при инициализации
+        window.loadSuppliers();
+
         let currentLang = localStorage.getItem('pos_lang') || 'ru';
         let db = [], cart = [], mode = 'sale', pendingMethod = null;
         let staffList = [], currentUser = null;
@@ -513,7 +537,7 @@ window.openQuickEditModal = function(id) {
 
     // Собираем пункты списка поставщиков
     let supplierDropdownHtml = '';
-    const supplierList = (typeof suppliers !== 'undefined') ? suppliers : [];
+    const supplierList = (Array.isArray(window.suppliers) && window.suppliers.length > 0) ? window.suppliers : [];
 
     supplierList.forEach(sup => {
         const safeSup = escapeHtml(sup);
