@@ -511,6 +511,16 @@ window.openQuickEditModal = function(id) {
     const currentStock = Number(item.stock) || 0;
     const formattedPrice = Number(item.price || 0).toLocaleString('ru-RU');
 
+    // Собираем пункты списка поставщиков
+    let supplierDropdownHtml = '';
+    const supplierList = (typeof suppliers !== 'undefined') ? suppliers : [];
+
+    supplierList.forEach(sup => {
+        const safeSup = escapeHtml(sup);
+        supplierDropdownHtml += `<div data-val="${safeSup}" data-text="${safeSup}" onclick="window.handleQeSupplierClick(this)" style="padding: 10px; cursor: pointer; border-bottom: 1px solid rgba(128,128,128,0.2);">${safeSup}</div>`;
+    });
+    supplierDropdownHtml += `<div data-val="new" data-text="${escapeHtml(t('qe_supplier_new') || 'Новый поставщик')}" onclick="window.handleQeSupplierClick(this)" style="padding: 10px; cursor: pointer; color: #ff9800; font-weight: bold;">${escapeHtml(t('qe_supplier_new') || 'Новый поставщик')}</div>`;
+
     // 3. HTML И СТИЛИ С ПОДДЕРЖКОЙ СВЕТЛОЙ ТЕМЫ
     const modalHtml = `
         <div id="quickEditModal" onclick="if(event.target.id === 'quickEditModal') window.closeQeNumpad()" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; display: flex; justify-content: center; align-items: flex-start; padding-top: 3vh; font-family: 'Roboto', sans-serif;">
@@ -621,23 +631,19 @@ window.openQuickEditModal = function(id) {
                 <!-- ПОСТАВЩИК -->
                 <label data-i18n="qe_supplier" style="font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 2px; display: block;">${t('qe_supplier')}</label>
                 <div style="position: relative; width: 100%; margin-bottom: 10px;">
-                    <input type="hidden" id="qe-supplier-hidden" value="">
+                    <input type="hidden" id="qe-supplier" value="">
                     <div id="qe-supplier-trigger" onclick="window.toggleSupplierDropdown()" style="width: 100%; border-radius: 4px; padding: 8px; font-size: 15px; box-sizing: border-box; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #000; border: 1px solid #333; color: #fff;">
                         <span id="qe-supplier-display" data-i18n="qe_supplier_placeholder" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${t('qe_supplier_placeholder')}</span>
                         <span id="qe-supplier-arrow" style="font-size: 12px; transition: transform 0.2s;">▼</span>
                     </div>
                     
                     <div id="qe-supplier-dropdown" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; max-height: 30vh; overflow-y: auto; border-radius: 4px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.5); margin-top: 4px; background: #1e1e1e; border: 1px solid #333; color: #fff;">
-                        <div onclick="window.selectSupplier('Поставщик 1')" style="padding: 10px; border-bottom: 1px solid #333; cursor: pointer;">Поставщик 1</div>
-                        <div onclick="window.selectSupplier('Поставщик 2')" style="padding: 10px; border-bottom: 1px solid #333; cursor: pointer;">Поставщик 2</div>
-                        <div onclick="window.selectSupplier('NEW')" data-i18n="qe_supplier_new" style="padding: 10px; color: #ff9800; font-weight: bold; cursor: pointer;">${t('qe_supplier_new')}</div>
+                        ${supplierDropdownHtml}
                     </div>
                     
                     <div id="qe-new-supplier-wrapper" style="display: none; width: 100%; gap: 5px; margin-top: 5px;">
-                        <input type="text" id="qe-new-supplier-input" placeholder="${t('qe_supplier_name_placeholder')}" 
-                            onfocus="window.onSupplierFocus()" onblur="window.onSupplierBlur()"
-                            style="flex: 1; width: 100%; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
-                        <button type="button" onclick="window.cancelNewSupplier(event)" style="background: #c62828; color: #fff; border: none; border-radius: 4px; padding: 0 12px; font-weight: bold; cursor: pointer;">✖</button>
+                        <input type="text" id="qe-new-supplier-input" placeholder="${t('qe_supplier_name_placeholder')}" style="flex: 1; width: 100%; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
+                        <button type="button" onclick="window.cancelNewSupplier()" style="background: #c62828; color: #fff; border: none; border-radius: 4px; padding: 0 12px; font-weight: bold; cursor: pointer;">✖</button>
                     </div>
                 </div>
 
@@ -1126,7 +1132,6 @@ window.saveQuickEdit = function(id) {
         // ИСПРАВЛЕНО: Мгновенно обновляем интерфейс для пользователя
         // (Предполагается, что остаток хранится в item.stock, если у тебя item.qty - поменяй слово)
         item.stock = (parseFloat(item.stock) || 0) + qty; 
-        if (price > 0) item.price = price; // Визуально обновим цену
 
     } else {
         // =========================================================
@@ -4017,17 +4022,74 @@ window.receiveNumpad = function(val, e) {
 };
 
 // 3. Логика кастомного списка поставщиков
+// Открывает/закрывает кастомный список поставщиков
 window.toggleSupplierDropdown = function() {
     const dropdown = document.getElementById('qe-supplier-dropdown');
     const arrow = document.getElementById('qe-supplier-arrow');
-    if (dropdown.style.display === 'none') {
-        window.renderSupplierList();
+    
+    if (dropdown.style.display === 'none' || dropdown.style.display === '') {
         dropdown.style.display = 'block';
-        arrow.style.transform = 'rotate(180deg)'; // Переворот стрелки
+        if (arrow) arrow.style.transform = 'rotate(180deg)';
     } else {
         dropdown.style.display = 'none';
+        if (arrow) arrow.style.transform = 'rotate(0deg)';
+    }
+};
+
+// Обработчик клика для выбора поставщика или нажатия "Новый"
+window.handleQeSupplierClick = function(element) {
+    const value = element.getAttribute('data-val');
+    const text = element.getAttribute('data-text');
+    
+    const dropdown = document.getElementById('qe-supplier-dropdown');
+    const trigger = document.getElementById('qe-supplier-trigger');
+    const display = document.getElementById('qe-supplier-display');
+    const hiddenInput = document.getElementById('qe-supplier');
+    const newSupplierWrapper = document.getElementById('qe-new-supplier-wrapper');
+    const newSupplierInput = document.getElementById('qe-new-supplier-input');
+    
+    if (value === 'new') {
+        // Прячем кнопку и список
+        if (trigger) trigger.style.display = 'none';
+        if (dropdown) dropdown.style.display = 'none';
+        
+        // Показываем поле ввода
+        if (newSupplierWrapper) newSupplierWrapper.style.display = 'flex';
+        if (hiddenInput) hiddenInput.value = 'new';
+        
+        if (newSupplierInput) newSupplierInput.focus();
+    } else {
+        // Подставляем выбранное значение
+        if (display) display.innerText = text;
+        if (hiddenInput) hiddenInput.value = text; // Сохраняем текст, а не value, так как в базу пишем имя
+        if (dropdown) dropdown.style.display = 'none';
+    }
+
+    // Сброс стрелки
+    const arrow = document.getElementById('qe-supplier-arrow');
+    if (arrow) {
         arrow.style.transform = 'rotate(0deg)';
     }
+};
+
+// Кнопка отмены "крестик" для нового поставщика
+window.cancelNewSupplier = function() {
+    const wrapper = document.getElementById('qe-new-supplier-wrapper');
+    const trigger = document.getElementById('qe-supplier-trigger');
+    const input = document.getElementById('qe-new-supplier-input');
+    const display = document.getElementById('qe-supplier-display');
+    const hiddenInput = document.getElementById('qe-supplier');
+    // Ищем дефолтную строку именно внутри списка поставщиков
+    const defaultTextElement = document.querySelector('#qe-supplier-dropdown [data-val="0"]'); 
+    
+    if (wrapper) wrapper.style.display = 'none';
+    if (trigger) trigger.style.display = 'flex';
+    if (input) input.value = '';
+    if (hiddenInput) hiddenInput.value = '0';
+    
+    if (display && defaultTextElement) {
+        display.innerText = defaultTextElement.getAttribute('data-text');
+    }    
 };
 
 window.selectSupplier = function(val) {
@@ -4075,32 +4137,6 @@ window.onSupplierBlur = function() {
         // Возвращаем окно на место
         modal.style.transform = 'translateY(0)'; 
     }
-};
-
-// 2.Закрытие поля с защитой от фантомных кликов (Ghost Click)
-window.cancelNewSupplier = function(e) {
-    // 1. Останавливаем пробитие клика насквозь
-    if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-    
-    const input = document.getElementById('qe-new-supplier-input');
-    input.blur(); // 2. Гарантированно сворачиваем системную клавиатуру
-    
-    // 3. Задержка в 200мс сохраняет кнопку на экране достаточно долго, 
-    // чтобы iOS "ударила" кликом по ней, а не по нижним слоям
-    setTimeout(() => {
-        document.getElementById('qe-new-supplier-wrapper').style.display = 'none';
-        input.value = '';
-        
-        document.getElementById('qe-supplier-trigger').style.display = 'flex';
-        document.getElementById('qe-supplier-hidden').value = '';
-        
-        // Подхватываем перевод или ставим текст по умолчанию
-        const placeholderText = typeof t === 'function' ? t('qe_supplier_placeholder') : 'Выберите поставщика...';
-        document.getElementById('qe-supplier-display').innerText = placeholderText; 
-    }, 200);
 };
 
 // 4. Глобальный перехват открытия/закрытия блока для управления футером
