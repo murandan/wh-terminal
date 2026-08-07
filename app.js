@@ -4242,7 +4242,9 @@ window.openFullscreenSupplier = function() {
     if (typeof t === 'function') {
         try {
             searchInput.placeholder = t('search_supplier') || 'Поиск или новый поставщик...';
-            cancelBtn.textContent = t('cancel') || 'Отмена';
+            // Переводим слово "Добавить", оставляем плюс
+            document.getElementById('fullscreen-add-text').textContent = '+ ' + (t('add') || 'Добавить') + ':';
+            // Строку с cancelBtn удалили, чтобы JS не стирал крестик
         } catch(e) {}
     }
     
@@ -4290,7 +4292,7 @@ window.filterFullscreenSuppliers = function() {
     }
     
     listContainer.innerHTML = filtered.map(s => `
-        <div class="supp-list-item" onclick="window.selectFullscreenSupplier('${s}')" style="padding: 10px 0; font-size: 15px; cursor: pointer;">
+        <div class="supp-list-item" onclick="window.selectFullscreenSupplier('${s}')" style="padding: 12px 0; font-size: 15px; cursor: pointer;">
             ${s}
         </div>
     `).join('');

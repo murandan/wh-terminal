@@ -466,21 +466,14 @@ html.lock, body.lock {
     height: 100% !important;
 }
 
-/* Светлая тема (по умолчанию) */
-.supp-modal-bg { background: #f0f0f0; }
-.supp-modal-header { background: #fff; border-bottom: 1px solid #ccc; }
-.supp-modal-input { background: #fff; color: #000; border: 1px solid #aaa; }
-.supp-list-item { border-bottom: 1px solid #ddd; color: #000; }
+/* По умолчанию — ТЕМНАЯ ТЕМА (POS Noir) */
+.supp-modal-bg { background: #121212 !important; color: #fff; }
+.supp-modal-header { background: #1e1e1e !important; border-bottom: 1px solid #333; }
+.supp-modal-input { background: #000 !important; color: #fff !important; border: 1px solid #333; }
+.supp-list-item { border-bottom: 1px solid rgba(255,255,255,0.08); color: #fff !important; }
 
-/* Темная тема (если на body вешается класс dark или dark-mode) */
-body.dark .supp-modal-bg, 
-body.dark-mode .supp-modal-bg { background: #121212; }
-
-body.dark .supp-modal-header, 
-body.dark-mode .supp-modal-header { background: #1e1e1e; border-bottom: 1px solid #333; }
-
-body.dark .supp-modal-input, 
-body.dark-mode .supp-modal-input { background: #000; color: #fff; border: 1px solid #333; }
-
-body.dark .supp-list-item, 
-body.dark-mode .supp-list-item { border-bottom: 1px solid rgba(255,255,255,0.05); color: #fff; }
+/* СВЕТЛАЯ ТЕМА (когда на body висит класс light-theme) */
+body.light-theme .supp-modal-bg { background: #f0f0f0 !important; color: #000; }
+body.light-theme .supp-modal-header { background: #ffffff !important; border-bottom: 1px solid #ccc; }
+body.light-theme .supp-modal-input { background: #ffffff !important; color: #000 !important; border: 1px solid #aaa; }
+body.light-theme .supp-list-item { border-bottom: 1px solid #ddd; color: #000 !important; }
