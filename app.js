@@ -4205,24 +4205,28 @@ window.filterSuppliers = function() {
     document.getElementById('qe-supplier-dropdown').style.display = 'block';
 };
 
-// Открытие списка: блокируем фон и поднимаем модалку
+// Открытие списка: фиксируем блок на самом верху экрана
 window.showSupplierDropdown = function() {
     const input = document.getElementById('qe-supplier-input');
     const modal = document.getElementById('qe-receive-block');
     
-    // Блокируем скролл всего приложения
+    // Блокируем скролл фона
     document.body.style.overflow = 'hidden';
     
-    // Поднимаем карточку наверх (подбери пиксели, если нужно выше/ниже)
     if (modal) {
-        modal.style.transform = 'translateY(-40px)'; 
+        // Вырываем блок из потока и прижимаем к верху экрана
+        modal.style.position = 'fixed';
+        modal.style.top = '15px';
+        modal.style.left = '15px';
+        modal.style.right = '15px';
+        modal.style.zIndex = '10000';
     }
 
     window.renderCustomSupplierDropdown(input.value);
     document.getElementById('qe-supplier-dropdown').style.display = 'block';
 };
 
-// Выбор из списка: разблокируем фон и опускаем модалку
+// Выбор из списка: возвращаем блок на место
 window.selectCustomSupplier = function(val) {
     const input = document.getElementById('qe-supplier-input');
     const modal = document.getElementById('qe-receive-block');
@@ -4230,14 +4234,18 @@ window.selectCustomSupplier = function(val) {
     input.value = val;
     document.getElementById('qe-supplier-dropdown').style.display = 'none';
     
-    // Возвращаем всё как было
+    // Возвращаем всё в исходное состояние
     document.body.style.overflow = '';
     if (modal) {
-        modal.style.transform = 'none';
+        modal.style.position = '';
+        modal.style.top = '';
+        modal.style.left = '';
+        modal.style.right = '';
+        modal.style.zIndex = '';
     }
 };
 
-// Клик мимо списка: тоже разблокируем фон и опускаем модалку
+// Клик мимо списка: тоже возвращаем на место
 document.addEventListener('click', function(e) {
     const dropdown = document.getElementById('qe-supplier-dropdown');
     const input = document.getElementById('qe-supplier-input');
@@ -4248,7 +4256,11 @@ document.addEventListener('click', function(e) {
         
         document.body.style.overflow = '';
         if (modal) {
-            modal.style.transform = 'none';
+            modal.style.position = '';
+            modal.style.top = '';
+            modal.style.left = '';
+            modal.style.right = '';
+            modal.style.zIndex = '';
         }
     }
 });
