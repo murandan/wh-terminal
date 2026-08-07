@@ -4205,62 +4205,44 @@ window.filterSuppliers = function() {
     document.getElementById('qe-supplier-dropdown').style.display = 'block';
 };
 
-// Открытие списка: фиксируем блок на самом верху экрана
+// Открытие списка
 window.showSupplierDropdown = function() {
     const input = document.getElementById('qe-supplier-input');
-    const modal = document.getElementById('qe-receive-block');
+    const greenBlock = document.getElementById('qe-receive-block');
     
-    // Блокируем скролл фона
+    // Блокируем общий фон приложения от случайных прокруток
     document.body.style.overflow = 'hidden';
     
-    if (modal) {
-        // Вырываем блок из потока и прижимаем к верху экрана
-        modal.style.position = 'fixed';
-        modal.style.top = '15px';
-        modal.style.left = '15px';
-        modal.style.right = '15px';
-        modal.style.zIndex = '10000';
-    }
-
     window.renderCustomSupplierDropdown(input.value);
     document.getElementById('qe-supplier-dropdown').style.display = 'block';
+
+    // Даем iOS 300 миллисекунд на то, чтобы вытащить клавиатуру, 
+    // после чего плавно прокручиваем зеленую карточку к самому верху экрана
+    if (greenBlock) {
+        setTimeout(() => {
+            greenBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 300);
+    }
 };
 
-// Выбор из списка: возвращаем блок на место
+// Выбор из списка
 window.selectCustomSupplier = function(val) {
     const input = document.getElementById('qe-supplier-input');
-    const modal = document.getElementById('qe-receive-block');
     
     input.value = val;
     document.getElementById('qe-supplier-dropdown').style.display = 'none';
     
-    // Возвращаем всё в исходное состояние
+    // Разблокируем фон
     document.body.style.overflow = '';
-    if (modal) {
-        modal.style.position = '';
-        modal.style.top = '';
-        modal.style.left = '';
-        modal.style.right = '';
-        modal.style.zIndex = '';
-    }
 };
 
-// Клик мимо списка: тоже возвращаем на место
+// Клик мимо
 document.addEventListener('click', function(e) {
     const dropdown = document.getElementById('qe-supplier-dropdown');
     const input = document.getElementById('qe-supplier-input');
-    const modal = document.getElementById('qe-receive-block');
     
     if (dropdown && input && e.target !== input && !dropdown.contains(e.target)) {
         dropdown.style.display = 'none';
-        
         document.body.style.overflow = '';
-        if (modal) {
-            modal.style.position = '';
-            modal.style.top = '';
-            modal.style.left = '';
-            modal.style.right = '';
-            modal.style.zIndex = '';
-        }
     }
 });
