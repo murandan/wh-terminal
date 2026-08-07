@@ -649,7 +649,7 @@ window.openQuickEditModal = function(id) {
                 <!-- === КОНЕЦ ОБЕРТКИ (qe-top-section) === -->
 
                 <!-- === НОВЫЙ БЛОК: ОФОРМЛЕНИЕ ПРИХОДА === -->
-            <div id="qe-receive-block" style="display: none; padding: 12px; background: rgba(46,125,50,0.05); border: 1px solid #2e7d32; border-radius: 6px; margin-bottom: 15px;">
+                <div id="qe-receive-block" style="display: none; padding: 12px; background: rgba(46,125,50,0.05); border: 1px solid #2e7d32; border-radius: 6px; margin-bottom: 15px; transition: transform 0.3s ease;">
                 <h4 data-i18n="qe_receive_title" style="margin: 0 0 10px 0; font-size: 12px; text-align: center; color: #4CAF50; text-transform: uppercase;">${t('qe_receive_title')}</h4>
                 
                 <!-- ПОСТАВЩИК -->
@@ -657,7 +657,7 @@ window.openQuickEditModal = function(id) {
                 <div style="position: relative; width: 100%; margin-bottom: 10px;">
                     <input type="text" id="qe-supplier-input" placeholder="${t('qe_supplier_placeholder')}" autocomplete="off" oninput="window.filterSuppliers()" onfocus="window.showSupplierDropdown()" style="width: 100%; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px; font-size: 15px; box-sizing: border-box;">
                     
-                    <div id="qe-supplier-dropdown" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; max-height: 200px; overflow-y: auto; z-index: 9999; margin-top: 4px; background: #1e1e1e; border: 1px solid #333; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.8);">
+                    <div id="qe-supplier-dropdown" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; max-height: 40vh; overflow-y: auto; overscroll-behavior: contain; z-index: 9999; margin-top: 4px; background: #1e1e1e; border: 1px solid #333; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.8);">
                     </div>
                 </div>
 
@@ -4205,26 +4205,50 @@ window.filterSuppliers = function() {
     document.getElementById('qe-supplier-dropdown').style.display = 'block';
 };
 
-// Функция срабатывает при клике в поле (показываем весь список, если поле пустое)
+// Открытие списка: блокируем фон и поднимаем модалку
 window.showSupplierDropdown = function() {
     const input = document.getElementById('qe-supplier-input');
+    const modal = document.getElementById('qe-receive-block');
+    
+    // Блокируем скролл всего приложения
+    document.body.style.overflow = 'hidden';
+    
+    // Поднимаем карточку наверх (подбери пиксели, если нужно выше/ниже)
+    if (modal) {
+        modal.style.transform = 'translateY(-40px)'; 
+    }
+
     window.renderCustomSupplierDropdown(input.value);
     document.getElementById('qe-supplier-dropdown').style.display = 'block';
 };
 
-// Функция выбора поставщика из списка
+// Выбор из списка: разблокируем фон и опускаем модалку
 window.selectCustomSupplier = function(val) {
     const input = document.getElementById('qe-supplier-input');
+    const modal = document.getElementById('qe-receive-block');
+    
     input.value = val;
     document.getElementById('qe-supplier-dropdown').style.display = 'none';
+    
+    // Возвращаем всё как было
+    document.body.style.overflow = '';
+    if (modal) {
+        modal.style.transform = 'none';
+    }
 };
 
-// Закрытие списка при клике в любое другое место экрана
+// Клик мимо списка: тоже разблокируем фон и опускаем модалку
 document.addEventListener('click', function(e) {
     const dropdown = document.getElementById('qe-supplier-dropdown');
     const input = document.getElementById('qe-supplier-input');
+    const modal = document.getElementById('qe-receive-block');
     
     if (dropdown && input && e.target !== input && !dropdown.contains(e.target)) {
         dropdown.style.display = 'none';
+        
+        document.body.style.overflow = '';
+        if (modal) {
+            modal.style.transform = 'none';
+        }
     }
 });
