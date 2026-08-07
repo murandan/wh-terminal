@@ -4208,11 +4208,13 @@ window.openFullscreenSupplier = function() {
     const modal = document.getElementById('supplier-fullscreen-modal');
     const searchInput = document.getElementById('fullscreen-supplier-search');
     
+    // НАМЕРТВО БЛОКИРУЕМ ЗАДНИЙ ФОН
+    document.body.style.overflow = 'hidden';
+    
     modal.style.display = 'flex';
     searchInput.value = ''; // Очищаем поиск
     window.filterFullscreenSuppliers(); // Рисуем полный список
     
-    // Фокусируемся на поиске с небольшой задержкой для плавности
     setTimeout(() => {
         searchInput.focus();
     }, 100);
@@ -4221,9 +4223,11 @@ window.openFullscreenSupplier = function() {
 // Закрытие
 window.closeFullscreenSupplier = function() {
     document.getElementById('supplier-fullscreen-modal').style.display = 'none';
+    // РАЗБЛОКИРУЕМ ФОН
+    document.body.style.overflow = '';
 };
 
-// Фильтрация списка и кнопка "+ Добавить"
+// Фильтрация списка
 window.filterFullscreenSuppliers = function() {
     const listContainer = document.getElementById('fullscreen-supplier-list');
     const searchInput = document.getElementById('fullscreen-supplier-search');
@@ -4234,11 +4238,9 @@ window.filterFullscreenSuppliers = function() {
     const lowerFilter = filterText.toLowerCase();
     const suppliers = window.suppliers || [];
     
-    // Фильтруем базу
     const filtered = suppliers.filter(s => s.toLowerCase().includes(lowerFilter));
-    
-    // Если ввели текст, и полного совпадения в базе нет — показываем кнопку "Добавить"
     const exactMatch = suppliers.find(s => s.toLowerCase() === lowerFilter);
+    
     if (filterText.length > 0 && !exactMatch) {
         addNewBtn.style.display = 'block';
         newNamePreview.textContent = filterText;
@@ -4246,21 +4248,16 @@ window.filterFullscreenSuppliers = function() {
         addNewBtn.style.display = 'none';
     }
     
-    // Рисуем список
+    // УМЕНЬШИЛИ PADDING до 10px (было 16px) и немного уменьшили шрифт
     listContainer.innerHTML = filtered.map(s => `
-        <div onclick="window.selectFullscreenSupplier('${s}')" style="padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 16px; color: #fff; cursor: pointer;">
+        <div onclick="window.selectFullscreenSupplier('${s}')" style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 15px; color: #fff; cursor: pointer;">
             ${s}
         </div>
     `).join('');
 };
 
-// Выбор поставщика (существующего или нового)
 window.selectFullscreenSupplier = function(val) {
     const mainInput = document.getElementById('qe-supplier-input');
-    
-    // Записываем значение в главную форму
     mainInput.value = val;
-    
-    // Закрываем шторку
     window.closeFullscreenSupplier();
 };
