@@ -489,9 +489,6 @@
     </div>
 </div>
 
-<!-- ПОЛНОЭКРАННЫЙ ПОИСК ПОСТАВЩИКА -->
-<div id="supplier-fullscreen-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden; overscroll-behavior: none; background: #121212; z-index: 999999; flex-direction: column;">
-    
     <!-- Шапка с поиском (добавлен flex-shrink: 0 и немного уменьшены отступы) -->
     <div style="flex-shrink: 0; display: flex; padding: 10px 15px; padding-top: max(10px, env(safe-area-inset-top)); background: #1e1e1e; border-bottom: 1px solid #333; gap: 10px;">
         <input type="text" id="fullscreen-supplier-search" placeholder="Поиск или новый поставщик..." oninput="window.filterFullscreenSuppliers()" style="flex: 1; background: #000; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 6px; font-size: 16px;">
@@ -508,6 +505,8 @@
         <!-- Результаты -->
     </div>
 </div>
+<!-- ПОЛНОЭКРАННЫЙ ПОИСК ПОСТАВЩИКА -->
+<div id="supplier-fullscreen-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden; overscroll-behavior: none; background: #121212; z-index: 999999; flex-direction: column;">
 
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 <!-- Библиотека Quagga2 для видео-сканирования штрихкодов -->

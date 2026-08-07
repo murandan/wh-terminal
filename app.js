@@ -4220,6 +4220,7 @@ window.openFullscreenSupplier = function() {
     
     setTimeout(() => {
         searchInput.focus();
+        window.scrollTo(0, 0); // Принудительно возвращаем экран наверх при открытии клавиатуры
     }, 100);
 };
 
