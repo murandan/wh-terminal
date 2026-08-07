@@ -4299,12 +4299,16 @@ window.filterFullscreenSuppliers = function() {
 };
 
 window.selectFullscreenSupplier = function(val) {
-    const mainInput = document.getElementById('qe-supplier-input');
-    mainInput.value = val;
-
-    // ПИНАЕМ СИСТЕМУ: говорим, что данные изменились, чтобы они ушли в базу
-    mainInput.dispatchEvent(new Event('input', { bubbles: true }));
-    mainInput.dispatchEvent(new Event('change', { bubbles: true }));
-
+    // ВАЖНО: убедись, что 'qe-supplier-input' - это правильный ID твоего инпута
+    const mainInput = document.getElementById('qe-supplier-input'); 
+    
+    if (mainInput) {
+        mainInput.value = val;
+        
+        // ПИНАЕМ СИСТЕМУ: говорим основному коду, что значение изменилось
+        mainInput.dispatchEvent(new Event('input', { bubbles: true }));
+        mainInput.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    
     window.closeFullscreenSupplier();
 };
