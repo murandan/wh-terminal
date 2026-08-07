@@ -4293,16 +4293,27 @@ window.filterFullscreenSuppliers = function() {
 };
 
 window.selectFullscreenSupplier = function(val) {
-    // ВАЖНО: убедись, что 'qe-supplier-input' - это правильный ID твоего инпута
+    val = val ? val.trim() : '';
+    if (!val) return;
+
+    // 1. Инициализируем массив поставщиков, если его нет
+    if (!window.suppliers) window.suppliers = [];
+
+    // 2. Если такого поставщика еще нет в локальном списке — добавляем и сортируем
+    const exists = window.suppliers.some(s => s.toLowerCase() === val.toLowerCase());
+    if (!exists) {
+        window.suppliers.push(val);
+        window.suppliers.sort((a, b) => a.localeCompare(b));
+    }
+
+    // 3. Подставляем значение в инпут формы
     const mainInput = document.getElementById('qe-supplier-input'); 
-    
     if (mainInput) {
         mainInput.value = val;
-        
-        // ПИНАЕМ СИСТЕМУ: говорим основному коду, что значение изменилось
         mainInput.dispatchEvent(new Event('input', { bubbles: true }));
         mainInput.dispatchEvent(new Event('change', { bubbles: true }));
     }
     
+    // 4. Закрываем модалку
     window.closeFullscreenSupplier();
 };
