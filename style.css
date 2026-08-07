@@ -465,3 +465,22 @@ html.lock, body.lock {
     width: 100% !important;
     height: 100% !important;
 }
+
+/* Светлая тема (по умолчанию) */
+.supp-modal-bg { background: #f0f0f0; }
+.supp-modal-header { background: #fff; border-bottom: 1px solid #ccc; }
+.supp-modal-input { background: #fff; color: #000; border: 1px solid #aaa; }
+.supp-list-item { border-bottom: 1px solid #ddd; color: #000; }
+
+/* Темная тема (если на body вешается класс dark или dark-mode) */
+body.dark .supp-modal-bg, 
+body.dark-mode .supp-modal-bg { background: #121212; }
+
+body.dark .supp-modal-header, 
+body.dark-mode .supp-modal-header { background: #1e1e1e; border-bottom: 1px solid #333; }
+
+body.dark .supp-modal-input, 
+body.dark-mode .supp-modal-input { background: #000; color: #fff; border: 1px solid #333; }
+
+body.dark .supp-list-item, 
+body.dark-mode .supp-list-item { border-bottom: 1px solid rgba(255,255,255,0.05); color: #fff; }

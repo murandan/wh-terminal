@@ -4289,5 +4289,10 @@ window.filterFullscreenSuppliers = function() {
 window.selectFullscreenSupplier = function(val) {
     const mainInput = document.getElementById('qe-supplier-input');
     mainInput.value = val;
+
+    // ПИНАЕМ СИСТЕМУ: говорим, что данные изменились, чтобы они ушли в базу
+    mainInput.dispatchEvent(new Event('input', { bubbles: true }));
+    mainInput.dispatchEvent(new Event('change', { bubbles: true }));
+    
     window.closeFullscreenSupplier();
 };
