@@ -4210,6 +4210,9 @@ window.openFullscreenSupplier = function() {
     
     // НАМЕРТВО БЛОКИРУЕМ ЗАДНИЙ ФОН
     document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.top = '0';
     
     modal.style.display = 'flex';
     searchInput.value = ''; // Очищаем поиск
@@ -4224,6 +4227,9 @@ window.openFullscreenSupplier = function() {
 window.closeFullscreenSupplier = function() {
     document.getElementById('supplier-fullscreen-modal').style.display = 'none';
     // РАЗБЛОКИРУЕМ ФОН
+    document.body.style.position = '';
+    document.body.style.width = '';
+    document.body.style.top = '';
     document.body.style.overflow = '';
 };
 
