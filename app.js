@@ -139,7 +139,12 @@
                 qe_receive_price: "Цена закупа",
                 qe_btn_submit: "ВНЕСТИ ПРИХОД",
                 qe_btn_back: "НАЗАД",
-                qe_btn_open_receive: "+ Новая партия"
+                qe_btn_open_receive: "+ Новая партия",
+                modal_choose_supplier: "Выберите поставщика",
+                modal_enter_supplier: "Ввести поставщика",
+                modal_search_supplier: "Поиск или новый поставщик...",
+                modal_add_supplier: "+ Добавить",
+                modal_unknown_supplier: "Неизвестный поставщик"
             },
             kz: {
                 btn_sale: "САТУ", btn_return: "ҚАЙТАРУ", search_placeholder: "ІЗДЕУ...",
@@ -281,7 +286,12 @@
                 qe_receive_price: "Сатып алу бағасы",
                 qe_btn_submit: "КІРІСТІ ЕНГІЗУ",
                 qe_btn_back: "АРТҚА",
-                qe_btn_open_receive: "+ Жаңа топтама"
+                qe_btn_open_receive: "+ Жаңа топтама",
+                modal_choose_supplier: "Жеткізушіні таңдаңыз",
+                modal_enter_supplier: "Жеткізушіні енгізіңіз",
+                modal_search_supplier: "Іздеу немесе жаңа жеткізуші...",
+                modal_add_supplier: "+ Қосу",
+                modal_unknown_supplier: "Белгісіз жеткізуші"
             }
         };
         
@@ -1098,8 +1108,8 @@ window.saveQuickEdit = function(id) {
         const qty = qtyInput ? parseInt(qtyInput.value.replace(/\D/g, ''), 10) || 0 : 0;
         const price = priceInput ? parseInt(priceInput.value.replace(/\D/g, ''), 10) || 0 : 0;
         
-        let supplier = "Неизвестный поставщик";
-        // ФИКС: Читаем значение из нашего нового поля
+        // Берем значение по умолчанию из активного словаря
+        let supplier = translations[currentLang].modal_unknown_supplier;
         const customSupplier = document.getElementById('qe-supplier-input');
 
         if (customSupplier && customSupplier.value.trim() !== '') {
@@ -4232,15 +4242,17 @@ window.openFullscreenSupplier = function() {
     
     modal.style.display = 'flex';
     
-    // Безопасно подставляем перевод (если функция t доступна)
-    if (typeof t === 'function') {
-        try {
-            searchInput.placeholder = t('search_supplier') || 'Поиск или новый поставщик...';
-            // Переводим слово "Добавить", оставляем плюс
-            document.getElementById('fullscreen-add-text').textContent = '+ ' + (t('add') || 'Добавить') + ':';
-            // Строку с cancelBtn удалили, чтобы JS не стирал крестик
-        } catch(e) {}
-    }
+    // --- НОВЫЙ БЛОК ПЕРЕВОДОВ ---
+    try {
+        const mainSupplierInput = document.getElementById('qe-supplier-input');
+        if (mainSupplierInput) {
+            mainSupplierInput.placeholder = translations[currentLang].modal_choose_supplier;
+        }
+        if (searchInput) {
+            searchInput.placeholder = translations[currentLang].modal_search_supplier;
+        }
+    } catch(e) {}
+    // ----------------------------
     
     searchInput.value = ''; 
     window.filterFullscreenSuppliers(); 
@@ -4280,7 +4292,10 @@ window.filterFullscreenSuppliers = function() {
     
     if (filterText.length > 0 && !exactMatch) {
         addNewBtn.style.display = 'block';
-        newNamePreview.textContent = filterText;
+        
+        // Читаем перевод и склеиваем его с введенным текстом
+        const addText = translations[currentLang].modal_add_supplier;
+        addNewBtn.innerHTML = `${addText} "<b>${filterText}</b>"`;
     } else {
         addNewBtn.style.display = 'none';
     }
