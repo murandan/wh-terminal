@@ -649,16 +649,14 @@ window.openQuickEditModal = function(id) {
                 <!-- === КОНЕЦ ОБЕРТКИ (qe-top-section) === -->
 
                 <!-- === НОВЫЙ БЛОК: ОФОРМЛЕНИЕ ПРИХОДА === -->
-                <div id="qe-receive-block" style="display: none; padding: 12px; background: rgba(46,125,50,0.05); border: 1px solid #2e7d32; border-radius: 6px; margin-bottom: 15px; transition: transform 0.3s ease;">
+            <div id="qe-receive-block" style="display: none; padding: 12px; background: rgba(46,125,50,0.05); border: 1px solid #2e7d32; border-radius: 6px; margin-bottom: 15px;">
                 <h4 data-i18n="qe_receive_title" style="margin: 0 0 10px 0; font-size: 12px; text-align: center; color: #4CAF50; text-transform: uppercase;">${t('qe_receive_title')}</h4>
                 
                 <!-- ПОСТАВЩИК -->
                 <label data-i18n="qe_supplier" style="font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 2px; display: block;">${t('qe_supplier')}</label>
                 <div style="position: relative; width: 100%; margin-bottom: 10px;">
-                    <input type="text" id="qe-supplier-input" placeholder="${t('qe_supplier_placeholder')}" autocomplete="off" oninput="window.filterSuppliers()" onfocus="window.showSupplierDropdown()" style="width: 100%; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px; font-size: 15px; box-sizing: border-box;">
-                    
-                    <div id="qe-supplier-dropdown" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; max-height: 40vh; overflow-y: auto; overscroll-behavior: contain; z-index: 9999; margin-top: 4px; background: #1e1e1e; border: 1px solid #333; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.8);">
-                    </div>
+                    <!-- Поле теперь readonly. Оно работает просто как кнопка -->
+                    <input type="text" id="qe-supplier-input" placeholder="${t('qe_supplier_placeholder')}" readonly onclick="window.openFullscreenSupplier()" style="width: 100%; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px; font-size: 15px; box-sizing: border-box; cursor: pointer;">
                 </div>
 
                 <!-- ПОЛЯ КОЛИЧЕСТВА И ЦЕНЫ -->
@@ -4205,44 +4203,64 @@ window.filterSuppliers = function() {
     document.getElementById('qe-supplier-dropdown').style.display = 'block';
 };
 
-// Открытие списка
-window.showSupplierDropdown = function() {
-    const input = document.getElementById('qe-supplier-input');
-    const greenBlock = document.getElementById('qe-receive-block');
+// Открытие полноэкранного окна
+window.openFullscreenSupplier = function() {
+    const modal = document.getElementById('supplier-fullscreen-modal');
+    const searchInput = document.getElementById('fullscreen-supplier-search');
     
-    // Блокируем общий фон приложения от случайных прокруток
-    document.body.style.overflow = 'hidden';
+    modal.style.display = 'flex';
+    searchInput.value = ''; // Очищаем поиск
+    window.filterFullscreenSuppliers(); // Рисуем полный список
     
-    window.renderCustomSupplierDropdown(input.value);
-    document.getElementById('qe-supplier-dropdown').style.display = 'block';
-
-    // Даем iOS 300 миллисекунд на то, чтобы вытащить клавиатуру, 
-    // после чего плавно прокручиваем зеленую карточку к самому верху экрана
-    if (greenBlock) {
-        setTimeout(() => {
-            greenBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 300);
-    }
+    // Фокусируемся на поиске с небольшой задержкой для плавности
+    setTimeout(() => {
+        searchInput.focus();
+    }, 100);
 };
 
-// Выбор из списка
-window.selectCustomSupplier = function(val) {
-    const input = document.getElementById('qe-supplier-input');
-    
-    input.value = val;
-    document.getElementById('qe-supplier-dropdown').style.display = 'none';
-    
-    // Разблокируем фон
-    document.body.style.overflow = '';
+// Закрытие
+window.closeFullscreenSupplier = function() {
+    document.getElementById('supplier-fullscreen-modal').style.display = 'none';
 };
 
-// Клик мимо
-document.addEventListener('click', function(e) {
-    const dropdown = document.getElementById('qe-supplier-dropdown');
-    const input = document.getElementById('qe-supplier-input');
+// Фильтрация списка и кнопка "+ Добавить"
+window.filterFullscreenSuppliers = function() {
+    const listContainer = document.getElementById('fullscreen-supplier-list');
+    const searchInput = document.getElementById('fullscreen-supplier-search');
+    const addNewBtn = document.getElementById('fullscreen-add-new-btn');
+    const newNamePreview = document.getElementById('new-supplier-name-preview');
     
-    if (dropdown && input && e.target !== input && !dropdown.contains(e.target)) {
-        dropdown.style.display = 'none';
-        document.body.style.overflow = '';
+    const filterText = searchInput.value.trim();
+    const lowerFilter = filterText.toLowerCase();
+    const suppliers = window.suppliers || [];
+    
+    // Фильтруем базу
+    const filtered = suppliers.filter(s => s.toLowerCase().includes(lowerFilter));
+    
+    // Если ввели текст, и полного совпадения в базе нет — показываем кнопку "Добавить"
+    const exactMatch = suppliers.find(s => s.toLowerCase() === lowerFilter);
+    if (filterText.length > 0 && !exactMatch) {
+        addNewBtn.style.display = 'block';
+        newNamePreview.textContent = filterText;
+    } else {
+        addNewBtn.style.display = 'none';
     }
-});
+    
+    // Рисуем список
+    listContainer.innerHTML = filtered.map(s => `
+        <div onclick="window.selectFullscreenSupplier('${s}')" style="padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 16px; color: #fff; cursor: pointer;">
+            ${s}
+        </div>
+    `).join('');
+};
+
+// Выбор поставщика (существующего или нового)
+window.selectFullscreenSupplier = function(val) {
+    const mainInput = document.getElementById('qe-supplier-input');
+    
+    // Записываем значение в главную форму
+    mainInput.value = val;
+    
+    // Закрываем шторку
+    window.closeFullscreenSupplier();
+};
