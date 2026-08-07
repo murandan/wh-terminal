@@ -655,8 +655,7 @@ window.openQuickEditModal = function(id) {
                 <!-- ПОСТАВЩИК -->
                 <label data-i18n="qe_supplier" style="font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 2px; display: block;">${t('qe_supplier')}</label>
                 <div style="position: relative; width: 100%; margin-bottom: 10px;">
-                    <!-- Поле теперь readonly. Оно работает просто как кнопка -->
-                    <input type="text" id="qe-supplier-input" placeholder="${t('qe_supplier_placeholder')}" readonly onclick="window.openFullscreenSupplier()" style="width: 100%; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px; font-size: 15px; box-sizing: border-box; cursor: pointer;">
+                    <input type="text" id="qe-supplier-input" placeholder="Выберите поставщика" readonly onclick="window.openFullscreenSupplier()" style="width: 100%; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px; font-size: 15px; box-sizing: border-box; cursor: pointer;">
                 </div>
 
                 <!-- ПОЛЯ КОЛИЧЕСТВА И ЦЕНЫ -->
@@ -4203,37 +4202,63 @@ window.filterSuppliers = function() {
     document.getElementById('qe-supplier-dropdown').style.display = 'block';
 };
 
-// Открытие полноэкранного окна
+// ==========================================
+// ЛОГИКА ПОИСКА ПОСТАВЩИКА И ФИКС ДЛЯ iOS
+// ==========================================
+
+let vvRaf = 0;
+
+function updateViewport() {
+    const modalEl = document.getElementById('supplier-fullscreen-modal');
+    if (!window.visualViewport || !modalEl || modalEl.style.display === 'none') return;
+    
+    const vv = window.visualViewport;
+    modalEl.style.setProperty('--vv-offset', vv.offsetTop + 'px');
+    modalEl.style.height = vv.height + 'px';
+}
+
+function scheduleUpdate() {
+    cancelAnimationFrame(vvRaf);
+    vvRaf = requestAnimationFrame(updateViewport);
+}
+
+if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", scheduleUpdate);
+    window.visualViewport.addEventListener("scroll", scheduleUpdate);
+}
+
 window.openFullscreenSupplier = function() {
     const modal = document.getElementById('supplier-fullscreen-modal');
     const searchInput = document.getElementById('fullscreen-supplier-search');
     
-    // НАМЕРТВО БЛОКИРУЕМ ЗАДНИЙ ФОН
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
-    document.body.style.top = '0';
+    // Жесткая блокировка фона
+    document.documentElement.classList.add("lock");
+    document.body.classList.add("lock");
     
     modal.style.display = 'flex';
-    searchInput.value = ''; // Очищаем поиск
-    window.filterFullscreenSuppliers(); // Рисуем полный список
+    searchInput.value = ''; 
+    window.filterFullscreenSuppliers(); 
+    
+    scheduleUpdate(); // Считаем габариты до выезда клавиатуры
     
     setTimeout(() => {
         searchInput.focus();
     }, 100);
 };
 
-// Закрытие
 window.closeFullscreenSupplier = function() {
-    document.getElementById('supplier-fullscreen-modal').style.display = 'none';
-    // РАЗБЛОКИРУЕМ ФОН
-    document.body.style.position = '';
-    document.body.style.width = '';
-    document.body.style.top = '';
-    document.body.style.overflow = '';
+    const modal = document.getElementById('supplier-fullscreen-modal');
+    modal.style.display = 'none';
+    
+    // Снимаем блокировку
+    document.documentElement.classList.remove("lock");
+    document.body.classList.remove("lock");
+    
+    // Сбрасываем стили
+    modal.style.height = '100%';
+    modal.style.setProperty('--vv-offset', '0px');
 };
 
-// Фильтрация списка
 window.filterFullscreenSuppliers = function() {
     const listContainer = document.getElementById('fullscreen-supplier-list');
     const searchInput = document.getElementById('fullscreen-supplier-search');
@@ -4242,7 +4267,7 @@ window.filterFullscreenSuppliers = function() {
     
     const filterText = searchInput.value.trim();
     const lowerFilter = filterText.toLowerCase();
-    const suppliers = window.suppliers || [];
+    const suppliers = window.suppliers || []; // Предполагается, что window.suppliers существует
     
     const filtered = suppliers.filter(s => s.toLowerCase().includes(lowerFilter));
     const exactMatch = suppliers.find(s => s.toLowerCase() === lowerFilter);
@@ -4254,7 +4279,6 @@ window.filterFullscreenSuppliers = function() {
         addNewBtn.style.display = 'none';
     }
     
-    // УМЕНЬШИЛИ PADDING до 10px (было 16px) и немного уменьшили шрифт
     listContainer.innerHTML = filtered.map(s => `
         <div onclick="window.selectFullscreenSupplier('${s}')" style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 15px; color: #fff; cursor: pointer;">
             ${s}
