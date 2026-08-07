@@ -4236,6 +4236,11 @@ window.openFullscreenSupplier = function() {
     document.body.classList.add("lock");
     
     modal.style.display = 'flex';
+
+    // Вставляем переводы
+    document.getElementById('fullscreen-supplier-search').placeholder = t('search_supplier');
+    document.getElementById('fullscreen-cancel-btn').textContent = t('cancel');
+
     searchInput.value = ''; 
     window.filterFullscreenSuppliers(); 
     
@@ -4280,7 +4285,7 @@ window.filterFullscreenSuppliers = function() {
     }
     
     listContainer.innerHTML = filtered.map(s => `
-        <div onclick="window.selectFullscreenSupplier('${s}')" style="padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 15px; color: #fff; cursor: pointer;">
+        <div class="supp-list-item" onclick="window.selectFullscreenSupplier('${s}')" style="padding: 10px 0; font-size: 15px; cursor: pointer;">
             ${s}
         </div>
     `).join('');
@@ -4293,6 +4298,6 @@ window.selectFullscreenSupplier = function(val) {
     // ПИНАЕМ СИСТЕМУ: говорим, что данные изменились, чтобы они ушли в базу
     mainInput.dispatchEvent(new Event('input', { bubbles: true }));
     mainInput.dispatchEvent(new Event('change', { bubbles: true }));
-    
+
     window.closeFullscreenSupplier();
 };
