@@ -4230,21 +4230,26 @@ if (window.visualViewport) {
 window.openFullscreenSupplier = function() {
     const modal = document.getElementById('supplier-fullscreen-modal');
     const searchInput = document.getElementById('fullscreen-supplier-search');
+    const cancelBtn = document.getElementById('fullscreen-cancel-btn');
     
-    // Жесткая блокировка фона
+    // Блокируем фон
     document.documentElement.classList.add("lock");
     document.body.classList.add("lock");
     
     modal.style.display = 'flex';
-
-    // Вставляем переводы
-    document.getElementById('fullscreen-supplier-search').placeholder = t('search_supplier');
-    document.getElementById('fullscreen-cancel-btn').textContent = t('cancel');
-
+    
+    // Безопасно подставляем перевод (если функция t доступна)
+    if (typeof t === 'function') {
+        try {
+            searchInput.placeholder = t('search_supplier') || 'Поиск или новый поставщик...';
+            cancelBtn.textContent = t('cancel') || 'Отмена';
+        } catch(e) {}
+    }
+    
     searchInput.value = ''; 
     window.filterFullscreenSuppliers(); 
     
-    scheduleUpdate(); // Считаем габариты до выезда клавиатуры
+    scheduleUpdate();
     
     setTimeout(() => {
         searchInput.focus();
