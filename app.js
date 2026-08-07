@@ -1099,17 +1099,11 @@ window.saveQuickEdit = function(id) {
         const price = priceInput ? parseInt(priceInput.value.replace(/\D/g, ''), 10) || 0 : 0;
         
         let supplier = "Неизвестный поставщик";
-        const customSupplier = document.getElementById('qe-new-supplier-input');
+        // ФИКС: Читаем значение из нашего нового поля
+        const customSupplier = document.getElementById('qe-supplier-input');
 
-        // Проверяем: если поле ввода открыто и там есть текст, берем его
-        if (customSupplier && customSupplier.offsetParent !== null && customSupplier.value.trim() !== '') {
+        if (customSupplier && customSupplier.value.trim() !== '') {
             supplier = customSupplier.value.trim(); 
-        } else {
-            // Иначе берем текст с кнопки и отрезаем стрелку
-            const supplierElements = document.querySelectorAll('#qe-supplier-trigger');
-            if (supplierElements.length > 0) {
-                supplier = supplierElements[supplierElements.length - 1].innerText.replace('▼', '').trim();
-            }
         }
 
         if (qty <= 0) {
