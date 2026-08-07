@@ -744,6 +744,14 @@ window.openQuickEditModal = function(id) {
     if (numpad) numpad.style.display = 'none';
     if (topSection) topSection.classList.remove('form-disabled');
     window.activeQeFieldId = null; // Сбрасываем глобальный стейт фокуса
+
+    // --- ПРИНУДИТЕЛЬНЫЙ ПЕРЕВОД ПЛЕЙСХОЛДЕРА ПРИ ОТКРЫТИИ ОКНА ---
+    try {
+        const mainSupplierInput = document.getElementById('qe-supplier-input');
+        if (mainSupplierInput) {
+            mainSupplierInput.placeholder = translations[currentLang].modal_choose_supplier;
+        }
+    } catch(e) {}
 };
 
 // Открывает/закрывает наш кастомный список

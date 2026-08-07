@@ -473,7 +473,12 @@ html.lock, body.lock {
 .supp-list-item { border-bottom: 1px solid rgba(255,255,255,0.08); color: #fff !important; }
 
 /* СВЕТЛАЯ ТЕМА (когда на body висит класс light-theme) */
-body.light-theme .supp-modal-bg { background: #f0f0f0 !important; color: #000; }
+body.light-theme .supp-modal-bg { background: #e4e6e8 !important; color: #000; }
 body.light-theme .supp-modal-header { background: #ffffff !important; border-bottom: 1px solid #ccc; }
 body.light-theme .supp-modal-input { background: #ffffff !important; color: #000 !important; border: 1px solid #aaa; }
 body.light-theme .supp-list-item { border-bottom: 1px solid #ddd; color: #000 !important; }
+/* Либо 100% рабочий вариант: добавляем рамки самим инпутам, чтобы они не сливались с фоном */
+body.light-theme #qe-supplier-input,
+body.light-theme .qe-input-group input {
+    background: #ffffff !important;
+    border: 1px solid #b0b0b0 !important;}
