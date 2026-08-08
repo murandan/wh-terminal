@@ -657,7 +657,7 @@ window.openQuickEditModal = function(id) {
                                 <span style="font-size: 10px; color: #2e7d32; font-weight: bold;"><span data-i18n="qe_current">${t('qe_current')}</span>: ${formattedPrice}</span>
                         </div>
                             <!-- Добавили formatNumberSpaces сюда -->
-                            <input type="text" class="no-spinners" id="qe-price" value="${formatNumberSpaces(item.price || 0)}" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%;">
+                            <input type="text" class="no-spinners" id="qe-price" value="${formatNumberSpaces(priceVal)}" inputmode="none" onclick="window.setQeActive(this, event)" style="width: 100%;">
                         </div>
                         <div style="flex: 1;">
                             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2px;">
@@ -665,7 +665,7 @@ window.openQuickEditModal = function(id) {
                                 <span style="font-size: 10px; color: #2e7d32; font-weight: bold;"><span data-i18n="qe_fact">${t('qe_fact')}</span>: ${currentStock}</span>
                             </div>
                             <!-- И добавили formatNumberSpaces сюда -->
-                            <input type="text" class="no-spinners" id="qe-minstock" value="${formatNumberSpaces(minStockVal)}" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%;">
+                            <input type="text" class="no-spinners" id="qe-minstock" value="${formatNumberSpaces(minStockVal)}" inputmode="none" onclick="window.setQeActive(this, event)" style="width: 100%;">
                         </div>
                     </div>
                 </div>
