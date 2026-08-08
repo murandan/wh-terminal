@@ -4376,7 +4376,7 @@ document.addEventListener('input', function(e) {
     // Проверяем, что ввод происходит именно в наших числовых полях
     const isNumberField = e.target && (
         e.target.id === 'qe-price' || 
-        e.target.id === 'qe-min-stock' || 
+        e.target.id === 'qe-minstock' || 
         e.target.id === 'qe-receive-price' || 
         e.target.id === 'qe-receive-qty'
     );
@@ -4390,6 +4390,18 @@ document.addEventListener('input', function(e) {
             e.target.value = Number(rawDigits).toLocaleString('ru-RU').replace(/,/g, ' ');
         } else {
             e.target.value = '';
+        }
+    }
+});
+// --- ПРИНУДИТЕЛЬНАЯ ОЧИСТКА ПРИ ПЕРВОМ ВВОДЕ С ФИЗИЧЕСКОЙ КЛАВИАТУРЫ ---
+document.addEventListener('keydown', function(e) {
+    // Проверяем, что клик в инпуте, и что пользователь нажал цифру
+    if (e.target && e.target.tagName === 'INPUT' && /\d/.test(e.key)) {
+        // Если стоит команда стереть при первом вводе
+        if (window.qeNeedsClear || window.receiveNeedsClear) {
+            e.target.value = ''; // Стираем старое значение
+            window.qeNeedsClear = false;
+            window.receiveNeedsClear = false;
         }
     }
 });
