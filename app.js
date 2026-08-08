@@ -4029,11 +4029,13 @@ window.receiveNeedsClear = false;
 
 // 1. Активация полей (Количество / Цена)
 window.activateReceiveField = function(el, event) {
+    // 1. Блокируем всплытие клика, но НЕ блокируем работу самого инпута!
     if (event) {
-        event.preventDefault();
+        // Удалили event.preventDefault(); — именно он убивал значения на ПК
         event.stopPropagation();
     }
     
+    // Прячем основную нижнюю клаву
     const mainNumpad = document.getElementById('custom-numpad');
     if (mainNumpad) mainNumpad.style.display = 'none';
 
@@ -4051,9 +4053,12 @@ window.activateReceiveField = function(el, event) {
     document.querySelectorAll('#qe-receive-block input').forEach(inp => inp.style.borderColor = '#333');
     el.style.borderColor = '#4CAF50';
 
-    // Выделение текста синим цветом для ПК
+    // Фокус и выделение текста синим цветом для ПК
     setTimeout(() => {
-        el.setSelectionRange(0, el.value.length);
+        el.focus(); // Принудительно даем фокус перед выделением
+        if (el.value) {
+            el.setSelectionRange(0, el.value.length);
+        }
     }, 10);
 };
 
