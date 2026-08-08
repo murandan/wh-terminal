@@ -385,37 +385,37 @@ window.currentQeInput = null;
 window.qeNeedsClear = false;
 
 window.setQeActive = function(el, event) {
-    // Проверка: если это ПК (нет грубого пальцевого ввода), то кастомную клаву даже не пытаемся показывать
-    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
-    if (!isTouchDevice) {
-        return; // На ПК работаем со стандартной клавиатурой браузера
-    }
-    // --- НОВОЕ: ЗАЩИТА ОТ ДВОЙНОЙ КЛАВИАТУРЫ ---
-    // Проверяем, открыт ли блок прихода. Если да — выходим, не открывая основную клаву
+    // 1. Проверяем, открыт ли блок прихода
     const receiveBlock = document.getElementById('qe-receive-block');
     const isReceiveMode = receiveBlock && window.getComputedStyle(receiveBlock).display !== 'none';
     if (isReceiveMode) return;
-    // --------------------------------------------
 
-    // ДАЛЕЕ ИДЕТ ТВОЙ ОРИГИНАЛЬНЫЙ КОД БЕЗ ИЗМЕНЕНИЙ:
     if (event) event.stopPropagation();
-    
-    const numpad = document.getElementById('custom-numpad');
-    if (numpad) numpad.style.display = 'grid';
 
+    // 2. --- ПРАВИЛЬНАЯ ПРОВЕРКА НА ПК ---
+    // Вызываем кастомную клаву ТОЛЬКО на устройствах с тачскрином
+    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+    const numpad = document.getElementById('custom-numpad');
+    if (numpad && isTouchDevice) {
+        numpad.style.display = 'grid';
+    }
+
+    // 3. --- ЭТО ДОЛЖНО РАБОТАТЬ ВЕЗДЕ (И НА ПК, И НА МОБИЛКЕ) ---
+    // Убираем подсветку со старых полей
     document.querySelectorAll('.qe-active-input').forEach(input => {
         input.classList.remove('qe-active-input');
     });
     
+    // Подсвечиваем текущее поле (даем зеленую рамку)
     window.currentQeInput = el;
     el.classList.add('qe-active-input');
 
-    // 1. Нативное выделение (чтобы сканер сразу затирал выделенный штрихкод)
+    // Нативное выделение текста синим цветом
     setTimeout(() => {
         el.setSelectionRange(0, el.value.length);
     }, 10);
 
-    // 2. Ставим флаг для Numpad: первое нажатие сотрет старые данные
+    // Флаг очистки: теперь он сработает и на ПК!
     window.qeNeedsClear = true;
 };
 
@@ -4029,30 +4029,32 @@ window.receiveNeedsClear = false;
 
 // 1. Активация полей (Количество / Цена)
 window.activateReceiveField = function(el, event) {
-    // Проверка: если это ПК (нет грубого пальцевого ввода), то кастомную клаву даже не пытаемся показывать
-    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
-    if (!isTouchDevice) {
-        return; // На ПК работаем со стандартной клавиатурой браузера
-    }
-    // --- НОВОЕ: Блокируем всплытие клика к глобальным обработчикам ---
     if (event) {
         event.preventDefault();
         event.stopPropagation();
     }
     
-    // --- НОВОЕ: Принудительно прячем основную нижнюю клаву ---
     const mainNumpad = document.getElementById('custom-numpad');
     if (mainNumpad) mainNumpad.style.display = 'none';
 
-    // --- ТВОЯ ОРИГИНАЛЬНАЯ ЛОГИКА ---
     window.activeQeFieldId = el.id;
-    window.receiveNeedsClear = true; // Даем команду стереть при первом вводе
+    window.receiveNeedsClear = true; // Команда стереть при первом вводе
     
-    document.getElementById('receive-numpad').style.display = 'grid'; // Открываем внутреннюю клавиатуру
+    // Показываем внутреннюю клаву прихода ТОЛЬКО на мобилках
+    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+    if (isTouchDevice) {
+        const receiveNumpad = document.getElementById('receive-numpad');
+        if (receiveNumpad) receiveNumpad.style.display = 'grid'; 
+    }
     
     // Подсветка активного поля
-    document.querySelectorAll('#qe-receive-block input[readonly]').forEach(inp => inp.style.borderColor = '#333');
+    document.querySelectorAll('#qe-receive-block input').forEach(inp => inp.style.borderColor = '#333');
     el.style.borderColor = '#4CAF50';
+
+    // Выделение текста синим цветом для ПК
+    setTimeout(() => {
+        el.setSelectionRange(0, el.value.length);
+    }, 10);
 };
 
 // 2. Ввод цифр с разделением на тысячи
