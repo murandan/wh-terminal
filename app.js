@@ -4441,5 +4441,87 @@ window.switchIncomeTab = function(tabName) {
         // Для формы используем flex, чтобы инпуты выстраивались в колонку
         blockManual.style.display = 'flex';
         blockExcel.style.display = 'none';
+
+        window.loadIncomeDropdowns();
     }
 };
+
+window.toggleIncDropdown = function(e, type) {
+    if (e) e.stopPropagation();
+    
+    // Закрываем другой список, если он открыт (чтобы не наслаивались)
+    const otherType = type === 'provider' ? 'category' : 'provider';
+    document.getElementById(`inc-${otherType}-dropdown`).style.display = 'none';
+    
+    const dropdown = document.getElementById(`inc-${type}-dropdown`);
+    const isHidden = dropdown.style.display === 'none';
+    dropdown.style.display = isHidden ? 'block' : 'none';
+    
+    const arrow = document.getElementById(`inc-${type}-arrow`);
+    if (arrow) arrow.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
+};
+
+window.handleIncCatClick = function(element, type) {
+    const value = element.getAttribute('data-val');
+    const text = element.getAttribute('data-text');
+
+    if (value === 'new') {
+        // Режим ручного ввода
+        document.getElementById(`inc-${type}-trigger`).style.display = 'none';
+        document.getElementById(`inc-new-${type}-wrapper`).style.display = 'flex';
+        document.getElementById(`inc-new-${type}`).focus();
+    } else {
+        // Обычный выбор
+        document.getElementById(`inc-${type}-display`).innerText = text;
+        document.getElementById(`inc-${type}-display`).style.color = 'var(--text-main)';
+        document.getElementById(`new-item-${type}`).value = value;
+    }
+    window.toggleIncDropdown(null, type);
+};
+
+window.cancelIncNew = function(type) {
+    document.getElementById(`inc-new-${type}-wrapper`).style.display = 'none';
+    document.getElementById(`inc-${type}-trigger`).style.display = 'flex';
+    document.getElementById(`inc-new-${type}`).value = '';
+    document.getElementById(`new-item-${type}`).value = '';
+    
+    document.getElementById(`inc-${type}-display`).innerText = type === 'provider' ? 'Поставщик...' : 'Категория...';
+    document.getElementById(`inc-${type}-display`).style.color = 'var(--text-muted)';
+};
+
+// Функция загрузки данных из глобальной базы
+window.loadIncomeDropdowns = function() {
+    if (!window.db) return; // Защита, если база еще не загрузилась
+
+    const categories = [...new Set(window.db.map(i => i.category).filter(Boolean))];
+    const providers = [...new Set(window.db.map(i => i.provider).filter(Boolean))]; 
+    // Если поле в базе называется не provider, а supplier, просто замени слово выше
+
+    // Заполняем поставщиков
+    let provHtml = `<div style="padding: 12px; cursor: pointer; border-bottom: 1px solid var(--border-light); color: var(--accent-green); font-weight: bold;" data-val="new" onclick="handleIncCatClick(this, 'provider')">+ Новый поставщик</div>`;
+    providers.forEach(p => {
+        provHtml += `<div style="padding: 12px; cursor: pointer; border-bottom: 1px solid var(--border-light);" data-val="${p}" data-text="${p}" onclick="handleIncCatClick(this, 'provider')">${p}</div>`;
+    });
+    const provDropdown = document.getElementById('inc-provider-dropdown');
+    if(provDropdown) provDropdown.innerHTML = provHtml;
+
+    // Заполняем категории
+    let catHtml = `<div style="padding: 12px; cursor: pointer; border-bottom: 1px solid var(--border-light); color: var(--accent-green); font-weight: bold;" data-val="new" onclick="handleIncCatClick(this, 'category')">+ Новая категория</div>`;
+    categories.forEach(c => {
+        catHtml += `<div style="padding: 12px; cursor: pointer; border-bottom: 1px solid var(--border-light);" data-val="${c}" data-text="${c}" onclick="handleIncCatClick(this, 'category')">${c}</div>`;
+    });
+    const catDropdown = document.getElementById('inc-category-dropdown');
+    if(catDropdown) catDropdown.innerHTML = catHtml;
+};
+
+// Закрываем список при клике в любое пустое место экрана
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#inc-provider-dropdown') && !e.target.closest('#inc-provider-trigger')) {
+        const dp = document.getElementById('inc-provider-dropdown');
+        if (dp) dp.style.display = 'none';
+    }
+    if (!e.target.closest('#inc-category-dropdown') && !e.target.closest('#inc-category-trigger')) {
+        const dc = document.getElementById('inc-category-dropdown');
+        if (dc) dc.style.display = 'none';
+    }
+});

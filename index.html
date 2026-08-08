@@ -470,12 +470,37 @@
             </div>
 
             <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <select id="new-item-provider" class="styled-select" style="flex: 1; padding: 12px; background: var(--bg-modal); border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; outline: none;">
-                    <option value="" disabled selected>Поставщик...</option>
-                </select>
-                <select id="new-item-category" class="styled-select" style="flex: 1; padding: 12px; background: var(--bg-modal); border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; outline: none;">
-                    <option value="" disabled selected>Категория...</option>
-                </select>
+                <!-- Блок Поставщика -->
+                <div style="flex: 1; position: relative;">
+                    <div id="inc-provider-trigger" onclick="window.toggleIncDropdown(event, 'provider')" style="padding: 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; display: flex; justify-content: space-between; cursor: pointer; align-items: center;">
+                        <div id="inc-provider-display" style="color: var(--text-muted);">Поставщик...</div>
+                        <input type="hidden" id="new-item-provider" value="">
+                        <span id="inc-provider-arrow" style="transition: 0.2s;">▼</span>
+                    </div>
+                    <div id="inc-new-provider-wrapper" style="display: none; align-items: center; gap: 5px;">
+                        <input type="text" id="inc-new-provider" class="qe-input" placeholder="Новый поставщик..." style="width: 100%; padding: 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; box-sizing: border-box; outline: none;">
+                        <button onclick="window.cancelIncNew('provider')" style="background: transparent; border: none; color: var(--text-muted); font-size: 16px; cursor: pointer;">✕</button>
+                    </div>
+                    <div id="inc-provider-dropdown" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 4px; max-height: 200px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                        <!-- JS вставит список -->
+                    </div>
+                </div>
+
+                <!-- Блок Категории -->
+                <div style="flex: 1; position: relative;">
+                    <div id="inc-category-trigger" onclick="window.toggleIncDropdown(event, 'category')" style="padding: 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; display: flex; justify-content: space-between; cursor: pointer; align-items: center;">
+                        <div id="inc-category-display" style="color: var(--text-muted);">Категория...</div>
+                        <input type="hidden" id="new-item-category" value="">
+                        <span id="inc-category-arrow" style="transition: 0.2s;">▼</span>
+                    </div>
+                    <div id="inc-new-category-wrapper" style="display: none; align-items: center; gap: 5px;">
+                        <input type="text" id="inc-new-category" class="qe-input" placeholder="Новая категория..." style="width: 100%; padding: 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; box-sizing: border-box; outline: none;">
+                        <button onclick="window.cancelIncNew('category')" style="background: transparent; border: none; color: var(--text-muted); font-size: 16px; cursor: pointer;">✕</button>
+                    </div>
+                    <div id="inc-category-dropdown" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 4px; max-height: 200px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                        <!-- JS вставит список -->
+                    </div>
+                </div>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px;">
@@ -536,7 +561,7 @@
             blockExcel.style.display = 'none';
         }
     };
-    
+
 </script>
 
 <!-- ========================================= -->
