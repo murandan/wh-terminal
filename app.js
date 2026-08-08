@@ -4468,7 +4468,7 @@ window.handleIncCatClick = function(element, type) {
     if (value === 'new') {
         // Режим ручного ввода
         document.getElementById(`inc-${type}-trigger`).style.display = 'none';
-        document.getElementById(`inc-new-${type}-wrapper`).style.display = 'flex';
+        document.getElementById(`inc-new-${type}-wrapper`).style.display = 'block';
         document.getElementById(`inc-new-${type}`).focus();
     } else {
         // Обычный выбор
@@ -4491,23 +4491,21 @@ window.cancelIncNew = function(type) {
 
 // Функция загрузки данных из глобальной базы
 window.loadIncomeDropdowns = function() {
-    // 1. Ищем базу данных (в твоем коде она скорее всего называется просто db)
-    const myDB = (typeof db !== 'undefined') ? db : window.db;
+    // 1. Берем базы (защита от undefined)
+    const myDB = (typeof db !== 'undefined') ? db : [];
+    
+    // ВАЖНО: Если глобальная переменная листа называется не incomes, а иначе (например incomesData), замени слово ниже:
+    const myIncomes = (typeof incomes !== 'undefined') ? incomes : [];
 
-    // 2. Если базы нет, выводим подсказку прямо в список!
-    if (!myDB || myDB.length === 0) {
-        const errorHtml = `<div style="padding: 12px; color: var(--accent-yellow);">Загрузка данных... (или база не найдена)</div>`;
-        document.getElementById('inc-provider-dropdown').innerHTML = errorHtml;
-        document.getElementById('inc-category-dropdown').innerHTML = errorHtml;
-        return;
-    }
-
-    // 3. Если база есть, собираем уникальные значения
+    // 2. Категории из db (по ключу)
     const categories = [...new Set(myDB.map(i => i.category).filter(Boolean))];
     
-    // ВАЖНО: Если у тебя в базе колонка поставщика называется supplier, 
-    // поменяй слово provider на supplier в строчке ниже!
-    const providers = [...new Set(myDB.map(i => i.supplier).filter(Boolean))]; 
+    // 3. Поставщики из incomes (по индексу 2), начиная с 4-й строки (индекс 3)
+    let providers = [];
+    if (myIncomes.length > 3 && Array.isArray(myIncomes[3])) {
+        // slice(3) пропускает пустую строку и две шапки
+        providers = [...new Set(myIncomes.slice(3).map(row => row[2]).filter(Boolean))];
+    }
 
     // Заполняем поставщиков
     let provHtml = `<div style="padding: 12px; cursor: pointer; border-bottom: 1px solid var(--border-light); color: var(--accent-green); font-weight: bold;" data-val="new" onclick="handleIncCatClick(this, 'provider')">+ Новый поставщик</div>`;
