@@ -685,11 +685,11 @@ window.openQuickEditModal = function(id) {
                 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                     <div style="flex: 1;">
                         <label data-i18n="qe_receive_qty" style="font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 2px; display: block;">${t('qe_receive_qty')}</label>
-                        <input type="text" id="qe-receive-qty" value="1" inputmode="none" readonly onclick="window.activateReceiveField(this, event)" style="width: 100%; text-align: center; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
+                        <input type="text" id="qe-receive-qty" value="1" inputmode="none" onclick="window.activateReceiveField(this, event)" style="width: 100%; text-align: center; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
                     </div>
                     <div style="flex: 1;">
                         <label data-i18n="qe_receive_price" style="font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 2px; display: block;">${t('qe_receive_price')}</label>
-                        <input type="text" id="qe-receive-price" value="0" inputmode="none" readonly onclick="window.activateReceiveField(this, event)" style="width: 100%; text-align: center; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
+                        <input type="text" id="qe-receive-price" value="0" inputmode="none" onclick="window.activateReceiveField(this, event)" style="width: 100%; text-align: center; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
                     </div>
                 </div>
 
