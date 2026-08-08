@@ -1250,6 +1250,8 @@ window.saveQuickEdit = function(id) {
     .catch(err => {
         alert('Ошибка связи с сервером: ' + err.message);
     });
+    const numpad = document.getElementById('custom-numpad');
+    if (numpad) numpad.style.display = 'none';
 };
 
 // === (Конец П1) ===
@@ -4174,7 +4176,11 @@ document.addEventListener('click', function(e) {
     // Если нажали НАЗАД в приходе
     if (e.target && e.target.id === 'btn-cancel-receive') {
         document.getElementById('qe-receive-block').style.display = 'none';
-        document.getElementById('receive-numpad').style.display = 'none';
+        
+        // ФИКС: Меняем receive-numpad на правильный custom-numpad
+        const numpad = document.getElementById('custom-numpad');
+        if (numpad) numpad.style.display = 'none'; 
+        
         document.getElementById('qe-bottom-buttons').style.display = 'flex'; // ВОЗВРАЩАЕМ ФУТЕР
         document.getElementById('qe-top-section').classList.remove('form-disabled');
         window.activeQeFieldId = null;
