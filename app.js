@@ -4491,35 +4491,16 @@ window.cancelIncNew = function(type) {
 
 // Функция загрузки данных из глобальной базы
 window.loadIncomeDropdowns = function() {
-    // 1. Берем базы (защита от undefined)
     const myDB = (typeof db !== 'undefined') ? db : [];
     
-    // ВАЖНО: Если глобальная переменная листа называется не incomes, а иначе (например incomesData), замени слово ниже:
-    const myIncomes = (typeof incomes !== 'undefined') ? incomes : [];
-
-    // 2. Категории из db (по ключу)
+    // Берем только категории
     const categories = [...new Set(myDB.map(i => i.category).filter(Boolean))];
     
-    // 3. Поставщики из incomes (по индексу 2), начиная с 4-й строки (индекс 3)
-    let providers = [];
-    if (myIncomes.length > 3 && Array.isArray(myIncomes[3])) {
-        // slice(3) пропускает пустую строку и две шапки
-        providers = [...new Set(myIncomes.slice(3).map(row => row[2]).filter(Boolean))];
-    }
-
-    // Заполняем поставщиков
-    let provHtml = `<div style="padding: 12px; cursor: pointer; border-bottom: 1px solid var(--border-light); color: var(--accent-green); font-weight: bold;" data-val="new" onclick="handleIncCatClick(this, 'provider')">+ Новый поставщик</div>`;
-    providers.forEach(p => {
-        provHtml += `<div style="padding: 12px; cursor: pointer; border-bottom: 1px solid var(--border-light);" data-val="${p}" data-text="${p}" onclick="handleIncCatClick(this, 'provider')">${p}</div>`;
-    });
-    const provDropdown = document.getElementById('inc-provider-dropdown');
-    if(provDropdown) provDropdown.innerHTML = provHtml;
-
-    // Заполняем категории
     let catHtml = `<div style="padding: 12px; cursor: pointer; border-bottom: 1px solid var(--border-light); color: var(--accent-green); font-weight: bold;" data-val="new" onclick="handleIncCatClick(this, 'category')">+ Новая категория</div>`;
     categories.forEach(c => {
         catHtml += `<div style="padding: 12px; cursor: pointer; border-bottom: 1px solid var(--border-light);" data-val="${c}" data-text="${c}" onclick="handleIncCatClick(this, 'category')">${c}</div>`;
     });
+    
     const catDropdown = document.getElementById('inc-category-dropdown');
     if(catDropdown) catDropdown.innerHTML = catHtml;
 };
@@ -4535,3 +4516,62 @@ document.addEventListener('click', function(e) {
         if (dc) dc.style.display = 'none';
     }
 });
+
+window.saveNewItemReceipt = function() {
+    // 1. Собираем тексты
+    const barcode = document.getElementById('new-item-barcode').value.trim();
+    const name = document.getElementById('new-item-name').value.trim();
+    
+    // Поставщик (берем из полноэкранного инпута)
+    const supplier = document.getElementById('qe-supplier-input').value.trim();
+    
+    // Категория (проверяем, открыт ли ручной ввод)
+    const isNewCategory = document.getElementById('inc-new-category-wrapper').style.display === 'block';
+    const category = isNewCategory 
+        ? document.getElementById('inc-new-category').value.trim() 
+        : document.getElementById('new-item-category').value.trim();
+
+    // 2. Собираем цифры (меняем запятые на точки на всякий случай)
+    const qty = parseFloat(document.getElementById('new-item-qty').value.replace(',', '.')) || 0;
+    const purchasePrice = parseFloat(document.getElementById('new-item-purchase-price').value.replace(',', '.')) || 0;
+    const retailPrice = parseFloat(document.getElementById('new-item-retail-price').value.replace(',', '.')) || 0;
+
+    // 3. Базовая защита: проверяем, что поля не пустые
+    if (!barcode || !name || !supplier || !category) {
+        alert('⚠️ Пожалуйста, заполните все текстовые поля (Штрихкод, Наименование, Поставщик, Категория).');
+        return;
+    }
+
+    if (qty <= 0) {
+        alert('⚠️ Количество товара должно быть больше нуля!');
+        return;
+    }
+
+    // 4. Финансовая защита (от дурака)
+    if (purchasePrice <= 0) {
+        alert('⚠️ Цена закупа не может быть нулевой!');
+        return;
+    }
+    if (retailPrice <= purchasePrice) {
+        alert('🛑 Ошибка: Розничная цена (' + retailPrice + ') должна быть строго больше цены закупа (' + purchasePrice + ')!');
+        return;
+    }
+
+    // 5. Упаковываем всё в красивый объект
+    const payload = {
+        barcode: barcode,
+        name: name,
+        supplier: supplier, 
+        category: category,
+        qty: qty,
+        purchasePrice: purchasePrice,
+        retailPrice: retailPrice,
+        timestamp: new Date().toISOString()
+    };
+
+    // Выводим в консоль для проверки
+    console.log("Пакет данных готов к отправке на сервер:", payload);
+    alert('✅ Данные успешно собраны! Проверь консоль браузера.');
+
+    // В будущем здесь добавим вызов Google Apps Script для записи в базу!
+};
