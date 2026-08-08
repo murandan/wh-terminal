@@ -370,23 +370,7 @@
     <input type="file" id="gallery-input" accept="image/*" style="display: none;" onchange="handlePhoto(event)">
     <canvas id="resize-canvas" style="display: none;"></canvas>
 
-    <div id="income-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-overlay); z-index: 10000; justify-content: center; align-items: flex-start; padding-top: 15vh; backdrop-filter: blur(3px);">
-    <div style="background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 8px; width: 95%; max-width: 600px; padding: 20px; color: var(--text-main); max-height: 90vh; display: flex; flex-direction: column; position: relative; margin-bottom: 15vh;">
-        
-        <!-- Общая шапка -->
-        <button onclick="toggleIncomeModule()" style="position: absolute; right: 15px; top: 15px; background: transparent; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer;">✕</button>
-        <h3 style="margin-bottom: 15px; color: var(--accent-green);" data-i18n="income_general_title">📦 ПРИЕМКА ТОВАРА</h3>
-        
-        <!-- Вкладки переключения -->
-        <div class="tabs-wrapper" style="display: flex; gap: 10px; margin-bottom: 20px;">
-            <button id="tab-btn-excel" onclick="window.switchIncomeTab('excel')" style="flex: 1; padding: 12px; background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;" data-i18n="tab_excel_import">ИМПОРТ EXCEL</button>
-            <button id="tab-btn-manual" onclick="window.switchIncomeTab('manual')" style="flex: 1; padding: 12px; background: transparent; color: var(--text-muted); border: 1px solid var(--border-light); border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;" data-i18n="tab_manual_receipt">НОВЫЙ ТОВАР</button>
-        </div>
-
-        <!-- ========================================== -->
-        <!-- БЛОК 1: ИМПОРТ НАКЛАДНОЙ (Активен)       -->
-        <!-- ========================================== -->
-        <div id="income-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-overlay); z-index: 10000; justify-content: center; align-items: flex-start; padding-top: 15vh; backdrop-filter: blur(3px);">
+   <div id="income-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-overlay); z-index: 10000; justify-content: center; align-items: flex-start; padding-top: 15vh; backdrop-filter: blur(3px);">
     <div style="background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 8px; width: 95%; max-width: 600px; padding: 20px; color: var(--text-main); max-height: 85vh; display: flex; flex-direction: column; position: relative;">
         
         <!-- Общая шапка -->
@@ -404,7 +388,6 @@
         <!-- ========================================== -->
         <div id="income-excel" style="display: block;">
             
-            <!-- Добавлен z-index: 999 чтобы список падал поверх кнопки -->
             <div class="minimal-input-container" style="position: relative; z-index: 999;">
                 <div class="currency-minimal-container">
                     <div class="currency-minimal-header" id="dropdownHeader" onclick="toggleDropdown()">
@@ -516,49 +499,45 @@
     </div>
 </div>
 
-        <!-- ========================================== -->
-        <!-- БЛОК 2: ПРИЕМ НОВОГО ТОВАРА (Скрыт)      -->
-        <!-- ========================================== -->
-        <div id="income-manual" style="display: none; flex-direction: column; overflow-y: auto;">
+<!-- Скрипт переключения (встроен прямо сюда для надежности) -->
+<script>
+    window.switchIncomeTab = function(tabName) {
+        const btnExcel = document.getElementById('tab-btn-excel');
+        const btnManual = document.getElementById('tab-btn-manual');
+        const blockExcel = document.getElementById('income-excel');
+        const blockManual = document.getElementById('income-manual');
+
+        if (!btnExcel || !blockExcel) {
+            console.error('Ошибка: Не найдены блоки модалки!');
+            return;
+        }
+
+        if (tabName === 'excel') {
+            btnExcel.style.background = 'var(--bg-success-dim)';
+            btnExcel.style.color = 'var(--accent-green)';
+            btnExcel.style.borderColor = 'var(--accent-green)';
             
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <input id="new-item-barcode" class="qe-input" type="text" placeholder="Штрихкод..." oninput="window.checkScannerStatus(this)" style="width: 100%; padding: 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; box-sizing: border-box; outline: none;">
-                <button class="qe-scan-btn" onclick="window.triggerCameraScan(event)" style="background: transparent; border: 1px solid var(--border-light); color: var(--text-main); border-radius: 4px; padding: 0 15px; cursor: pointer; font-size: 16px;">📷</button>
-            </div>
-
-            <div style="margin-bottom: 15px;">
-                <input id="new-item-name" class="qe-input" type="text" placeholder="Наименование товара..." style="width: 100%; padding: 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; box-sizing: border-box; outline: none;">
-            </div>
-
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <select id="new-item-provider" class="styled-select" style="flex: 1; padding: 12px; background: var(--bg-modal); border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; outline: none;">
-                    <option value="" disabled selected>Поставщик...</option>
-                </select>
-                <select id="new-item-category" class="styled-select" style="flex: 1; padding: 12px; background: var(--bg-modal); border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; outline: none;">
-                    <option value="" disabled selected>Категория...</option>
-                </select>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px;">
-                <div>
-                    <label style="display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 5px; text-align: center;">Количество</label>
-                    <input id="new-item-qty" class="qe-input" type="text" inputmode="none" placeholder="0" onclick="window.setQeActive(this, event)" style="width: 100%; padding: 12px; background: transparent; border: 1px solid var(--border-light); color: var(--text-main); border-radius: 4px; text-align: center; box-sizing: border-box; outline: none;">
-                </div>
-                <div>
-                    <label style="display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 5px; text-align: center;">Цена закупа</label>
-                    <input id="new-item-purchase-price" class="qe-input" type="text" inputmode="none" placeholder="0" onclick="window.setQeActive(this, event)" style="width: 100%; padding: 12px; background: transparent; border: 1px solid var(--border-light); color: var(--text-main); border-radius: 4px; text-align: center; box-sizing: border-box; outline: none;">
-                </div>
-                <div>
-                    <label style="display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 5px; text-align: center;">Розница</label>
-                    <input id="new-item-retail-price" class="qe-input" type="text" inputmode="none" placeholder="0" onclick="window.setQeActive(this, event)" style="width: 100%; padding: 12px; background: transparent; border: 1px solid var(--border-light); color: var(--text-main); border-radius: 4px; text-align: center; box-sizing: border-box; outline: none;">
-                </div>
-            </div>
-
-            <button onclick="window.saveNewItemReceipt()" style="background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); padding: 12px 15px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; font-size: 14px;">ОПРИХОДОВАТЬ ТОВАР</button>
-        </div>
-
-    </div>
-</div>
+            btnManual.style.background = 'transparent';
+            btnManual.style.color = 'var(--text-muted)';
+            btnManual.style.borderColor = 'var(--border-light)';
+            
+            blockExcel.style.display = 'block';
+            blockManual.style.display = 'none';
+        } else if (tabName === 'manual') {
+            btnManual.style.background = 'var(--bg-success-dim)';
+            btnManual.style.color = 'var(--accent-green)';
+            btnManual.style.borderColor = 'var(--accent-green)';
+            
+            btnExcel.style.background = 'transparent';
+            btnExcel.style.color = 'var(--text-muted)';
+            btnExcel.style.borderColor = 'var(--border-light)';
+            
+            blockManual.style.display = 'flex';
+            blockExcel.style.display = 'none';
+        }
+    };
+    
+</script>
 
 <!-- ========================================= -->
 <!-- ОКНО БЫСТРОГО РЕДАКТИРОВАНИЯ (QUICK EDIT) -->
