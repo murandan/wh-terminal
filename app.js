@@ -4507,7 +4507,7 @@ window.loadIncomeDropdowns = function() {
     
     // ВАЖНО: Если у тебя в базе колонка поставщика называется supplier, 
     // поменяй слово provider на supplier в строчке ниже!
-    const providers = [...new Set(myDB.map(i => i.provider).filter(Boolean))]; 
+    const providers = [...new Set(myDB.map(i => i.supplier).filter(Boolean))]; 
 
     // Заполняем поставщиков
     let provHtml = `<div style="padding: 12px; cursor: pointer; border-bottom: 1px solid var(--border-light); color: var(--accent-green); font-weight: bold;" data-val="new" onclick="handleIncCatClick(this, 'provider')">+ Новый поставщик</div>`;
