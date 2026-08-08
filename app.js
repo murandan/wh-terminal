@@ -4053,9 +4053,8 @@ window.activateReceiveField = function(el, event) {
     document.querySelectorAll('#qe-receive-block input').forEach(inp => inp.style.borderColor = '#333');
     el.style.borderColor = '#4CAF50';
 
-    // Фокус и выделение текста синим цветом для ПК
+    // Выделение текста синим цветом для ПК
     setTimeout(() => {
-        el.focus(); // Принудительно даем фокус перед выделением
         if (el.value) {
             el.setSelectionRange(0, el.value.length);
         }
