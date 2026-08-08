@@ -4418,29 +4418,27 @@ window.switchIncomeTab = function(tabName) {
     const blockManual = document.getElementById('income-manual');
 
     if (tabName === 'excel') {
-        // Делаем активной кнопку Excel
         btnExcel.style.background = 'var(--bg-success-dim)';
         btnExcel.style.color = 'var(--accent-green)';
         btnExcel.style.borderColor = 'var(--accent-green)';
         
-        // Гасим кнопку Ручного прихода
         btnManual.style.background = 'transparent';
         btnManual.style.color = 'var(--text-muted)';
         btnManual.style.borderColor = 'var(--border-light)';
         
-        blockExcel.style.display = 'flex';
+        // Используем block, чтобы не создавать скроллы
+        blockExcel.style.display = 'block';
         blockManual.style.display = 'none';
     } else if (tabName === 'manual') {
-        // Делаем активной кнопку Ручного прихода
         btnManual.style.background = 'var(--bg-success-dim)';
         btnManual.style.color = 'var(--accent-green)';
         btnManual.style.borderColor = 'var(--accent-green)';
         
-        // Гасим кнопку Excel
         btnExcel.style.background = 'transparent';
         btnExcel.style.color = 'var(--text-muted)';
         btnExcel.style.borderColor = 'var(--border-light)';
         
+        // Для формы используем flex, чтобы инпуты выстраивались в колонку
         blockManual.style.display = 'flex';
         blockExcel.style.display = 'none';
     }
