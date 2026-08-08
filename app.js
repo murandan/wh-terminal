@@ -657,7 +657,7 @@ window.openQuickEditModal = function(id) {
                                 <span style="font-size: 10px; color: #2e7d32; font-weight: bold;"><span data-i18n="qe_current">${t('qe_current')}</span>: ${formattedPrice}</span>
                         </div>
                             <!-- Добавили formatNumberSpaces сюда -->
-                            <input type="text" class="no-spinners" id="qe-price" value="${formatNumberSpaces(priceVal)}" inputmode="none" onclick="window.setQeActive(this, event)" style="width: 100%;">
+                            <input type="text" class="no-spinners" id="qe-price" value="${formattedPrice}" inputmode="none" onclick="window.setQeActive(this, event)" style="width: 100%;">
                         </div>
                         <div style="flex: 1;">
                             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2px;">
