@@ -385,6 +385,14 @@ window.currentQeInput = null;
 window.qeNeedsClear = false;
 
 window.setQeActive = function(el, event) {
+    // --- НОВОЕ: ЗАЩИТА ОТ ДВОЙНОЙ КЛАВИАТУРЫ ---
+    // Проверяем, открыт ли блок прихода. Если да — выходим, не открывая основную клаву
+    const receiveBlock = document.getElementById('qe-receive-block');
+    const isReceiveMode = receiveBlock && window.getComputedStyle(receiveBlock).display !== 'none';
+    if (isReceiveMode) return;
+    // --------------------------------------------
+
+    // ДАЛЕЕ ИДЕТ ТВОЙ ОРИГИНАЛЬНЫЙ КОД БЕЗ ИЗМЕНЕНИЙ:
     if (event) event.stopPropagation();
     
     const numpad = document.getElementById('custom-numpad');
@@ -3991,10 +3999,19 @@ document.addEventListener('click', function(e) {
     }
 
     // 3. Кнопка "Назад" в блоке прихода
+    // --- ЕДИНЫЙ БЛОК ДЛЯ КНОПКИ "НАЗАД" В ПРИХОДЕ ---
     if (e.target && e.target.closest('#btn-cancel-receive')) {
         e.preventDefault();
         document.getElementById('qe-receive-block').style.display = 'none';
-        document.getElementById('custom-numpad').style.display = 'none';
+        
+        // Прячем нижнюю клавиатуру
+        const numpad = document.getElementById('custom-numpad');
+        if (numpad) numpad.style.display = 'none';
+        
+        // Возвращаем футер с кнопками
+        const bottomButtons = document.getElementById('qe-bottom-buttons');
+        if (bottomButtons) bottomButtons.style.display = 'flex';
+        
         document.getElementById('qe-top-section').classList.remove('form-disabled');
         window.activeQeFieldId = null;
     }
@@ -4171,19 +4188,6 @@ document.addEventListener('click', function(e) {
         document.getElementById('qe-receive-block').style.display = 'block';
         document.getElementById('qe-bottom-buttons').style.display = 'none'; // ПРЯЧЕМ ФУТЕР
         document.getElementById('qe-top-section').classList.add('form-disabled');
-    }
-
-    // Если нажали НАЗАД в приходе
-    if (e.target && e.target.id === 'btn-cancel-receive') {
-        document.getElementById('qe-receive-block').style.display = 'none';
-        
-        // ФИКС: Меняем receive-numpad на правильный custom-numpad
-        const numpad = document.getElementById('custom-numpad');
-        if (numpad) numpad.style.display = 'none'; 
-        
-        document.getElementById('qe-bottom-buttons').style.display = 'flex'; // ВОЗВРАЩАЕМ ФУТЕР
-        document.getElementById('qe-top-section').classList.remove('form-disabled');
-        window.activeQeFieldId = null;
     }
 });
 
