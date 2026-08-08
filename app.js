@@ -4491,11 +4491,23 @@ window.cancelIncNew = function(type) {
 
 // Функция загрузки данных из глобальной базы
 window.loadIncomeDropdowns = function() {
-    if (!window.db) return; // Защита, если база еще не загрузилась
+    // 1. Ищем базу данных (в твоем коде она скорее всего называется просто db)
+    const myDB = (typeof db !== 'undefined') ? db : window.db;
 
-    const categories = [...new Set(window.db.map(i => i.category).filter(Boolean))];
-    const providers = [...new Set(window.db.map(i => i.provider).filter(Boolean))]; 
-    // Если поле в базе называется не provider, а supplier, просто замени слово выше
+    // 2. Если базы нет, выводим подсказку прямо в список!
+    if (!myDB || myDB.length === 0) {
+        const errorHtml = `<div style="padding: 12px; color: var(--accent-yellow);">Загрузка данных... (или база не найдена)</div>`;
+        document.getElementById('inc-provider-dropdown').innerHTML = errorHtml;
+        document.getElementById('inc-category-dropdown').innerHTML = errorHtml;
+        return;
+    }
+
+    // 3. Если база есть, собираем уникальные значения
+    const categories = [...new Set(myDB.map(i => i.category).filter(Boolean))];
+    
+    // ВАЖНО: Если у тебя в базе колонка поставщика называется supplier, 
+    // поменяй слово provider на supplier в строчке ниже!
+    const providers = [...new Set(myDB.map(i => i.provider).filter(Boolean))]; 
 
     // Заполняем поставщиков
     let provHtml = `<div style="padding: 12px; cursor: pointer; border-bottom: 1px solid var(--border-light); color: var(--accent-green); font-weight: bold;" data-val="new" onclick="handleIncCatClick(this, 'provider')">+ Новый поставщик</div>`;
