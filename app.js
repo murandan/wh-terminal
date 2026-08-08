@@ -385,6 +385,11 @@ window.currentQeInput = null;
 window.qeNeedsClear = false;
 
 window.setQeActive = function(el, event) {
+    // Проверка: если это ПК (нет грубого пальцевого ввода), то кастомную клаву даже не пытаемся показывать
+    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+    if (!isTouchDevice) {
+        return; // На ПК работаем со стандартной клавиатурой браузера
+    }
     // --- НОВОЕ: ЗАЩИТА ОТ ДВОЙНОЙ КЛАВИАТУРЫ ---
     // Проверяем, открыт ли блок прихода. Если да — выходим, не открывая основную клаву
     const receiveBlock = document.getElementById('qe-receive-block');
@@ -4024,6 +4029,11 @@ window.receiveNeedsClear = false;
 
 // 1. Активация полей (Количество / Цена)
 window.activateReceiveField = function(el, event) {
+    // Проверка: если это ПК (нет грубого пальцевого ввода), то кастомную клаву даже не пытаемся показывать
+    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+    if (!isTouchDevice) {
+        return; // На ПК работаем со стандартной клавиатурой браузера
+    }
     // --- НОВОЕ: Блокируем всплытие клика к глобальным обработчикам ---
     if (event) {
         event.preventDefault();
@@ -4361,3 +4371,25 @@ window.selectFullscreenSupplier = function(val) {
     // 4. Закрываем модалку
     window.closeFullscreenSupplier();
 };
+// --- ДИНАМИЧЕСКОЕ ФОРМАТИРОВАНИЕ ТЫСЯЧ ПРИ ВВОДЕ С ПК ---
+document.addEventListener('input', function(e) {
+    // Проверяем, что ввод происходит именно в наших числовых полях
+    const isNumberField = e.target && (
+        e.target.id === 'qe-price' || 
+        e.target.id === 'qe-min-stock' || 
+        e.target.id === 'qe-receive-price' || 
+        e.target.id === 'qe-receive-qty'
+    );
+
+    if (isNumberField) {
+        // Вырезаем всё, кроме цифр
+        let rawDigits = e.target.value.replace(/\D/g, '');
+        
+        if (rawDigits) {
+            // Форматируем красивыми пробелами (например, 1 500 000)
+            e.target.value = Number(rawDigits).toLocaleString('ru-RU').replace(/,/g, ' ');
+        } else {
+            e.target.value = '';
+        }
+    }
+});
