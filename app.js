@@ -377,10 +377,11 @@ window.qeNeedsClear = false;
 window.setQeActive = function(el, event) {
     if (event) event.stopPropagation();
     
-    // Показываем клавиатуру ТОЛЬКО если есть тачскрин
+    // Жесткая проверка на мобильное устройство (телефон/планшет)
     const numpad = document.getElementById('custom-numpad');
-    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-    if (numpad && isTouch) {
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (numpad && isMobile) {
         numpad.style.display = 'grid';
     }
 
@@ -391,7 +392,6 @@ window.setQeActive = function(el, event) {
     window.currentQeInput = el;
     el.classList.add('qe-active-input');
 
-    // Нативное выделение
     setTimeout(() => {
         el.setSelectionRange(0, el.value.length);
     }, 10);
@@ -3997,18 +3997,17 @@ window.activateReceiveField = function(el) {
     window.activeQeFieldId = el.id;
     window.receiveNeedsClear = true; 
     
-    // Показываем клавиатуру ТОЛЬКО если есть тачскрин (телефоны/планшеты)
+    // Жесткая проверка на мобильное устройство (телефон/планшет)
     const numpad = document.getElementById('receive-numpad');
-    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-    if (numpad && isTouch) {
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (numpad && isMobile) {
         numpad.style.display = 'grid';
     }
     
-    // Подсветка активного поля
     document.querySelectorAll('#qe-receive-block input[readonly]').forEach(inp => inp.style.borderColor = '#333');
     el.style.borderColor = '#4CAF50';
 
-    // ДОБАВЛЕНО: Нативное выделение текста (синий фон) для быстрого затирания
     setTimeout(() => {
         el.setSelectionRange(0, el.value.length);
     }, 10);
