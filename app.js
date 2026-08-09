@@ -4273,23 +4273,21 @@ window.filterFullscreenSuppliers = function() {
     
     const filterText = searchInput.value.trim();
     const lowerFilter = filterText.toLowerCase();
-    const suppliers = window.suppliers || []; // <-- Берем из правильного места!
+    const suppliers = window.suppliers || [];
     
-    // Фильтруем...
+    // Фильтруем и сортируем по алфавиту
     const filtered = suppliers.filter(s => s.toLowerCase().includes(lowerFilter));
-    // ...и сортируем по алфавиту (с учетом русского языка)
     filtered.sort((a, b) => a.localeCompare(b, 'ru', { sensitivity: 'base' }));
-
-    const exactMatch = suppliers.find(s => s.toLowerCase() === lowerFilter);
     
-    if (filterText.length > 0 && !exactMatch) {
+    // ИСПРАВЛЕННОЕ УСЛОВИЕ: Кнопка показывается ВСЕГДА, если введен хоть один символ
+    if (filterText.length > 0) {
         addNewBtn.style.display = 'block';
         newNamePreview.textContent = filterText;
     } else {
         addNewBtn.style.display = 'none';
     }
     
-    // Отрисовываем с поддержкой светлой/темной темы (color: var(--text-main))
+    // Отрисовываем список
     listContainer.innerHTML = filtered.map(s => `
         <div class="supp-list-item" onclick="window.selectFullscreenSupplier('${s}')" style="padding: 15px 0; border-bottom: 1px solid var(--border-light); color: var(--text-main); font-size: 16px; cursor: pointer;">
             ${s}
