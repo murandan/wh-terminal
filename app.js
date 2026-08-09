@@ -4368,30 +4368,40 @@ window.selectFullscreenSupplier = function(val) {
     val = val ? val.trim() : '';
     if (!val) return;
 
-    // 1. Вставляем выбранное значение в то самое главное поле
+    // 1. Вставляем выбранное значение в главное поле кассы
     const targetInput = document.getElementById('qe-supplier-input');
     if (targetInput) {
         targetInput.value = val;
         
-        // Обязательно "дергаем" поле, чтобы касса поняла, что текст изменился
+        // Дергаем события, чтобы касса зафиксировала ввод
         targetInput.dispatchEvent(new Event('input'));
         targetInput.dispatchEvent(new Event('change'));
     }
 
-    // 2. Очищаем поле поиска для следующего раза
+    // 2. Очищаем поле поиска
     const searchInput = document.getElementById('fullscreen-supplier-search');
     if (searchInput) searchInput.value = '';
 
-    // 3. ЗАКРЫВАЕМ ОКНО, чтобы ты увидел подставленное значение
-    if (typeof window.closeFullscreenSupplier === 'function') {
-        window.closeFullscreenSupplier();
-    } else {
-        const modal = document.getElementById('supplier-fullscreen-modal');
-        if (modal) modal.style.display = 'none';
-    }
-
-    // 4. Сбрасываем фильтры списка на фоне
+    // 3. Перерисовываем список
     window.filterFullscreenSuppliers();
+
+    // 4. УМНОЕ ЗАКРЫТИЕ ОКНА
+    // Получаем текущий список поставщиков
+    const existingSuppliers = (window.suppliers || []).map(String);
+    
+    // Проверяем, является ли выбранный текст новым поставщиком
+    const isNewSupplier = !existingSuppliers.includes(val);
+
+    // Если это новый поставщик (клик по "Добавить..."), закрываем окно.
+    // Если это существующий поставщик (клик по списку), окно остается открытым.
+    if (isNewSupplier) {
+        if (typeof window.closeFullscreenSupplier === 'function') {
+            window.closeFullscreenSupplier();
+        } else {
+            const modal = document.getElementById('supplier-fullscreen-modal');
+            if (modal) modal.style.display = 'none';
+        }
+    }
 };
 
 // --- ДИНАМИЧЕСКОЕ ФОРМАТИРОВАНИЕ ТЫСЯЧ ПРИ ВВОДЕ С ПК ---
