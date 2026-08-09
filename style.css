@@ -496,16 +496,6 @@ body.light-theme #qe-receive-block input {
     border-radius: 4px !important;
 }
 
-/* ПРИНУДИТЕЛЬНЫЕ ЦВЕТА ДЛЯ ОКНА ПОСТАВЩИКОВ (СВЕТЛАЯ ТЕМА) */
-body.light-theme #fullscreen-supplier-modal {
-    background-color: #e4e6e8 !important; /* Светло-серый фон самого окна */
-}
-
-/* Красим шапку (первый div внутри модалки, где лежит инпут и кнопка) */
-body.light-theme #fullscreen-supplier-modal > div:first-child {
-    background-color: #ffffff !important; /* Белая шапка */
-    border-bottom: 1px solid #ccc !important;
-}
 
 /* На всякий случай делаем фон списка прозрачным, чтобы он перенял цвет окна */
 body.light-theme #fullscreen-supplier-list {
