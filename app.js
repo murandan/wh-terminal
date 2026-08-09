@@ -4323,36 +4323,46 @@ window.closeFullscreenSupplier = function() {
 };
 
 window.filterFullscreenSuppliers = function() {
+    // 1. Проверяем HTML-элементы
+    const listContainer = document.getElementById('fullscreen-supplier-list');
+    const searchInput = document.getElementById('fullscreen-supplier-search');
+    
+    if (!listContainer) {
+        alert('ДИАГНОСТИКА: Не найден HTML-блок "fullscreen-supplier-list".');
+        return;
+    }
+    if (!searchInput) {
+        alert('ДИАГНОСТИКА: Не найдено поле поиска "fullscreen-supplier-search".');
+        return;
+    }
+
+    // 2. Проверяем базу данных
+    if (typeof incomes === 'undefined') {
+        alert('ДИАГНОСТИКА: Массив данных "incomes" не существует или еще не загрузился!');
+        return;
+    }
+    if (!Array.isArray(incomes)) {
+        alert('ДИАГНОСТИКА: Данные "incomes" есть, но это не массив!');
+        return;
+    }
+
     try {
-        const listContainer = document.getElementById('fullscreen-supplier-list');
-        const searchInput = document.getElementById('fullscreen-supplier-search');
         const addNewBtn = document.getElementById('fullscreen-add-new-btn');
         const newNamePreview = document.getElementById('new-supplier-name-preview');
-
-        if (!listContainer || !searchInput) return;
-
         const query = searchInput.value.trim().toLowerCase();
 
-        // Проверяем, загрузились ли данные из таблицы вообще
-        if (typeof incomes === 'undefined' || !Array.isArray(incomes)) return;
-
-        // 1. Собираем уникальных поставщиков безопасно
+        // 3. Пытаемся собрать данные
         let suppliers = [...new Set(
             incomes.slice(3)
                 .map(row => row[2])
-                // Убираем пустые ячейки
                 .filter(val => val !== null && val !== undefined && val !== '')
-                // ПРИНУДИТЕЛЬНО ПРЕВРАЩАЕМ ЛЮБЫЕ ЦИФРЫ В ТЕКСТ, чтобы избежать ошибок
                 .map(String) 
         )];
 
-        // 2. Сортировка по алфавиту
         suppliers.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
 
-        // 3. Фильтруем список согласно поисковому запросу
         const filtered = suppliers.filter(s => s.toLowerCase().includes(query));
 
-        // 4. Генерация HTML-разметки
         listContainer.innerHTML = '';
         let html = '';
 
@@ -4362,7 +4372,6 @@ window.filterFullscreenSuppliers = function() {
 
         listContainer.innerHTML = html;
 
-        // 5. Логика отображения кнопки "Добавить нового"
         const exactMatch = suppliers.some(s => s.toLowerCase() === query);
         if (query.length > 0 && !exactMatch) {
             if (addNewBtn) addNewBtn.style.display = 'block';
@@ -4371,7 +4380,8 @@ window.filterFullscreenSuppliers = function() {
             if (addNewBtn) addNewBtn.style.display = 'none';
         }
     } catch (error) {
-        console.error("Ошибка при генерации списка поставщиков:", error);
+        // 4. Ловим любые скрытые ошибки логики
+        alert('ДИАГНОСТИКА ОШИБКИ В КОДЕ: ' + error.message);
     }
 };
 
