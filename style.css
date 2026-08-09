@@ -477,6 +477,7 @@ body.light-theme .supp-modal-bg { background: #e4e6e8 !important; color: #000; }
 body.light-theme .supp-modal-header { background: #ffffff !important; border-bottom: 1px solid #ccc; }
 body.light-theme .supp-modal-input { background: #ffffff !important; color: #000 !important; border: 1px solid #aaa; }
 body.light-theme .supp-list-item { border-bottom: 1px solid #ddd; color: #000 !important; }
+body.light-theme #fullscreen-supplier-list { background: #e4e6e8 !important; }
 /* Либо 100% рабочий вариант: добавляем рамки самим инпутам, чтобы они не сливались с фоном */
 body.light-theme #qe-supplier-input,
 body.light-theme .qe-input-group input {
