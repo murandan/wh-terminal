@@ -470,9 +470,23 @@
                 <input type="text" id="nt-name" placeholder="Наименование товара..." data-i18n-placeholder="ph_name" style="width: 100%; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 12px; border-radius: 4px; margin-bottom: 12px; box-sizing: border-box;">
 
                 <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                    <input type="text" id="nt-supplier-input" placeholder="Поставщик... ▼" data-i18n-placeholder="ph_supplier" onclick="window.openFullscreenSupplier()" readonly style="flex: 1; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 12px; border-radius: 4px; cursor: pointer; box-sizing: border-box;">
-                    
-                    <input type="text" id="nt-category-input" placeholder="Категория... ▼" data-i18n-placeholder="ph_category" onclick="openCategorySelector()" readonly style="flex: 1; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 12px; border-radius: 4px; cursor: pointer; box-sizing: border-box;">
+    
+                <!-- ПОСТАВЩИК (Стрелка прижата вправо) -->
+                    <div style="position: relative; flex: 1;">
+                        <input type="text" id="nt-supplier-input" placeholder="Поставщик..." data-i18n-placeholder="ph_supplier" onclick="window.openFullscreenSupplier()" readonly style="width: 100%; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 12px; padding-right: 30px; border-radius: 4px; cursor: pointer; box-sizing: border-box;">
+                        <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 10px; pointer-events: none;">▼</span>
+                    </div>
+    
+                <!-- КАТЕГОРИЯ (Стрелка вправо + выпадающий список) -->
+                    <div style="position: relative; flex: 1;">
+                        <input type="text" id="nt-category-input" placeholder="Категория..." data-i18n-placeholder="ph_category" onclick="toggleNtCategoryDropdown()" readonly style="width: 100%; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 12px; padding-right: 30px; border-radius: 4px; cursor: pointer; box-sizing: border-box;">
+                        <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 10px; pointer-events: none;">▼</span>
+                        
+                        <!-- Сам список (скрыт по умолчанию) -->
+                        <div id="nt-category-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; width: 100%; max-height: 200px; overflow-y: auto; background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 9999;">
+                            <!-- Пункты списка будут генерироваться через JS -->
+                        </div>
+                    </div>
                 </div>
 
                 <div style="display: flex; gap: 10px; margin-bottom: 20px;">

@@ -4468,3 +4468,80 @@ window.switchIncomeTab = function(tabName) {
         btnNew.style.border = '1px solid var(--border-light)';
     }
 };
+
+// Открытие/закрытие списка категорий
+window.toggleNtCategoryDropdown = function() {
+    const dropdown = document.getElementById('nt-category-dropdown');
+    if (!dropdown) return;
+    
+    if (dropdown.style.display === 'block') {
+        dropdown.style.display = 'none';
+    } else {
+        dropdown.style.display = 'block';
+        window.renderNtCategories(); // Отрисовываем список при открытии
+    }
+};
+
+// Выбор категории из списка
+window.selectNtCategory = function(catName) {
+    const input = document.getElementById('nt-category-input');
+    if (input) {
+        input.value = catName;
+        // Генерируем события, чтобы касса зафиксировала выбор
+        input.dispatchEvent(new Event('input'));
+        input.dispatchEvent(new Event('change'));
+    }
+    // Прячем список после выбора
+    const dropdown = document.getElementById('nt-category-dropdown');
+    if (dropdown) dropdown.style.display = 'none';
+};
+
+// Закрытие списка при клике вне его области
+document.addEventListener('click', function(e) {
+    const categoryContainer = document.getElementById('nt-category-dropdown');
+    const categoryInput = document.getElementById('nt-category-input');
+    
+    if (categoryContainer && categoryContainer.style.display === 'block') {
+        if (e.target !== categoryContainer && e.target !== categoryInput) {
+            categoryContainer.style.display = 'none';
+        }
+    }
+});
+
+window.renderNtCategories = function() {
+    const dropdown = document.getElementById('nt-category-dropdown');
+    if (!dropdown) return;
+
+    // Берем локальный кэш товаров (если он еще не загружен, используем пустой массив)
+    const allItems = window.db || [];
+    
+    // 1. Извлекаем все категории, убираем пустые и оставляем только уникальные (через Set)
+    const uniqueCategories = [...new Set(allItems
+        .map(item => item.category)
+        .filter(c => c && c.trim() !== '')
+    )];
+    
+    // 2. Сортируем по алфавиту для удобства
+    uniqueCategories.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+
+    // Если база пустая или категорий нет
+    if (uniqueCategories.length === 0) {
+        dropdown.innerHTML = `<div style="padding: 12px; color: var(--text-muted); text-align: center;" data-i18n="no_categories">Нет доступных категорий</div>`;
+        return;
+    }
+
+    // 3. Генерируем HTML-список с использованием CSS-переменных для темной/светлой темы
+    dropdown.innerHTML = uniqueCategories.map(cat => {
+        // Защита от кавычек в названиях категорий (как мы делали с поставщиками)
+        const safeCat = cat.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        
+        return `
+            <div onclick="window.selectNtCategory('${safeCat}')" 
+                 style="padding: 12px 15px; font-size: 15px; cursor: pointer; border-bottom: 1px solid var(--border-light); color: var(--text-main); transition: background 0.2s;" 
+                 onmouseover="this.style.background='var(--bg-overlay)'" 
+                 onmouseout="this.style.background='transparent'">
+                ${cat}
+            </div>
+        `;
+    }).join('');
+};
