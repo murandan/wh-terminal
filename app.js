@@ -4369,7 +4369,7 @@ window.selectFullscreenSupplier = function(val) {
     if (!val) return;
 
     // 1. Подставляем выбранное значение в целевое поле (убедись, что ID совпадает с твоим рабочим полем)
-    const targetInput = document.getElementById('qe-supplier-input');
+    const targetInput = document.getElementById('fullscreen-supplier-search');
     if (targetInput) targetInput.value = val;
 
     // 2. Очищаем поле поиска в модальном окне
