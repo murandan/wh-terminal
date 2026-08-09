@@ -376,7 +376,7 @@
             <button onclick="toggleIncomeModule()" style="position: absolute; right: 15px; top: 15px; background: transparent; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer;">✕</button>
             
             <!-- Вкладки (Tabs) -->
-            <div style="display: flex; gap: 10px; margin-bottom: 20px; margin-top: 10px;">
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; margin-top: 40px;">
                 <button id="tab-btn-excel" onclick="window.switchIncomeTab('excel')" style="flex: 1; padding: 12px; background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); border-radius: 4px; font-weight: bold; cursor: pointer;">ИМПОРТ EXCEL</button>
                 <button id="tab-btn-manual" onclick="window.switchIncomeTab('manual')" style="flex: 1; padding: 12px; background: transparent; color: var(--text-muted); border: 1px dashed var(--border-light); border-radius: 4px; font-weight: bold; cursor: pointer;">НОВЫЙ ТОВАР</button>
             </div>
@@ -465,24 +465,25 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                     <!-- Левая ячейка: Поставщик (Твой полноэкранный компонент) -->
                     <div style="position: relative; min-width: 0;">
-                        <input id="qe-supplier-input" class="qe-input" type="text" placeholder="Поставщик... ▼" readonly onclick="window.openFullscreenSupplier()" style="width: 100%; padding: 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; box-sizing: border-box; outline: none; cursor: pointer; text-overflow: ellipsis; font-size: 16px;">
+                        <input id="qe-supplier-input" class="qe-input" type="text" placeholder="Поставщик..." readonly onclick="window.openFullscreenSupplier()" style="width: 100%; height: 48px; padding: 12px; padding-right: 30px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; box-sizing: border-box; outline: none; cursor: pointer; text-overflow: ellipsis; font-size: 16px;">
+                        <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 12px; pointer-events: none;">▼</span>
                     </div>
 
                     <!-- Правая ячейка: Категория (Кастомный выпадающий список) -->
                     <div style="position: relative; min-width: 0;">
                         <!-- Триггер -->
-                        <div id="inc-category-trigger" onclick="window.toggleIncDropdown(event, 'category')" style="padding: 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; display: flex; justify-content: space-between; cursor: pointer; align-items: center;">
+                        <div id="inc-category-trigger" onclick="window.toggleIncDropdown(event, 'category')" style="height: 48px; padding: 0 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; display: flex; justify-content: space-between; cursor: pointer; align-items: center; box-sizing: border-box;">
                             <div id="inc-category-display" style="color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 16px;">Категория...</div>
                             <input type="hidden" id="new-item-category" value="">
-                            <span id="inc-category-arrow" style="transition: 0.2s; flex-shrink: 0; margin-left: 5px;">▼</span>
+                            <span id="inc-category-arrow" style="transition: 0.2s; flex-shrink: 0; margin-left: 5px; color: var(--text-muted); font-size: 12px;">▼</span>
                         </div>
                         <!-- Поле ручного ввода -->
                         <div id="inc-new-category-wrapper" style="display: none; width: 100%; position: relative;">
-                            <input type="text" id="inc-new-category" class="qe-input" placeholder="Новая категория..." style="width: 100%; padding: 12px 35px 12px 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; box-sizing: border-box; outline: none; font-size: 16px;">
+                            <input type="text" id="inc-new-category" class="qe-input" placeholder="Новая категория..." style="width: 100%; height: 48px; padding: 12px 35px 12px 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; box-sizing: border-box; outline: none; font-size: 16px;">
                             <button onclick="window.cancelIncNew('category')" style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; padding: 5px; display: flex; align-items: center; justify-content: center;">✕</button>
                         </div>
                         <!-- Контейнер списка -->
-                        <div id="inc-category-dropdown" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 4px; max-height: 200px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.2);"></div>
+                        <div id="inc-category-dropdown" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 4px; max-height: 350px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.5);"></div>
                     </div>
                 </div>
 
