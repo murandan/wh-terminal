@@ -737,6 +737,19 @@ window.openQuickEditModal = function(id) {
     if (numpad) numpad.style.display = 'none';
     if (topSection) topSection.classList.remove('form-disabled');
     window.activeQeFieldId = null; // Сбрасываем глобальный стейт фокуса
+
+    // --- БЛОКИРОВКА КАСТОМНЫХ КЛАВИАТУР НА ПК ---
+    // Проверяем, мобильное ли это устройство
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    // Если это ПК, принудительно прячем обе клавиатуры сразу при открытии окна
+    if (!isMobileDevice) {
+        const mainNumpad = document.getElementById('custom-numpad');
+        const recNumpad = document.getElementById('receive-numpad');
+        
+        if (mainNumpad) mainNumpad.style.display = 'none';
+        if (recNumpad) recNumpad.style.display = 'none';
+    }
 };
 
 // Открывает/закрывает наш кастомный список

@@ -562,11 +562,12 @@
     <!-- Шапка -->
     <div style="flex-shrink: 0; display: flex; padding: 10px 15px; padding-top: max(10px, env(safe-area-inset-top)); background: var(--bg-panel); border-bottom: 1px solid var(--border-main); gap: 10px; align-items: center;">
         <input type="text" id="fullscreen-supplier-search" placeholder="Поиск или новый поставщик..." oninput="window.filterFullscreenSuppliers()" style="flex: 1; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-focus); padding: 10px; border-radius: 6px; font-size: 16px; outline: none;">
+        <button onclick="window.confirmFullscreenSupplier()" style="background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); padding: 10px 15px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer;">Готово</button>
         <button onclick="window.closeFullscreenSupplier()" style="background: transparent; color: var(--accent-red); border: none; padding: 0 5px; font-size: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;">✕</button>
     </div>
 
     <!-- Кнопка добавления -->
-    <div id="fullscreen-add-new-btn" style="display: none; flex-shrink: 0; padding: 15px; background: var(--bg-success-dim); border-bottom: 1px solid var(--border-main); text-align: center; color: var(--accent-green); font-weight: bold; cursor: pointer;" onclick="window.selectFullscreenSupplier(document.getElementById('fullscreen-supplier-search').value)">
+    <div id="fullscreen-add-new-btn" style="display: none; flex-shrink: 0; padding: 15px; background: var(--bg-success-dim); border-bottom: 1px solid var(--border-main); text-align: center; color: var(--accent-green); font-weight: bold; cursor: pointer;" onclick="window.confirmFullscreenSupplier()">
         + Добавить: <span id="new-supplier-name-preview"></span>
     </div>
 
