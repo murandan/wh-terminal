@@ -4323,41 +4323,55 @@ window.closeFullscreenSupplier = function() {
 };
 
 window.filterFullscreenSuppliers = function() {
-    const listContainer = document.getElementById('fullscreen-supplier-list');
-    const searchInput = document.getElementById('fullscreen-supplier-search');
-    const addNewBtn = document.getElementById('fullscreen-add-new-btn');
-    const newNamePreview = document.getElementById('new-supplier-name-preview');
+    try {
+        const listContainer = document.getElementById('fullscreen-supplier-list');
+        const searchInput = document.getElementById('fullscreen-supplier-search');
+        const addNewBtn = document.getElementById('fullscreen-add-new-btn');
+        const newNamePreview = document.getElementById('new-supplier-name-preview');
 
-    if (!listContainer || !searchInput) return;
+        if (!listContainer || !searchInput) return;
 
-    const query = searchInput.value.trim().toLowerCase();
+        const query = searchInput.value.trim().toLowerCase();
 
-    // 1. Пропускаем первые 3 строки шапки (.slice(3)), берем колонку C (индекс 2)
-    let suppliers = [...new Set(incomes.slice(3).map(row => row[2]).filter(Boolean))];
+        // Проверяем, загрузились ли данные из таблицы вообще
+        if (typeof incomes === 'undefined' || !Array.isArray(incomes)) return;
 
-    // 2. Сортировка по алфавиту (RU/EN)
-    suppliers.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+        // 1. Собираем уникальных поставщиков безопасно
+        let suppliers = [...new Set(
+            incomes.slice(3)
+                .map(row => row[2])
+                // Убираем пустые ячейки
+                .filter(val => val !== null && val !== undefined && val !== '')
+                // ПРИНУДИТЕЛЬНО ПРЕВРАЩАЕМ ЛЮБЫЕ ЦИФРЫ В ТЕКСТ, чтобы избежать ошибок
+                .map(String) 
+        )];
 
-    // 3. Фильтруем список согласно поисковому запросу
-    const filtered = suppliers.filter(s => s.toLowerCase().includes(query));
+        // 2. Сортировка по алфавиту
+        suppliers.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
 
-    // 4. Генерация HTML-разметки
-    listContainer.innerHTML = '';
-    let html = '';
+        // 3. Фильтруем список согласно поисковому запросу
+        const filtered = suppliers.filter(s => s.toLowerCase().includes(query));
 
-    filtered.forEach(s => {
-        html += `<div class="supp-list-item" onclick="window.selectFullscreenSupplier('${s.replace(/'/g, "\\'")}')">${s}</div>`;
-    });
+        // 4. Генерация HTML-разметки
+        listContainer.innerHTML = '';
+        let html = '';
 
-    listContainer.innerHTML = html;
+        filtered.forEach(s => {
+            html += `<div class="supp-list-item" onclick="window.selectFullscreenSupplier('${s.replace(/'/g, "\\'")}')">${s}</div>`;
+        });
 
-    // 5. Логика отображения кнопки "Добавить нового"
-    const exactMatch = suppliers.some(s => s.toLowerCase() === query);
-    if (query.length > 0 && !exactMatch) {
-        if (addNewBtn) addNewBtn.style.display = 'block';
-        if (newNamePreview) newNamePreview.innerText = searchInput.value;
-    } else {
-        if (addNewBtn) addNewBtn.style.display = 'none';
+        listContainer.innerHTML = html;
+
+        // 5. Логика отображения кнопки "Добавить нового"
+        const exactMatch = suppliers.some(s => s.toLowerCase() === query);
+        if (query.length > 0 && !exactMatch) {
+            if (addNewBtn) addNewBtn.style.display = 'block';
+            if (newNamePreview) newNamePreview.innerText = searchInput.value;
+        } else {
+            if (addNewBtn) addNewBtn.style.display = 'none';
+        }
+    } catch (error) {
+        console.error("Ошибка при генерации списка поставщиков:", error);
     }
 };
 
@@ -4365,26 +4379,18 @@ window.selectFullscreenSupplier = function(val) {
     val = val ? val.trim() : '';
     if (!val) return;
 
-    // 1. Инициализируем массив поставщиков, если его нет
-    if (!window.suppliers) window.suppliers = [];
+    // 1. Подставляем выбранное значение в основное поле формы
+    const targetInput = document.getElementById('qe-supplier-input');
+    if (targetInput) targetInput.value = val;
 
-    // 2. Если такого поставщика еще нет в локальном списке — добавляем и сортируем
-    const exists = window.suppliers.some(s => s.toLowerCase() === val.toLowerCase());
-    if (!exists) {
-        window.suppliers.push(val);
-        window.suppliers.sort((a, b) => a.localeCompare(b));
-    }
+    // 2. Очищаем поле поиска в модальном окне
+    const searchInput = document.getElementById('fullscreen-supplier-search');
+    if (searchInput) searchInput.value = '';
 
-    // 3. Подставляем значение в инпут формы
-    const mainInput = document.getElementById('qe-supplier-input'); 
-    if (mainInput) {
-        mainInput.value = val;
-        mainInput.dispatchEvent(new Event('input', { bubbles: true }));
-        mainInput.dispatchEvent(new Event('change', { bubbles: true }));
-    }
+    // 3. Перерисовываем список, чтобы сбросить фильтры и применить сортировку
+    window.filterFullscreenSuppliers();
     
-    // 4. Закрываем модалку
-    window.closeFullscreenSupplier();
+    // Вызов закрытия окна (window.closeFullscreenSupplier) удален, чтобы окно оставалось открытым
 };
 // --- ДИНАМИЧЕСКОЕ ФОРМАТИРОВАНИЕ ТЫСЯЧ ПРИ ВВОДЕ С ПК ---
 document.addEventListener('input', function(e) {
