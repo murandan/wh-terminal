@@ -4332,23 +4332,30 @@ window.filterFullscreenSuppliers = function() {
     const filterText = searchInput.value.trim();
     const lowerFilter = filterText.toLowerCase();
     
-    // 1. Берем родной массив и принудительно переводим всё в текст (защита от падений из-за цифр)
+    // Берем массив и переводим в текст
     const suppliers = (window.suppliers || []).map(String);
     
-    // 2. Фильтруем список
+    // Фильтруем и сортируем список
     const filtered = suppliers.filter(s => s.toLowerCase().includes(lowerFilter));
-    
-    // 3. ДОБАВЛЕНО: Сортировка по алфавиту (RU/EN)
     filtered.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
     
     const exactMatch = suppliers.find(s => s.toLowerCase() === lowerFilter);
     
-    // Логика кнопки "Добавить" (сохранена твоя оригинальная мультиязычность)
+    // Логика кнопки "Добавить"
     if (filterText.length > 0 && !exactMatch) {
         if (addNewBtn) {
             addNewBtn.style.display = 'block';
-            const addText = translations[currentLang].modal_add_supplier;
+            // Используем безопасный доступ к переводам (на случай если translations не прогрузился)
+            const addText = (typeof translations !== 'undefined' && translations[currentLang]) 
+                            ? translations[currentLang].modal_add_supplier 
+                            : "Добавить";
+            
             addNewBtn.innerHTML = `${addText} "<b>${filterText}</b>"`;
+            
+            // ЖЕЛЕЗОБЕТОННО: Говорим кнопке "Добавить" закрывать окно (передаем true)
+            addNewBtn.onclick = function() {
+                window.selectFullscreenSupplier(filterText, true);
+            };
         }
     } else {
         if (addNewBtn) {
@@ -4356,24 +4363,23 @@ window.filterFullscreenSuppliers = function() {
         }
     }
     
-    // Генерация HTML с экранированием кавычек (replace)
+    // Генерация HTML. Обычным пунктам говорим НЕ закрывать окно (передаем false)
     listContainer.innerHTML = filtered.map(s => `
-        <div class="supp-list-item" onclick="window.selectFullscreenSupplier('${s.replace(/'/g, "\\'")}')" style="padding: 12px 0; font-size: 15px; cursor: pointer;">
+        <div class="supp-list-item" onclick="window.selectFullscreenSupplier('${s.replace(/'/g, "\\'")}', false)" style="padding: 12px 0; font-size: 15px; cursor: pointer;">
             ${s}
         </div>
     `).join('');
 };
 
-window.selectFullscreenSupplier = function(val) {
+// Добавлен второй параметр shouldClose
+window.selectFullscreenSupplier = function(val, shouldClose) {
     val = val ? val.trim() : '';
     if (!val) return;
 
-    // 1. Вставляем выбранное значение в главное поле кассы
+    // 1. Вставляем текст в главное поле кассы
     const targetInput = document.getElementById('qe-supplier-input');
     if (targetInput) {
         targetInput.value = val;
-        
-        // Дергаем события, чтобы касса зафиксировала ввод
         targetInput.dispatchEvent(new Event('input'));
         targetInput.dispatchEvent(new Event('change'));
     }
@@ -4382,19 +4388,11 @@ window.selectFullscreenSupplier = function(val) {
     const searchInput = document.getElementById('fullscreen-supplier-search');
     if (searchInput) searchInput.value = '';
 
-    // 3. Перерисовываем список
+    // 3. Обновляем список
     window.filterFullscreenSuppliers();
 
-    // 4. УМНОЕ ЗАКРЫТИЕ ОКНА
-    // Получаем текущий список поставщиков
-    const existingSuppliers = (window.suppliers || []).map(String);
-    
-    // Проверяем, является ли выбранный текст новым поставщиком
-    const isNewSupplier = !existingSuppliers.includes(val);
-
-    // Если это новый поставщик (клик по "Добавить..."), закрываем окно.
-    // Если это существующий поставщик (клик по списку), окно остается открытым.
-    if (isNewSupplier) {
+    // 4. Закрываем окно ТОЛЬКО если shouldClose === true (то есть нажали на кнопку "Добавить")
+    if (shouldClose === true) {
         if (typeof window.closeFullscreenSupplier === 'function') {
             window.closeFullscreenSupplier();
         } else {
@@ -4403,7 +4401,6 @@ window.selectFullscreenSupplier = function(val) {
         }
     }
 };
-
 // --- ДИНАМИЧЕСКОЕ ФОРМАТИРОВАНИЕ ТЫСЯЧ ПРИ ВВОДЕ С ПК ---
 document.addEventListener('input', function(e) {
     // Проверяем, что ввод происходит именно в наших числовых полях
