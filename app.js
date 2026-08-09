@@ -375,18 +375,17 @@ window.currentQeInput = null;
 window.qeNeedsClear = false;
 
 window.setQeActive = function(el, event) {
-    // Ловим событие, чтобы понять, чем кликнули
-    const e = event || window.event;
-    if (e && e.stopPropagation) e.stopPropagation();
+    if (event && event.stopPropagation) event.stopPropagation();
     
-    // Магия: проверяем, был ли клик мышкой или тачпадом ноутбука
-    const isMouse = e && e.pointerType === 'mouse';
+    // Аппаратная проверка на ПК (мышь или тачпад)
+    const isPC = window.matchMedia("(pointer: fine)").matches;
     
-    const numpad = document.getElementById('custom-numpad');
-    if (numpad) {
-        // Если кликнули мышкой - прячем. Иначе - показываем.
-        numpad.style.display = isMouse ? 'none' : 'grid';
-    }
+    const mainNumpad = document.getElementById('custom-numpad');
+    const recNumpad = document.getElementById('receive-numpad');
+    
+    // Показываем основную клаву (если не ПК), прячем зеленую
+    if (recNumpad) recNumpad.style.display = 'none';
+    if (mainNumpad) mainNumpad.style.display = isPC ? 'none' : 'grid';
 
     document.querySelectorAll('.qe-active-input').forEach(input => {
         input.classList.remove('qe-active-input');
@@ -395,8 +394,9 @@ window.setQeActive = function(el, event) {
     window.currentQeInput = el;
     el.classList.add('qe-active-input');
 
+    // Безопасное выделение текста
     setTimeout(() => {
-        el.setSelectionRange(0, el.value.length);
+        try { el.setSelectionRange(0, el.value.length); } catch(e) {}
     }, 10);
 
     window.qeNeedsClear = true;
@@ -640,7 +640,7 @@ window.openQuickEditModal = function(id) {
                                 <span style="font-size: 10px; color: #2e7d32; font-weight: bold;"><span data-i18n="qe_current">${t('qe_current')}</span>: ${formattedPrice}</span>
                         </div>
                             <!-- Добавили formatNumberSpaces сюда -->
-                            <input type="text" class="no-spinners" id="qe-price" value="${formatNumberSpaces(item.price || 0)}" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%;">
+                            <input type="text" class="no-spinners" id="qe-price" value="${formatNumberSpaces(item.price || 0)}" inputmode="none" inputmode="none" onclick="window.setQeActive(this)" style="width: 100%;">
                         </div>
                         <div style="flex: 1;">
                             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2px;">
@@ -648,7 +648,7 @@ window.openQuickEditModal = function(id) {
                                 <span style="font-size: 10px; color: #2e7d32; font-weight: bold;"><span data-i18n="qe_fact">${t('qe_fact')}</span>: ${currentStock}</span>
                             </div>
                             <!-- И добавили formatNumberSpaces сюда -->
-                            <input type="text" class="no-spinners" id="qe-minstock" value="${formatNumberSpaces(minStockVal)}" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%;">
+                            <input type="text" class="no-spinners" id="qe-minstock" value="${formatNumberSpaces(minStockVal)}" inputmode="none" inputmode="none" onclick="window.setQeActive(this)" style="width: 100%;">
                         </div>
                     </div>
                 </div>
@@ -668,11 +668,11 @@ window.openQuickEditModal = function(id) {
                 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                     <div style="flex: 1;">
                         <label data-i18n="qe_receive_qty" style="font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 2px; display: block;">${t('qe_receive_qty')}</label>
-                        <input type="text" id="qe-receive-qty" value="1" inputmode="none" readonly onclick="window.activateReceiveField(this)" style="width: 100%; text-align: center; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
+                        <input type="text" id="qe-receive-qty" value="1" inputmode="none" onclick="window.activateReceiveField(this)" style="width: 100%; text-align: center; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
                     </div>
                     <div style="flex: 1;">
                         <label data-i18n="qe_receive_price" style="font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 2px; display: block;">${t('qe_receive_price')}</label>
-                        <input type="text" id="qe-receive-price" value="0" inputmode="none" readonly onclick="window.activateReceiveField(this)" style="width: 100%; text-align: center; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
+                        <input type="text" id="qe-receive-price" value="0" inputmode="none" onclick="window.activateReceiveField(this)" style="width: 100%; text-align: center; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
                     </div>
                 </div>
 
@@ -3996,25 +3996,28 @@ document.addEventListener('click', function(e) {
 window.receiveNeedsClear = false; 
 
 // 1. Активация полей (Количество / Цена)
-window.activateReceiveField = function(el) {
-    // Здесь event обычно не передается в функцию, поэтому ловим глобальное событие
-    const e = window.event; 
-    const isMouse = e && e.pointerType === 'mouse';
+window.activateReceiveField = function(el, event) {
+    if (event && event.stopPropagation) event.stopPropagation();
+
+    // Аппаратная проверка на ПК (мышь или тачпад)
+    const isPC = window.matchMedia("(pointer: fine)").matches;
+
+    const mainNumpad = document.getElementById('custom-numpad');
+    const recNumpad = document.getElementById('receive-numpad');
+
+    // Показываем зеленую клаву (если не ПК), прячем основную
+    if (mainNumpad) mainNumpad.style.display = 'none';
+    if (recNumpad) recNumpad.style.display = isPC ? 'none' : 'grid';
 
     window.activeQeFieldId = el.id;
     window.receiveNeedsClear = true; 
     
-    const numpad = document.getElementById('receive-numpad');
-    if (numpad) {
-        // Тот же принцип: отсекаем мышку
-        numpad.style.display = isMouse ? 'none' : 'grid';
-    }
-    
-    document.querySelectorAll('#qe-receive-block input[readonly]').forEach(inp => inp.style.borderColor = '#333');
+    document.querySelectorAll('#qe-receive-block input').forEach(inp => inp.style.borderColor = '#333');
     el.style.borderColor = '#4CAF50';
 
+    // Безопасное выделение текста
     setTimeout(() => {
-        el.setSelectionRange(0, el.value.length);
+        try { el.setSelectionRange(0, el.value.length); } catch(e) {}
     }, 10);
 };
 
