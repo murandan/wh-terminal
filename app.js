@@ -4297,16 +4297,26 @@ window.filterFullscreenSuppliers = function() {
     `).join('');
 };
 
+// Клик по элементу списка: просто подставляет текст в строку поиска
 window.selectFullscreenSupplier = function(val) {
-    // ВАЖНО: убедись, что 'qe-supplier-input' - это правильный ID твоего инпута
-    const mainInput = document.getElementById('qe-supplier-input'); 
+    if(!val) return;
+    const searchInput = document.getElementById('fullscreen-supplier-search');
+    searchInput.value = val.trim();
     
-    if (mainInput) {
-        mainInput.value = val;
-        
-        // ПИНАЕМ СИСТЕМУ: говорим основному коду, что значение изменилось
-        mainInput.dispatchEvent(new Event('input', { bubbles: true }));
-        mainInput.dispatchEvent(new Event('change', { bubbles: true }));
+    // Обновляем список, чтобы он отфильтровался по выбранному слову
+    window.filterFullscreenSuppliers(); 
+    
+    // Возвращаем фокус в поле ввода, чтобы клавиатура на телефоне не закрывалась
+    searchInput.focus(); 
+};
+
+// Кнопка "Готово": сохраняет финальный текст и закрывает окно
+window.confirmFullscreenSupplier = function() {
+    const searchInput = document.getElementById('fullscreen-supplier-search');
+    const val = searchInput.value.trim();
+    
+    if (val !== '') {
+        document.getElementById('qe-supplier-input').value = val;
     }
     
     window.closeFullscreenSupplier();
