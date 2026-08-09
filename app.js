@@ -375,17 +375,10 @@ window.currentQeInput = null;
 window.qeNeedsClear = false;
 
 window.setQeActive = function(el, event) {
-    if (event && event.stopPropagation) event.stopPropagation();
+    if (event) event.stopPropagation();
     
-    // Аппаратная проверка на ПК (мышь или тачпад)
-    const isPC = window.matchMedia("(pointer: fine)").matches;
-    
-    const mainNumpad = document.getElementById('custom-numpad');
-    const recNumpad = document.getElementById('receive-numpad');
-    
-    // Показываем основную клаву (если не ПК), прячем зеленую
-    if (recNumpad) recNumpad.style.display = 'none';
-    if (mainNumpad) mainNumpad.style.display = isPC ? 'none' : 'grid';
+    const numpad = document.getElementById('custom-numpad');
+    if (numpad) numpad.style.display = 'grid';
 
     document.querySelectorAll('.qe-active-input').forEach(input => {
         input.classList.remove('qe-active-input');
@@ -394,11 +387,12 @@ window.setQeActive = function(el, event) {
     window.currentQeInput = el;
     el.classList.add('qe-active-input');
 
-    // Безопасное выделение текста
+    // 1. Нативное выделение (чтобы сканер сразу затирал выделенный штрихкод)
     setTimeout(() => {
-        try { el.setSelectionRange(0, el.value.length); } catch(e) {}
+        el.setSelectionRange(0, el.value.length);
     }, 10);
 
+    // 2. Ставим флаг для Numpad: первое нажатие сотрет старые данные
     window.qeNeedsClear = true;
 };
 
@@ -640,7 +634,7 @@ window.openQuickEditModal = function(id) {
                                 <span style="font-size: 10px; color: #2e7d32; font-weight: bold;"><span data-i18n="qe_current">${t('qe_current')}</span>: ${formattedPrice}</span>
                         </div>
                             <!-- Добавили formatNumberSpaces сюда -->
-                            <input type="text" class="no-spinners" id="qe-price" value="${formatNumberSpaces(item.price || 0)}" inputmode="none" inputmode="none" onclick="window.setQeActive(this)" style="width: 100%;">
+                            <input type="text" class="no-spinners" id="qe-price" value="${formatNumberSpaces(item.price || 0)}" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%;">
                         </div>
                         <div style="flex: 1;">
                             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2px;">
@@ -648,7 +642,7 @@ window.openQuickEditModal = function(id) {
                                 <span style="font-size: 10px; color: #2e7d32; font-weight: bold;"><span data-i18n="qe_fact">${t('qe_fact')}</span>: ${currentStock}</span>
                             </div>
                             <!-- И добавили formatNumberSpaces сюда -->
-                            <input type="text" class="no-spinners" id="qe-minstock" value="${formatNumberSpaces(minStockVal)}" inputmode="none" inputmode="none" onclick="window.setQeActive(this)" style="width: 100%;">
+                            <input type="text" class="no-spinners" id="qe-minstock" value="${formatNumberSpaces(minStockVal)}" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%;">
                         </div>
                     </div>
                 </div>
@@ -668,11 +662,11 @@ window.openQuickEditModal = function(id) {
                 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                     <div style="flex: 1;">
                         <label data-i18n="qe_receive_qty" style="font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 2px; display: block;">${t('qe_receive_qty')}</label>
-                        <input type="text" id="qe-receive-qty" value="1" inputmode="none" onclick="window.activateReceiveField(this)" style="width: 100%; text-align: center; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
+                        <input type="text" id="qe-receive-qty" value="1" inputmode="none" readonly onclick="window.activateReceiveField(this)" style="width: 100%; text-align: center; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
                     </div>
                     <div style="flex: 1;">
                         <label data-i18n="qe_receive_price" style="font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 2px; display: block;">${t('qe_receive_price')}</label>
-                        <input type="text" id="qe-receive-price" value="0" inputmode="none" onclick="window.activateReceiveField(this)" style="width: 100%; text-align: center; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
+                        <input type="text" id="qe-receive-price" value="0" inputmode="none" readonly onclick="window.activateReceiveField(this)" style="width: 100%; text-align: center; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
                     </div>
                 </div>
 
@@ -3960,10 +3954,6 @@ document.addEventListener('click', function(e) {
     if (e.target && e.target.closest('#btn-open-receive')) {
         document.getElementById('qe-receive-block').style.display = 'block';
         document.getElementById('qe-top-section').classList.add('form-disabled'); // Затемняем верх
-        
-        // --- ДОБАВЛЕНО: Прячем старую клавиатуру ---
-        const oldNumpad = document.getElementById('custom-numpad');
-        if (oldNumpad) oldNumpad.style.display = 'none';
     }
 
     // 2. Клик по полям Количество или Цена закупа
@@ -3996,29 +3986,15 @@ document.addEventListener('click', function(e) {
 window.receiveNeedsClear = false; 
 
 // 1. Активация полей (Количество / Цена)
-window.activateReceiveField = function(el, event) {
-    if (event && event.stopPropagation) event.stopPropagation();
-
-    // Аппаратная проверка на ПК (мышь или тачпад)
-    const isPC = window.matchMedia("(pointer: fine)").matches;
-
-    const mainNumpad = document.getElementById('custom-numpad');
-    const recNumpad = document.getElementById('receive-numpad');
-
-    // Показываем зеленую клаву (если не ПК), прячем основную
-    if (mainNumpad) mainNumpad.style.display = 'none';
-    if (recNumpad) recNumpad.style.display = isPC ? 'none' : 'grid';
-
+window.activateReceiveField = function(el) {
     window.activeQeFieldId = el.id;
-    window.receiveNeedsClear = true; 
+    window.receiveNeedsClear = true; // <-- ДОБАВЛЕНО: Даем команду стереть при первом вводе
     
-    document.querySelectorAll('#qe-receive-block input').forEach(inp => inp.style.borderColor = '#333');
+    document.getElementById('receive-numpad').style.display = 'grid'; // Открываем внутреннюю клавиатуру
+    
+    // Подсветка активного поля
+    document.querySelectorAll('#qe-receive-block input[readonly]').forEach(inp => inp.style.borderColor = '#333');
     el.style.borderColor = '#4CAF50';
-
-    // Безопасное выделение текста
-    setTimeout(() => {
-        try { el.setSelectionRange(0, el.value.length); } catch(e) {}
-    }, 10);
 };
 
 // 2. Ввод цифр с разделением на тысячи
@@ -4175,10 +4151,6 @@ document.addEventListener('click', function(e) {
         document.getElementById('qe-receive-block').style.display = 'block';
         document.getElementById('qe-bottom-buttons').style.display = 'none'; // ПРЯЧЕМ ФУТЕР
         document.getElementById('qe-top-section').classList.add('form-disabled');
-        
-        // --- ДОБАВЛЕНО: Прячем старую клавиатуру ---
-        const oldNumpad = document.getElementById('custom-numpad');
-        if (oldNumpad) oldNumpad.style.display = 'none';
     }
 
     // Если нажали НАЗАД в приходе
@@ -4301,239 +4273,36 @@ window.filterFullscreenSuppliers = function() {
     
     const filterText = searchInput.value.trim();
     const lowerFilter = filterText.toLowerCase();
-    const suppliers = window.suppliers || [];
+    const suppliers = window.suppliers || []; // Предполагается, что window.suppliers существует
     
-    // Фильтруем и сортируем по алфавиту
     const filtered = suppliers.filter(s => s.toLowerCase().includes(lowerFilter));
-    filtered.sort((a, b) => a.localeCompare(b, 'ru', { sensitivity: 'base' }));
+    const exactMatch = suppliers.find(s => s.toLowerCase() === lowerFilter);
     
-    // ИСПРАВЛЕННОЕ УСЛОВИЕ: Кнопка показывается ВСЕГДА, если введен хоть один символ
-    if (filterText.length > 0) {
+    if (filterText.length > 0 && !exactMatch) {
         addNewBtn.style.display = 'block';
         newNamePreview.textContent = filterText;
     } else {
         addNewBtn.style.display = 'none';
     }
     
-    // Отрисовываем список
     listContainer.innerHTML = filtered.map(s => `
-        <div class="supp-list-item" onclick="window.selectFullscreenSupplier('${s}')" style="padding: 15px 0; border-bottom: 1px solid var(--border-light); color: var(--text-main); font-size: 16px; cursor: pointer;">
+        <div class="supp-list-item" onclick="window.selectFullscreenSupplier('${s}')" style="padding: 12px 0; font-size: 15px; cursor: pointer;">
             ${s}
         </div>
     `).join('');
 };
 
-// Клик по элементу списка: просто подставляет текст в строку поиска
 window.selectFullscreenSupplier = function(val) {
-    if(!val) return;
-    const searchInput = document.getElementById('fullscreen-supplier-search');
-    searchInput.value = val.trim();
+    // ВАЖНО: убедись, что 'qe-supplier-input' - это правильный ID твоего инпута
+    const mainInput = document.getElementById('qe-supplier-input'); 
     
-    // Обновляем список, чтобы он отфильтровался по выбранному слову
-    window.filterFullscreenSuppliers(); 
-    
-    // Возвращаем фокус в поле ввода, чтобы клавиатура на телефоне не закрывалась
-    searchInput.focus(); 
-};
-
-// Кнопка "Готово": сохраняет финальный текст и закрывает окно
-window.confirmFullscreenSupplier = function() {
-    const searchInput = document.getElementById('fullscreen-supplier-search');
-    const val = searchInput.value.trim();
-    
-    if (val !== '') {
-        document.getElementById('qe-supplier-input').value = val;
+    if (mainInput) {
+        mainInput.value = val;
+        
+        // ПИНАЕМ СИСТЕМУ: говорим основному коду, что значение изменилось
+        mainInput.dispatchEvent(new Event('input', { bubbles: true }));
+        mainInput.dispatchEvent(new Event('change', { bubbles: true }));
     }
     
     window.closeFullscreenSupplier();
 };
-
-// =========================================
-// Вкладки окна ПРИЕМКА (Excel / Новый товар)
-// =========================================
-window.switchIncomeTab = function(tabName) {
-    const btnExcel = document.getElementById('tab-btn-excel');
-    const btnManual = document.getElementById('tab-btn-manual');
-    const blockExcel = document.getElementById('block-excel');
-    const blockManual = document.getElementById('block-manual');
-
-    if (!btnExcel || !btnManual || !blockExcel || !blockManual) return;
-
-    if (tabName === 'excel') {
-        btnExcel.style.background = 'var(--bg-success-dim)';
-        btnExcel.style.color = 'var(--accent-green)';
-        btnExcel.style.border = '1px solid var(--accent-green)';
-
-        btnManual.style.background = 'transparent';
-        btnManual.style.color = 'var(--text-muted)';
-        btnManual.style.border = '1px dashed var(--border-light)';
-
-        blockExcel.style.display = 'block';
-        blockManual.style.display = 'none';
-    } else if (tabName === 'manual') {
-        btnManual.style.background = 'var(--bg-success-dim)';
-        btnManual.style.color = 'var(--accent-green)';
-        btnManual.style.border = '1px solid var(--accent-green)';
-
-        btnExcel.style.background = 'transparent';
-        btnExcel.style.color = 'var(--text-muted)';
-        btnExcel.style.border = '1px dashed var(--border-light)';
-
-        blockManual.style.display = 'flex';
-        blockExcel.style.display = 'none';
-
-        // Загружаем категории при открытии вкладки
-        window.loadIncomeDropdowns();
-    }
-};
-
-// =========================================
-// Логика ручного ввода (Новый товар)
-// =========================================
-window.toggleIncDropdown = function(e, type) {
-    if (e) e.stopPropagation();
-    const dropdown = document.getElementById(`inc-${type}-dropdown`);
-    if(!dropdown) return;
-    const isHidden = dropdown.style.display === 'none';
-    dropdown.style.display = isHidden ? 'block' : 'none';
-    
-    const arrow = document.getElementById(`inc-${type}-arrow`);
-    if (arrow) arrow.style.transform = isHidden ? 'rotate(180deg)' : 'rotate(0deg)';
-};
-
-window.handleIncCatClick = function(element, type) {
-    const value = element.getAttribute('data-val');
-    const text = element.getAttribute('data-text');
-
-    if (value === 'new') {
-        document.getElementById(`inc-${type}-trigger`).style.display = 'none';
-        document.getElementById(`inc-new-${type}-wrapper`).style.display = 'block';
-        document.getElementById(`inc-new-${type}`).focus();
-    } else {
-        document.getElementById(`inc-${type}-display`).innerText = text;
-        document.getElementById(`inc-${type}-display`).style.color = 'var(--text-main)';
-        document.getElementById(`new-item-${type}`).value = value;
-    }
-    window.toggleIncDropdown(null, type);
-};
-
-window.cancelIncNew = function(type) {
-    document.getElementById(`inc-new-${type}-wrapper`).style.display = 'none';
-    document.getElementById(`inc-${type}-trigger`).style.display = 'flex';
-    document.getElementById(`inc-new-${type}`).value = '';
-    document.getElementById(`new-item-${type}`).value = '';
-    document.getElementById(`inc-${type}-display`).innerText = 'Категория...';
-    document.getElementById(`inc-${type}-display`).style.color = 'var(--text-muted)';
-};
-
-// Закрытие списка при клике мимо него
-document.addEventListener('click', function(e) {
-    if (!e.target.closest('#inc-category-dropdown') && !e.target.closest('#inc-category-trigger')) {
-        const dc = document.getElementById('inc-category-dropdown');
-        if (dc) dc.style.display = 'none';
-        const arrow = document.getElementById('inc-category-arrow');
-        if (arrow) arrow.style.transform = 'rotate(0deg)';
-    }
-});
-
-// Загрузка категорий из базы
-window.loadIncomeDropdowns = function() {
-    const myDB = (typeof db !== 'undefined') ? db : [];
-    const categories = [...new Set(myDB.map(i => i.category).filter(Boolean))];
-    
-    let catHtml = `<div style="padding: 12px; cursor: pointer; border-bottom: 1px solid var(--border-light); color: var(--accent-green); font-weight: bold;" data-val="new" onclick="handleIncCatClick(this, 'category')">+ Новая категория</div>`;
-    categories.forEach(c => {
-        catHtml += `<div style="padding: 12px; cursor: pointer; border-bottom: 1px solid var(--border-light);" data-val="${c}" data-text="${c}" onclick="handleIncCatClick(this, 'category')">${c}</div>`;
-    });
-    
-    const catDropdown = document.getElementById('inc-category-dropdown');
-    if(catDropdown) catDropdown.innerHTML = catHtml;
-};
-
-// Сборка и валидация данных перед отправкой
-window.saveNewItemReceipt = function() {
-    const barcode = document.getElementById('new-item-barcode').value.trim();
-    const name = document.getElementById('new-item-name').value.trim();
-    
-    // Забираем поставщика из полноэкранного инпута
-    const supplierInput = document.getElementById('qe-supplier-input');
-    const supplier = supplierInput ? supplierInput.value.trim() : '';
-    
-    // Умный выбор категории (из списка или из ручного ввода)
-    const isNewCategory = document.getElementById('inc-new-category-wrapper').style.display === 'block';
-    const category = isNewCategory 
-        ? document.getElementById('inc-new-category').value.trim() 
-        : document.getElementById('new-item-category').value.trim();
-
-    const qty = parseFloat(document.getElementById('new-item-qty').value.replace(',', '.')) || 0;
-    const purchasePrice = parseFloat(document.getElementById('new-item-purchase-price').value.replace(',', '.')) || 0;
-    const retailPrice = parseFloat(document.getElementById('new-item-retail-price').value.replace(',', '.')) || 0;
-
-    // Защита от дурака
-    if (!barcode || !name || !supplier || !category) {
-        alert('⚠️ Заполните все текстовые поля (Штрихкод, Наименование, Поставщик, Категория).');
-        return;
-    }
-    if (qty <= 0) {
-        alert('⚠️ Количество товара должно быть больше нуля!');
-        return;
-    }
-    if (purchasePrice <= 0) {
-        alert('⚠️ Цена закупа не может быть нулевой!');
-        return;
-    }
-    if (retailPrice <= purchasePrice) {
-        alert('🛑 Ошибка: Розничная цена (' + retailPrice + ') должна быть строго больше цены закупа (' + purchasePrice + ')!');
-        return;
-    }
-
-    // Упаковка пакета
-    const payload = {
-        barcode: barcode,
-        name: name,
-        supplier: supplier, 
-        category: category,
-        qty: qty,
-        purchasePrice: purchasePrice,
-        retailPrice: retailPrice,
-        timestamp: new Date().toISOString()
-    };
-
-    console.log("Пакет данных готов к отправке:", payload);
-    alert('✅ Данные успешно собраны! Проверь консоль (F12).');
-};
-// =========================================
-// УМНАЯ ОБРАБОТКА ВВОДА С ФИЗИЧЕСКОЙ КЛАВИАТУРЫ ПК
-// =========================================
-
-// 1. Стираем старые данные при первом нажатии цифры
-document.addEventListener('keydown', function(e) {
-    if (/\d/.test(e.key)) { // Если нажата цифра
-        const el = e.target;
-        // Проверяем поля Распределения и Прихода
-        if (el.id === 'qe-price' || el.id === 'qe-stock' || el.id === 'qe-receive-qty' || el.id === 'qe-receive-price' || el.id === 'qe-minstock') {
-            if (window.qeNeedsClear && (el.id === 'qe-price' || el.id === 'qe-stock')) {
-                el.value = '';
-                window.qeNeedsClear = false;
-            }
-            if (window.receiveNeedsClear && (el.id === 'qe-receive-qty' || el.id === 'qe-receive-price' || el.id === 'qe-minstock')) {
-                el.value = '';
-                window.receiveNeedsClear = false;
-            }
-        }
-    }
-});
-
-// 2. Ставим пробелы (тысячные) и убираем нули на лету
-document.addEventListener('input', function(e) {
-    const el = e.target;
-    if (el.id === 'qe-price' || el.id === 'qe-stock' || el.id === 'qe-receive-qty' || el.id === 'qe-receive-price' || el.id === 'qe-minstock') {
-        let val = el.value.replace(/\D/g, ''); // Оставляем только цифры
-        if (val !== '') {
-            val = parseInt(val, 10).toString(); // Убираем ведущие нули
-            el.value = val.replace(/\B(?=(\d{3})+(?!\d))/g, ' '); // Разделяем тысячные
-        } else {
-            el.value = '';
-        }
-    }
-});
