@@ -4337,19 +4337,21 @@ window.filterFullscreenSuppliers = function() {
     const filtered = suppliers.filter(s => s.toLowerCase().includes(lowerFilter));
     filtered.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
     
-    const exactMatch = suppliers.find(s => s.toLowerCase() === lowerFilter);
-    
-    if (filterText.length > 0 && !exactMatch) {
+    // МЫ УБРАЛИ ПРОВЕРКУ НА ТОЧНОЕ СОВПАДЕНИЕ!
+    // Теперь кнопка появляется всегда, если поле поиска не пустое
+    if (filterText.length > 0) {
         if (addNewBtn) {
             addNewBtn.style.display = 'block';
             const addText = (typeof translations !== 'undefined' && translations[currentLang]) 
                             ? translations[currentLang].modal_add_supplier 
                             : "Добавить";
             
+            // Кнопка дублирует текст из поиска
             addNewBtn.innerHTML = `${addText} "<b>${filterText}</b>"`;
             
+            // Передаем true - нажатие на эту кнопку закроет окно
             addNewBtn.onclick = function() {
-                window.selectFullscreenSupplier(filterText);
+                window.selectFullscreenSupplier(filterText, true);
             };
         }
     } else {
@@ -4358,39 +4360,45 @@ window.filterFullscreenSuppliers = function() {
         }
     }
     
-    // Генерируем список, заменяя любые кавычки на безопасные символы, чтобы не ломался клик
+    // Клик по списку передает false - окно не закроется, а текст прыгнет в поиск
     listContainer.innerHTML = filtered.map(s => {
         const safeStr = s.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-        return `<div class="supp-list-item" onclick="window.selectFullscreenSupplier('${safeStr}')" style="padding: 12px 0; font-size: 15px; cursor: pointer;">${s}</div>`;
+        return `<div class="supp-list-item" onclick="window.selectFullscreenSupplier('${safeStr}', false)" style="padding: 12px 0; font-size: 15px; cursor: pointer;">${s}</div>`;
     }).join('');
 };
 
-window.selectFullscreenSupplier = function(val) {
+window.selectFullscreenSupplier = function(val, isAddingNew) {
     val = val ? val.trim() : '';
     if (!val) return;
 
-    // 1. Вставляем текст в главное поле кассы
+    // 1. Всегда отправляем значение в главное окно кассы
     const targetInput = document.getElementById('qe-supplier-input');
     if (targetInput) {
         targetInput.value = val;
-        // Дергаем события, чтобы касса "увидела", что поле заполнилось
         targetInput.dispatchEvent(new Event('input'));
         targetInput.dispatchEvent(new Event('change'));
     }
 
-    // 2. Очищаем поле поиска для следующего раза
     const searchInput = document.getElementById('fullscreen-supplier-search');
-    if (searchInput) searchInput.value = '';
 
-    // 3. Обновляем (сбрасываем) список на фоне
-    window.filterFullscreenSuppliers();
-
-    // 4. ВСЕГДА ЗАКРЫВАЕМ ОКНО (и при выборе, и при добавлении)
-    if (typeof window.closeFullscreenSupplier === 'function') {
-        window.closeFullscreenSupplier();
+    if (isAddingNew === true) {
+        // НАЖАТИЕ НА КНОПКУ ПОДТВЕРЖДЕНИЯ: 
+        // Очищаем поиск и закрываем окно
+        if (searchInput) searchInput.value = '';
+        
+        if (typeof window.closeFullscreenSupplier === 'function') {
+            window.closeFullscreenSupplier();
+        } else {
+            const modal = document.getElementById('supplier-fullscreen-modal');
+            if (modal) modal.style.display = 'none';
+        }
     } else {
-        const modal = document.getElementById('supplier-fullscreen-modal');
-        if (modal) modal.style.display = 'none';
+        // КЛИК ПО СПИСКУ: 
+        // Подставляем текст в строку поиска
+        if (searchInput) searchInput.value = val;
+        
+        // Перерисовываем интерфейс (и так как текст есть, кнопка подтверждения сразу появится!)
+        window.filterFullscreenSuppliers();
     }
 };
 // --- ДИНАМИЧЕСКОЕ ФОРМАТИРОВАНИЕ ТЫСЯЧ ПРИ ВВОДЕ С ПК ---
