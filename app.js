@@ -4512,29 +4512,41 @@ window.renderNtCategories = function() {
     const dropdown = document.getElementById('nt-category-dropdown');
     if (!dropdown) return;
 
-    // Берем локальный кэш товаров (если он еще не загружен, используем пустой массив)
-    const allItems = window.db || [];
-    
-    // 1. Извлекаем все категории, убираем пустые и оставляем только уникальные (через Set)
-    const uniqueCategories = [...new Set(allItems
-        .map(item => item.category)
-        .filter(c => c && c.trim() !== '')
-    )];
-    
-    // 2. Сортируем по алфавиту для удобства
+    let uniqueCategories = [];
+
+    // 1. УМНЫЙ ПАРСИНГ: Ищем старый список в DOM и берем категории оттуда
+    const originalDropdown = document.getElementById('qe-category-dropdown');
+    if (originalDropdown) {
+        // Находим все элементы, у которых есть data-val
+        const items = originalDropdown.querySelectorAll('[data-val]');
+        items.forEach(item => {
+            const val = item.getAttribute('data-val');
+            const text = item.getAttribute('data-text') || item.innerText.trim();
+            // Игнорируем кнопку "Новая категория" (value === 'new')
+            if (val && val !== 'new' && text) {
+                uniqueCategories.push(text);
+            }
+        });
+    }
+
+    // 2. ЗАПАСНОЙ ВАРИАНТ: Если вдруг старый список еще не отрендерился
+    if (uniqueCategories.length === 0 && window.db) {
+        uniqueCategories = window.db.map(item => item.category).filter(c => c && c.trim() !== '');
+    }
+
+    // 3. Убираем дубликаты и сортируем по алфавиту
+    uniqueCategories = [...new Set(uniqueCategories)];
     uniqueCategories.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
 
-    // Если база пустая или категорий нет
+    // Если всё равно пусто
     if (uniqueCategories.length === 0) {
         dropdown.innerHTML = `<div style="padding: 12px; color: var(--text-muted); text-align: center;" data-i18n="no_categories">Нет доступных категорий</div>`;
         return;
     }
 
-    // 3. Генерируем HTML-список с использованием CSS-переменных для темной/светлой темы
+    // 4. Генерируем HTML для нашего нового списка
     dropdown.innerHTML = uniqueCategories.map(cat => {
-        // Защита от кавычек в названиях категорий (как мы делали с поставщиками)
         const safeCat = cat.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-        
         return `
             <div onclick="window.selectNtCategory('${safeCat}')" 
                  style="padding: 12px 15px; font-size: 15px; cursor: pointer; border-bottom: 1px solid var(--border-light); color: var(--text-main); transition: background 0.2s;" 
