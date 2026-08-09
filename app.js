@@ -4461,3 +4461,59 @@ window.saveNewItemReceipt = function() {
     console.log("Пакет данных готов к отправке:", payload);
     alert('✅ Данные успешно собраны! Проверь консоль (F12).');
 };
+// =========================================
+// ПОЛНОЭКРАННЫЙ ПОСТАВЩИК (Сортировка + Темы)
+// =========================================
+window.openFullscreenSupplier = function() {
+    document.getElementById('supplier-fullscreen-modal').style.display = 'flex';
+    document.getElementById('fullscreen-supplier-search').value = '';
+    window.filterFullscreenSuppliers();
+    setTimeout(() => document.getElementById('fullscreen-supplier-search').focus(), 100);
+};
+
+window.closeFullscreenSupplier = function() {
+    document.getElementById('supplier-fullscreen-modal').style.display = 'none';
+};
+
+window.selectFullscreenSupplier = function(val) {
+    if(!val || val.trim() === '') return;
+    document.getElementById('qe-supplier-input').value = val.trim();
+    window.closeFullscreenSupplier();
+};
+
+window.filterFullscreenSuppliers = function() {
+    const query = document.getElementById('fullscreen-supplier-search').value.toLowerCase().trim();
+    const listDiv = document.getElementById('fullscreen-supplier-list');
+    const addBtn = document.getElementById('fullscreen-add-new-btn');
+    const preview = document.getElementById('new-supplier-name-preview');
+
+    const myIncomes = (typeof incomes !== 'undefined') ? incomes : [];
+    let providers = [];
+    if (myIncomes.length > 3 && Array.isArray(myIncomes[3])) {
+        providers = [...new Set(myIncomes.slice(3).map(row => row[2]).filter(Boolean))];
+    }
+
+    // 1. АЛФАВИТНАЯ СОРТИРОВКА (с учетом русского языка)
+    providers.sort((a, b) => a.localeCompare(b, 'ru', { sensitivity: 'base' }));
+
+    // 2. ФИЛЬТРАЦИЯ
+    let filtered = providers;
+    if (query) {
+        filtered = providers.filter(p => p.toLowerCase().includes(query));
+    }
+
+    // 3. ОТРИСОВКА (используем var(--text-main) для поддержки светлой темы)
+    let html = '';
+    filtered.forEach(p => {
+        html += `<div onclick="window.selectFullscreenSupplier('${p}')" style="padding: 15px 0; border-bottom: 1px solid var(--border-light); color: var(--text-main); font-size: 16px; cursor: pointer;">${p}</div>`;
+    });
+    listDiv.innerHTML = html;
+
+    // Кнопка добавления нового
+    if (query && !providers.some(p => p.toLowerCase() === query)) {
+        addBtn.style.display = 'block';
+        preview.innerText = query;
+    } else {
+        addBtn.style.display = 'none';
+    }
+};
