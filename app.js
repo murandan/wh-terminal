@@ -4265,6 +4265,38 @@ window.closeFullscreenSupplier = function() {
     modal.style.setProperty('--vv-offset', '0px');
 };
 
+window.filterFullscreenSuppliers = function() {
+    const listContainer = document.getElementById('fullscreen-supplier-list');
+    const searchInput = document.getElementById('fullscreen-supplier-search');
+    const addNewBtn = document.getElementById('fullscreen-add-new-btn');
+    const newNamePreview = document.getElementById('new-supplier-name-preview');
+    
+    const filterText = searchInput.value.trim();
+    const lowerFilter = filterText.toLowerCase();
+    const suppliers = window.suppliers || []; // <-- Берем из правильного места!
+    
+    // Фильтруем...
+    const filtered = suppliers.filter(s => s.toLowerCase().includes(lowerFilter));
+    // ...и сортируем по алфавиту (с учетом русского языка)
+    filtered.sort((a, b) => a.localeCompare(b, 'ru', { sensitivity: 'base' }));
+
+    const exactMatch = suppliers.find(s => s.toLowerCase() === lowerFilter);
+    
+    if (filterText.length > 0 && !exactMatch) {
+        addNewBtn.style.display = 'block';
+        newNamePreview.textContent = filterText;
+    } else {
+        addNewBtn.style.display = 'none';
+    }
+    
+    // Отрисовываем с поддержкой светлой/темной темы (color: var(--text-main))
+    listContainer.innerHTML = filtered.map(s => `
+        <div class="supp-list-item" onclick="window.selectFullscreenSupplier('${s}')" style="padding: 15px 0; border-bottom: 1px solid var(--border-light); color: var(--text-main); font-size: 16px; cursor: pointer;">
+            ${s}
+        </div>
+    `).join('');
+};
+
 window.selectFullscreenSupplier = function(val) {
     // ВАЖНО: убедись, что 'qe-supplier-input' - это правильный ID твоего инпута
     const mainInput = document.getElementById('qe-supplier-input'); 
@@ -4433,73 +4465,4 @@ window.saveNewItemReceipt = function() {
 
     console.log("Пакет данных готов к отправке:", payload);
     alert('✅ Данные успешно собраны! Проверь консоль (F12).');
-};
-// =========================================
-// ПОЛНОЭКРАННЫЙ ПОСТАВЩИК (Сортировка + Темы)
-// =========================================
-window.openFullscreenSupplier = function() {
-    document.getElementById('supplier-fullscreen-modal').style.display = 'flex';
-    document.getElementById('fullscreen-supplier-search').value = '';
-    window.filterFullscreenSuppliers();
-    setTimeout(() => document.getElementById('fullscreen-supplier-search').focus(), 100);
-};
-
-window.closeFullscreenSupplier = function() {
-    document.getElementById('supplier-fullscreen-modal').style.display = 'none';
-};
-
-window.selectFullscreenSupplier = function(val) {
-    if(!val || val.trim() === '') return;
-    document.getElementById('qe-supplier-input').value = val.trim();
-    window.closeFullscreenSupplier();
-};
-
-window.filterFullscreenSuppliers = function() {
-    const query = document.getElementById('fullscreen-supplier-search').value.toLowerCase().trim();
-    const listDiv = document.getElementById('fullscreen-supplier-list');
-    const addBtn = document.getElementById('fullscreen-add-new-btn');
-    const preview = document.getElementById('new-supplier-name-preview');
-
-    // 1. Берем данные (без жесткого обрезания)
-    const myIncomes = (typeof incomes !== 'undefined') ? incomes : [];
-    let providers = [];
-    
-    if (myIncomes.length > 0) {
-        // Извлекаем 3-ю колонку (индекс 2)
-        providers = myIncomes.map(row => Array.isArray(row) ? row[2] : null);
-    }
-
-    // 2. Умная очистка (убираем пустоту и слово "Поставщик", если оно пролезло)
-    providers = providers.filter(p => {
-        if (!p) return false;
-        const text = p.toString().toLowerCase().trim();
-        return text !== 'поставщик' && text !== 'supplier';
-    });
-
-    // 3. Убираем дубликаты
-    providers = [...new Set(providers)];
-
-    // 4. Сортировка по алфавиту (с поддержкой русского языка)
-    providers.sort((a, b) => a.toString().localeCompare(b.toString(), 'ru', { sensitivity: 'base' }));
-
-    // 5. Фильтрация поиска
-    let filtered = providers;
-    if (query) {
-        filtered = providers.filter(p => p.toString().toLowerCase().includes(query));
-    }
-
-    // 6. Отрисовка с учетом светлой/темной темы (color: var(--text-main))
-    let html = '';
-    filtered.forEach(p => {
-        html += `<div onclick="window.selectFullscreenSupplier('${p}')" style="padding: 15px 0; border-bottom: 1px solid var(--border-light); color: var(--text-main); font-size: 16px; cursor: pointer;">${p}</div>`;
-    });
-    listDiv.innerHTML = html;
-
-    // Кнопка добавления нового
-    if (query && !providers.some(p => p.toString().toLowerCase() === query)) {
-        addBtn.style.display = 'block';
-        preview.innerText = query;
-    } else {
-        addBtn.style.display = 'none';
-    }
 };
