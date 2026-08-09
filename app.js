@@ -375,14 +375,17 @@ window.currentQeInput = null;
 window.qeNeedsClear = false;
 
 window.setQeActive = function(el, event) {
-    if (event) event.stopPropagation();
+    // Ловим событие, чтобы понять, чем кликнули
+    const e = event || window.event;
+    if (e && e.stopPropagation) e.stopPropagation();
     
-    // Жесткая проверка на мобильное устройство (телефон/планшет)
+    // Магия: проверяем, был ли клик мышкой или тачпадом ноутбука
+    const isMouse = e && e.pointerType === 'mouse';
+    
     const numpad = document.getElementById('custom-numpad');
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
-    if (numpad && isMobile) {
-        numpad.style.display = 'grid';
+    if (numpad) {
+        // Если кликнули мышкой - прячем. Иначе - показываем.
+        numpad.style.display = isMouse ? 'none' : 'grid';
     }
 
     document.querySelectorAll('.qe-active-input').forEach(input => {
@@ -737,19 +740,6 @@ window.openQuickEditModal = function(id) {
     if (numpad) numpad.style.display = 'none';
     if (topSection) topSection.classList.remove('form-disabled');
     window.activeQeFieldId = null; // Сбрасываем глобальный стейт фокуса
-
-    // --- БЛОКИРОВКА КАСТОМНЫХ КЛАВИАТУР НА ПК ---
-    // Проверяем, мобильное ли это устройство
-    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
-    // Если это ПК, принудительно прячем обе клавиатуры сразу при открытии окна
-    if (!isMobileDevice) {
-        const mainNumpad = document.getElementById('custom-numpad');
-        const recNumpad = document.getElementById('receive-numpad');
-        
-        if (mainNumpad) mainNumpad.style.display = 'none';
-        if (recNumpad) recNumpad.style.display = 'none';
-    }
 };
 
 // Открывает/закрывает наш кастомный список
@@ -4007,15 +3997,17 @@ window.receiveNeedsClear = false;
 
 // 1. Активация полей (Количество / Цена)
 window.activateReceiveField = function(el) {
+    // Здесь event обычно не передается в функцию, поэтому ловим глобальное событие
+    const e = window.event; 
+    const isMouse = e && e.pointerType === 'mouse';
+
     window.activeQeFieldId = el.id;
     window.receiveNeedsClear = true; 
     
-    // Жесткая проверка на мобильное устройство (телефон/планшет)
     const numpad = document.getElementById('receive-numpad');
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
-    if (numpad && isMobile) {
-        numpad.style.display = 'grid';
+    if (numpad) {
+        // Тот же принцип: отсекаем мышку
+        numpad.style.display = isMouse ? 'none' : 'grid';
     }
     
     document.querySelectorAll('#qe-receive-block input[readonly]').forEach(inp => inp.style.borderColor = '#333');
