@@ -4265,33 +4265,6 @@ window.closeFullscreenSupplier = function() {
     modal.style.setProperty('--vv-offset', '0px');
 };
 
-window.filterFullscreenSuppliers = function() {
-    const listContainer = document.getElementById('fullscreen-supplier-list');
-    const searchInput = document.getElementById('fullscreen-supplier-search');
-    const addNewBtn = document.getElementById('fullscreen-add-new-btn');
-    const newNamePreview = document.getElementById('new-supplier-name-preview');
-    
-    const filterText = searchInput.value.trim();
-    const lowerFilter = filterText.toLowerCase();
-    const suppliers = window.suppliers || []; // Предполагается, что window.suppliers существует
-    
-    const filtered = suppliers.filter(s => s.toLowerCase().includes(lowerFilter));
-    const exactMatch = suppliers.find(s => s.toLowerCase() === lowerFilter);
-    
-    if (filterText.length > 0 && !exactMatch) {
-        addNewBtn.style.display = 'block';
-        newNamePreview.textContent = filterText;
-    } else {
-        addNewBtn.style.display = 'none';
-    }
-    
-    listContainer.innerHTML = filtered.map(s => `
-        <div class="supp-list-item" onclick="window.selectFullscreenSupplier('${s}')" style="padding: 12px 0; font-size: 15px; cursor: pointer;">
-            ${s}
-        </div>
-    `).join('');
-};
-
 window.selectFullscreenSupplier = function(val) {
     // ВАЖНО: убедись, что 'qe-supplier-input' - это правильный ID твоего инпута
     const mainInput = document.getElementById('qe-supplier-input'); 
@@ -4487,22 +4460,35 @@ window.filterFullscreenSuppliers = function() {
     const addBtn = document.getElementById('fullscreen-add-new-btn');
     const preview = document.getElementById('new-supplier-name-preview');
 
+    // 1. Берем данные (без жесткого обрезания)
     const myIncomes = (typeof incomes !== 'undefined') ? incomes : [];
     let providers = [];
-    if (myIncomes.length > 3 && Array.isArray(myIncomes[3])) {
-        providers = [...new Set(myIncomes.slice(3).map(row => row[2]).filter(Boolean))];
+    
+    if (myIncomes.length > 0) {
+        // Извлекаем 3-ю колонку (индекс 2)
+        providers = myIncomes.map(row => Array.isArray(row) ? row[2] : null);
     }
 
-    // 1. АЛФАВИТНАЯ СОРТИРОВКА (с учетом русского языка)
-    providers.sort((a, b) => a.localeCompare(b, 'ru', { sensitivity: 'base' }));
+    // 2. Умная очистка (убираем пустоту и слово "Поставщик", если оно пролезло)
+    providers = providers.filter(p => {
+        if (!p) return false;
+        const text = p.toString().toLowerCase().trim();
+        return text !== 'поставщик' && text !== 'supplier';
+    });
 
-    // 2. ФИЛЬТРАЦИЯ
+    // 3. Убираем дубликаты
+    providers = [...new Set(providers)];
+
+    // 4. Сортировка по алфавиту (с поддержкой русского языка)
+    providers.sort((a, b) => a.toString().localeCompare(b.toString(), 'ru', { sensitivity: 'base' }));
+
+    // 5. Фильтрация поиска
     let filtered = providers;
     if (query) {
-        filtered = providers.filter(p => p.toLowerCase().includes(query));
+        filtered = providers.filter(p => p.toString().toLowerCase().includes(query));
     }
 
-    // 3. ОТРИСОВКА (используем var(--text-main) для поддержки светлой темы)
+    // 6. Отрисовка с учетом светлой/темной темы (color: var(--text-main))
     let html = '';
     filtered.forEach(p => {
         html += `<div onclick="window.selectFullscreenSupplier('${p}')" style="padding: 15px 0; border-bottom: 1px solid var(--border-light); color: var(--text-main); font-size: 16px; cursor: pointer;">${p}</div>`;
@@ -4510,7 +4496,7 @@ window.filterFullscreenSuppliers = function() {
     listDiv.innerHTML = html;
 
     // Кнопка добавления нового
-    if (query && !providers.some(p => p.toLowerCase() === query)) {
+    if (query && !providers.some(p => p.toString().toLowerCase() === query)) {
         addBtn.style.display = 'block';
         preview.innerText = query;
     } else {
