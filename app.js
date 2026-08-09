@@ -4368,18 +4368,30 @@ window.selectFullscreenSupplier = function(val) {
     val = val ? val.trim() : '';
     if (!val) return;
 
-    // 1. Подставляем выбранное значение в целевое поле (убедись, что ID совпадает с твоим рабочим полем)
-    const targetInput = document.getElementById('fullscreen-supplier-search');
-    if (targetInput) targetInput.value = val;
+    // 1. Вставляем выбранное значение в то самое главное поле
+    const targetInput = document.getElementById('qe-supplier-input');
+    if (targetInput) {
+        targetInput.value = val;
+        
+        // Обязательно "дергаем" поле, чтобы касса поняла, что текст изменился
+        targetInput.dispatchEvent(new Event('input'));
+        targetInput.dispatchEvent(new Event('change'));
+    }
 
-    // 2. Очищаем поле поиска в модальном окне
+    // 2. Очищаем поле поиска для следующего раза
     const searchInput = document.getElementById('fullscreen-supplier-search');
     if (searchInput) searchInput.value = '';
 
-    // 3. Перерисовываем список поставщиков
+    // 3. ЗАКРЫВАЕМ ОКНО, чтобы ты увидел подставленное значение
+    if (typeof window.closeFullscreenSupplier === 'function') {
+        window.closeFullscreenSupplier();
+    } else {
+        const modal = document.getElementById('supplier-fullscreen-modal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    // 4. Сбрасываем фильтры списка на фоне
     window.filterFullscreenSuppliers();
-    
-    // Окно больше не закрывается! Команда window.closeFullscreenSupplier() убрана.
 };
 
 // --- ДИНАМИЧЕСКОЕ ФОРМАТИРОВАНИЕ ТЫСЯЧ ПРИ ВВОДЕ С ПК ---
