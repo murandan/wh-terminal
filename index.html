@@ -370,216 +370,144 @@
     <input type="file" id="gallery-input" accept="image/*" style="display: none;" onchange="handlePhoto(event)">
     <canvas id="resize-canvas" style="display: none;"></canvas>
 
-   <div id="income-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-overlay); z-index: 10000; justify-content: center; align-items: flex-start; padding-top: 15vh; backdrop-filter: blur(3px);">
-    <div style="background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 8px; width: 95%; max-width: 600px; padding: 20px; color: var(--text-main); max-height: 85vh; display: flex; flex-direction: column; position: relative;">
-        
-        <!-- Общая шапка -->
-        <button onclick="toggleIncomeModule()" style="position: absolute; right: 15px; top: 15px; background: transparent; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; z-index: 10;">✕</button>
-        <h3 style="margin-bottom: 15px; color: var(--accent-green);" data-i18n="income_general_title">📦 ПРИЕМКА ТОВАРА</h3>
-        
-        <!-- Вкладки переключения -->
-        <div class="tabs-wrapper" style="display: flex; gap: 10px; margin-bottom: 20px; flex-shrink: 0;">
-            <button id="tab-btn-excel" onclick="window.switchIncomeTab('excel')" style="flex: 1; padding: 12px; background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;" data-i18n="tab_excel_import">ИМПОРТ EXCEL</button>
-            <button id="tab-btn-manual" onclick="window.switchIncomeTab('manual')" style="flex: 1; padding: 12px; background: transparent; color: var(--text-muted); border: 1px solid var(--border-light); border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s;" data-i18n="tab_manual_receipt">НОВЫЙ ТОВАР</button>
-        </div>
-
-        <!-- ========================================== -->
-        <!-- БЛОК 1: ИМПОРТ НАКЛАДНОЙ (Активен)       -->
-        <!-- ========================================== -->
-        <div id="income-excel" style="display: block;">
+    <!-- Окно ПРИЕМКА с вкладками ИМПОРТ EXCEL и НОВЫЙ ТОВАР -->
+    <div id="income-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-overlay); z-index: 10000; justify-content: center; align-items: center; backdrop-filter: blur(3px);">
+        <div style="background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 8px; width: 95%; max-width: 600px; padding: 20px; color: var(--text-main); max-height: 90vh; display: flex; flex-direction: column; position: relative;">
+            <button onclick="toggleIncomeModule()" style="position: absolute; right: 15px; top: 15px; background: transparent; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer;">✕</button>
             
-            <div class="minimal-input-container" style="position: relative; z-index: 999;">
-                <div class="currency-minimal-container">
-                    <div class="currency-minimal-header" id="dropdownHeader" onclick="toggleDropdown()">
-                        <span id="dropdownSelectedCode">USD</span><span class="curr-arrow-mini">▼</span>
-                    </div>
-                    <div class="currency-minimal-list" id="dropdownList">
-                        <div class="currency-minimal-item" onclick="selectCurrency('KZT')">KZT</div>
-                        <div class="currency-minimal-item selected" onclick="selectCurrency('USD')">USD</div>
-                        <div class="currency-minimal-item" onclick="selectCurrency('CNY')">CNY</div>
-                        <div class="currency-minimal-item" onclick="selectCurrency('EUR')">EUR</div>
-                        <div class="currency-minimal-item" onclick="selectCurrency('RUB')">RUB</div>
-                    </div>
-                    <input type="hidden" id="invoiceCurrency" value="USD">
-                </div>
-
-                <div class="file-input-wrapper">
-                    <label for="invoiceFileInput" id="fileInputLabel" class="file-upload-label">
-                        <div class="file-content">
-                            <span style="color: var(--text-muted); font-size: 10px;">📄</span>
-                            <span id="fileNameTextCompact" class="file-placeholder-text">Нажмите для выбора Excel</span>
+            <!-- Вкладки (Tabs) -->
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; margin-top: 10px;">
+                <button id="tab-btn-excel" onclick="window.switchIncomeTab('excel')" style="flex: 1; padding: 12px; background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); border-radius: 4px; font-weight: bold; cursor: pointer;">ИМПОРТ EXCEL</button>
+                <button id="tab-btn-manual" onclick="window.switchIncomeTab('manual')" style="flex: 1; padding: 12px; background: transparent; color: var(--text-muted); border: 1px dashed var(--border-light); border-radius: 4px; font-weight: bold; cursor: pointer;">НОВЫЙ ТОВАР</button>
+            </div>
+            
+            <!-- Вкладка 1: ИМПОРТ EXCEL (Обернули старый код) -->
+            <div id="block-excel" style="display: block;">
+                <div class="minimal-input-container">
+                    <div class="currency-minimal-container">
+                        <div class="currency-minimal-header" id="dropdownHeader" onclick="toggleDropdown()">
+                            <span id="dropdownSelectedCode">USD</span><span class="curr-arrow-mini">▼</span>
                         </div>
-                        <span style="color: var(--text-muted); font-size: 11px;">📎</span>
-                    </label>
-                    <input type="file" id="invoiceFileInput" accept=".csv, .xls, .xlsx" style="display: none;" multiple onchange="updateFileNameCompactUI(this)">
-                </div>
-            </div>
-            
-            <button id="parseInvoiceBtn" onclick="processInvoiceFile()" style="background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); padding: 12px 15px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; font-size: 14px; position: relative; z-index: 1;" data-i18n="income_parse">ОБРАБОТАТЬ ФАЙЛ</button>
-            
-            <div id="debug-container" style="display: none; margin-top: 15px; flex-direction: column; overflow-y: auto; max-height: 50vh;"></div>
+                        <div class="currency-minimal-list" id="dropdownList">
+                            <div class="currency-minimal-item" onclick="selectCurrency('KZT')">KZT</div>
+                            <div class="currency-minimal-item selected" onclick="selectCurrency('USD')">USD</div>
+                            <div class="currency-minimal-item" onclick="selectCurrency('CNY')">CNY</div>
+                            <div class="currency-minimal-item" onclick="selectCurrency('EUR')">EUR</div>
+                            <div class="currency-minimal-item" onclick="selectCurrency('RUB')">RUB</div>
+                        </div>
+                        <input type="hidden" id="invoiceCurrency" value="USD">
+                    </div>
 
-            <div id="invoicePreviewArea" style="display: none; margin-top: 20px; flex-direction: column; overflow: hidden;">
-                <div id="invoiceMetadata" style="margin-bottom: 10px; font-weight: bold; color: var(--accent-yellow); font-size: 13px; text-align: center;"></div>
-                <div style="overflow-y: auto; border: 1px solid var(--border-light); margin-bottom: 15px; flex-grow: 1;">
-                    <table style="width: 100%; border-collapse: collapse; font-size: 12px; color: var(--text-main);">
-                        <thead style="background: var(--border-main); position: sticky; top: 0; z-index: 5;">
-                            <tr style="border-bottom: 1px solid var(--text-muted); text-align: left;">
-                                <th style="padding: 8px;" data-i18n="income_code">Код</th>
-                                <th style="padding: 8px;" data-i18n="income_name">Наименование</th>
-                                <th style="padding: 8px;" data-i18n="income_qty">Кол-во</th>
-                                <th style="padding: 8px;" data-i18n="income_cbm">Объем (CBM)</th>
-                                <th style="padding: 8px;" data-i18n="income_weight">Вес (кг)</th>
-                                <th style="padding: 8px;">
-                                    <span data-i18n="income_price">Цена</span> (<span id="dynamicCurrencySpan" style="color: var(--accent-yellow);">USD</span>)
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody id="invoiceTableBody"></tbody>
-                    </table>
-                </div>
-                
-                <div id="status-container" style="display: none; margin-bottom: 15px; padding: 10px; background: var(--bg-body); border: 1px solid var(--border-light); border-radius: 4px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px;">
-                        <span id="status-text" style="color: var(--accent-green);">Подготовка...</span>
-                        <span id="status-percent" style="color: var(--text-muted);">0%</span>
-                    </div>
-                    <div style="width: 100%; height: 4px; background: var(--border-main); border-radius: 2px; overflow: hidden;">
-                        <div id="status-bar" style="width: 0%; height: 100%; background: var(--accent-green); transition: width 0.3s;"></div>
+                    <div class="file-input-wrapper">
+                        <label for="invoiceFileInput" id="fileInputLabel" class="file-upload-label">
+                            <div class="file-content">
+                                <span style="color: var(--text-muted); font-size: 10px;">📄</span>
+                                <span id="fileNameTextCompact" class="file-placeholder-text">Нажмите для выбора Excel</span>
+                            </div>
+                            <span style="color: var(--text-muted); font-size: 11px;">📎</span>
+                        </label>
+                        <input type="file" id="invoiceFileInput" accept=".csv, .xls, .xlsx" style="display: none;" multiple onchange="updateFileNameCompactUI(this)">
                     </div>
                 </div>
                 
-                <button id="sendInvoiceBtn" onclick="sendInvoiceToBackend()" style="background: var(--accent-blue); color: #ffffff; padding: 12px 20px; border: none; border-radius: 4px; width: 100%; cursor: pointer; font-weight: bold;" data-i18n="income_confirm">
-                    ✅ ОПРИХОДОВАТЬ НА СКЛАД
-                </button>
+                <button id="parseInvoiceBtn" onclick="processInvoiceFile()" style="background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); padding: 12px 15px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; font-size: 14px;" data-i18n="income_parse">ОБРАБОТАТЬ ФАЙЛ</button>
+                
+                <div id="debug-container" style="display: none; margin-top: 15px; flex-direction: column; overflow-y: auto; max-height: 50vh;"></div>
+
+                <div id="invoicePreviewArea" style="display: none; margin-top: 20px; flex-direction: column; overflow: hidden;">
+                    <div id="invoiceMetadata" style="margin-bottom: 10px; font-weight: bold; color: var(--accent-yellow); font-size: 13px; text-align: center;"></div>
+                    <div style="overflow-y: auto; border: 1px solid var(--border-light); margin-bottom: 15px; flex-grow: 1;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 12px; color: var(--text-main);">
+                            <thead style="background: var(--border-main); position: sticky; top: 0;">
+                                <tr style="border-bottom: 1px solid var(--text-muted); text-align: left;">
+                                    <th style="padding: 8px;" data-i18n="income_code">Код</th>
+                                    <th style="padding: 8px;" data-i18n="income_name">Наименование</th>
+                                    <th style="padding: 8px;" data-i18n="income_qty">Кол-во</th>
+                                    <th style="padding: 8px;" data-i18n="income_cbm">Объем (CBM)</th>
+                                    <th style="padding: 8px;" data-i18n="income_weight">Вес (кг)</th>
+                                    <th style="padding: 8px;">
+                                        <span data-i18n="income_price">Цена</span> (<span id="dynamicCurrencySpan" style="color: var(--accent-yellow);">USD</span>)
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="invoiceTableBody"></tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="status-container" style="display: none; margin-bottom: 15px; padding: 10px; background: var(--bg-body); border: 1px solid var(--border-light); border-radius: 4px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px;">
+                            <span id="status-text" style="color: var(--accent-green);">Подготовка...</span>
+                            <span id="status-percent" style="color: var(--text-muted);">0%</span>
+                        </div>
+                        <div style="width: 100%; height: 4px; background: var(--border-main); border-radius: 2px; overflow: hidden;">
+                            <div id="status-bar" style="width: 0%; height: 100%; background: var(--accent-green); transition: width 0.3s;"></div>
+                        </div>
+                    </div>
+                    
+                    <button id="sendInvoiceBtn" onclick="sendInvoiceToBackend()" style="background: var(--accent-blue); color: #ffffff; padding: 12px 20px; border: none; border-radius: 4px; width: 100%; cursor: pointer; font-weight: bold;" data-i18n="income_confirm">
+                        ✅ ОПРИХОДОВАТЬ НА СКЛАД
+                    </button>
+                </div>
             </div>
+
+            <!-- Вкладка 2: НОВЫЙ ТОВАР (Ручной ввод) -->
+            <div id="block-manual" style="display: none; flex-direction: column; gap: 15px;">
+                <!-- 1. Штрихкод -->
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="new-item-barcode" class="qe-input" placeholder="Штрихкод..." style="flex: 1; padding: 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; outline: none;">
+                    <button class="icon-btn" style="padding: 0 15px; background: transparent; border: 1px dashed var(--border-light); border-radius: 4px; color: var(--text-muted); cursor: pointer;">📷</button>
+                </div>
+
+                <!-- 2. Наименование -->
+                <input type="text" id="new-item-name" class="qe-input" placeholder="Наименование товара..." style="width: 100%; padding: 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; box-sizing: border-box; outline: none;">
+
+                <!-- 3. Поставщик и Категория (Сетка Grid 50/50) -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <!-- Левая ячейка: Поставщик (Твой полноэкранный компонент) -->
+                    <div style="position: relative; min-width: 0;">
+                        <input id="qe-supplier-input" class="qe-input" type="text" placeholder="Поставщик... ▼" readonly onclick="window.openFullscreenSupplier()" style="width: 100%; padding: 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; box-sizing: border-box; outline: none; cursor: pointer; text-overflow: ellipsis; font-size: 16px;">
+                    </div>
+
+                    <!-- Правая ячейка: Категория (Кастомный выпадающий список) -->
+                    <div style="position: relative; min-width: 0;">
+                        <!-- Триггер -->
+                        <div id="inc-category-trigger" onclick="window.toggleIncDropdown(event, 'category')" style="padding: 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; display: flex; justify-content: space-between; cursor: pointer; align-items: center;">
+                            <div id="inc-category-display" style="color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 16px;">Категория...</div>
+                            <input type="hidden" id="new-item-category" value="">
+                            <span id="inc-category-arrow" style="transition: 0.2s; flex-shrink: 0; margin-left: 5px;">▼</span>
+                        </div>
+                        <!-- Поле ручного ввода -->
+                        <div id="inc-new-category-wrapper" style="display: none; width: 100%; position: relative;">
+                            <input type="text" id="inc-new-category" class="qe-input" placeholder="Новая категория..." style="width: 100%; padding: 12px 35px 12px 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; box-sizing: border-box; outline: none; font-size: 16px;">
+                            <button onclick="window.cancelIncNew('category')" style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; padding: 5px; display: flex; align-items: center; justify-content: center;">✕</button>
+                        </div>
+                        <!-- Контейнер списка -->
+                        <div id="inc-category-dropdown" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 4px; max-height: 200px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.2);"></div>
+                    </div>
+                </div>
+
+                <!-- 4. Цифры -->
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px; text-align: center;">Количество</div>
+                        <input type="number" id="new-item-qty" class="qe-input" value="0" style="width: 100%; padding: 12px; background: transparent; border: 1px solid var(--border-light); color: var(--text-main); border-radius: 4px; text-align: center; outline: none; font-size: 16px; box-sizing: border-box;">
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px; text-align: center;">Цена закупа</div>
+                        <input type="number" id="new-item-purchase-price" class="qe-input" value="0" style="width: 100%; padding: 12px; background: transparent; border: 1px solid var(--border-light); color: var(--text-main); border-radius: 4px; text-align: center; outline: none; font-size: 16px; box-sizing: border-box;">
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px; text-align: center;">Розница</div>
+                        <input type="number" id="new-item-retail-price" class="qe-input" value="0" style="width: 100%; padding: 12px; background: transparent; border: 1px solid var(--border-light); color: var(--text-main); border-radius: 4px; text-align: center; outline: none; font-size: 16px; box-sizing: border-box;">
+                    </div>
+                </div>
+
+                <!-- 5. Кнопка отправки -->
+                <button onclick="window.saveNewItemReceipt()" style="background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); padding: 12px 15px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; font-size: 14px;">ОПРИХОДОВАТЬ ТОВАР</button>
+            </div>
+            
         </div>
-
-        <!-- ========================================== -->
-        <!-- БЛОК 2: ПРИЕМ НОВОГО ТОВАРА (Скрыт)      -->
-        <!-- ========================================== -->
-        <div id="income-manual" style="display: none; flex-direction: column;">
-            
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <input id="new-item-barcode" class="qe-input" type="text" placeholder="Штрихкод..." oninput="window.checkScannerStatus(this)" style="width: 100%; padding: 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; box-sizing: border-box; outline: none;">
-                <button class="qe-scan-btn" onclick="window.triggerCameraScan(event)" style="background: transparent; border: 1px solid var(--border-light); color: var(--text-main); border-radius: 4px; padding: 0 15px; cursor: pointer; font-size: 16px;">📷</button>
-            </div>
-
-            <div style="margin-bottom: 15px;">
-                <input id="new-item-name" class="qe-input" type="text" placeholder="Наименование товара..." style="width: 100%; padding: 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; box-sizing: border-box; outline: none;">
-            </div>
-
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <!-- Блок Поставщика -->
-                <div style="flex: 1; position: relative; min-width: 0;">
-                    <div id="inc-provider-trigger" onclick="window.toggleIncDropdown(event, 'provider')" style="padding: 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; display: flex; justify-content: space-between; cursor: pointer; align-items: center;">
-                        <div id="inc-provider-display" style="color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Поставщик...</div>
-                        <input type="hidden" id="new-item-provider" value="">
-                        <span id="inc-provider-arrow" style="transition: 0.2s; flex-shrink: 0; margin-left: 5px;">▼</span>
-                    </div>
-                    
-                    <!-- Бронебойная обертка без flex -->
-                    <div id="inc-new-provider-wrapper" style="display: none; width: 100%; position: relative;">
-                        <input type="text" id="inc-new-provider" class="qe-input" placeholder="Новый поставщик..." style="width: 100%; padding: 12px 35px 12px 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; box-sizing: border-box; outline: none; font-size: 16px;">
-                        <button onclick="window.cancelIncNew('provider')" style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; padding: 5px; display: flex; align-items: center; justify-content: center;">✕</button>
-                    </div>
-                    
-                    <div id="inc-provider-dropdown" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 4px; max-height: 200px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.2);"></div>
-                </div>
-
-                <!-- Блок Категории -->
-                <div style="flex: 1; position: relative; min-width: 0;">
-                    <div id="inc-category-trigger" onclick="window.toggleIncDropdown(event, 'category')" style="padding: 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; display: flex; justify-content: space-between; cursor: pointer; align-items: center;">
-                        <div id="inc-category-display" style="color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Категория...</div>
-                        <input type="hidden" id="new-item-category" value="">
-                        <span id="inc-category-arrow" style="transition: 0.2s; flex-shrink: 0; margin-left: 5px;">▼</span>
-                    </div>
-                    
-                    <!-- Бронебойная обертка без flex -->
-                    <div id="inc-new-category-wrapper" style="display: none; width: 100%; position: relative;">
-                        <input type="text" id="inc-new-category" class="qe-input" placeholder="Новая категория..." style="width: 100%; padding: 12px 35px 12px 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; box-sizing: border-box; outline: none; font-size: 16px;">
-                        <button onclick="window.cancelIncNew('category')" style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; padding: 5px; display: flex; align-items: center; justify-content: center;">✕</button>
-                    </div>
-                    
-                    <div id="inc-category-dropdown" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 4px; max-height: 200px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.2);"></div>
-                </div>
-            </div>
-
-            <!-- НАЧАЛО БЛОКА ПОСТАВЩИКА И КАТЕГОРИИ -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
-                
-                <!-- Левая ячейка: Поставщик (Полноэкранный режим) -->
-                <div style="position: relative; min-width: 0;">
-                    <input id="qe-supplier-input" class="qe-input" type="text" placeholder="Поставщик... ▼" readonly onclick="window.openFullscreenSupplier()" style="width: 100%; padding: 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; box-sizing: border-box; outline: none; cursor: pointer; text-overflow: ellipsis; font-size: 16px;">
-                </div>
-
-                <!-- Правая ячейка: Категория -->
-                <div style="position: relative; min-width: 0;">
-                    <!-- Триггер -->
-                    <div id="inc-category-trigger" onclick="window.toggleIncDropdown(event, 'category')" style="padding: 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; display: flex; justify-content: space-between; cursor: pointer; align-items: center;">
-                        <div id="inc-category-display" style="color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 16px;">Категория...</div>
-                        <input type="hidden" id="new-item-category" value="">
-                        <span id="inc-category-arrow" style="transition: 0.2s; flex-shrink: 0; margin-left: 5px;">▼</span>
-                    </div>
-                    
-                    <!-- Поле ввода новой категории (скрыто) -->
-                    <div id="inc-new-category-wrapper" style="display: none; width: 100%; position: relative;">
-                        <input type="text" id="inc-new-category" class="qe-input" placeholder="Новая категория..." style="width: 100%; padding: 12px 35px 12px 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; box-sizing: border-box; outline: none; font-size: 16px;">
-                        <button onclick="window.cancelIncNew('category')" style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; padding: 5px; display: flex; align-items: center; justify-content: center;">✕</button>
-                    </div>
-                    
-                    <!-- Выпадающий список -->
-                    <div id="inc-category-dropdown" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 4px; max-height: 200px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.2);"></div>
-                </div>
-
-            </div>
-            <!-- КОНЕЦ БЛОКА -->
-
-            <button onclick="window.saveNewItemReceipt()" style="background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); padding: 12px 15px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; font-size: 14px;">ОПРИХОДОВАТЬ ТОВАР</button>
-        </div>
-
     </div>
-</div>
-
-<!-- Скрипт переключения (встроен прямо сюда для надежности) -->
-<script>
-    window.switchIncomeTab = function(tabName) {
-        const btnExcel = document.getElementById('tab-btn-excel');
-        const btnManual = document.getElementById('tab-btn-manual');
-        const blockExcel = document.getElementById('income-excel');
-        const blockManual = document.getElementById('income-manual');
-
-        if (!btnExcel || !blockExcel) {
-            console.error('Ошибка: Не найдены блоки модалки!');
-            return;
-        }
-
-        if (tabName === 'excel') {
-            btnExcel.style.background = 'var(--bg-success-dim)';
-            btnExcel.style.color = 'var(--accent-green)';
-            btnExcel.style.borderColor = 'var(--accent-green)';
-            
-            btnManual.style.background = 'transparent';
-            btnManual.style.color = 'var(--text-muted)';
-            btnManual.style.borderColor = 'var(--border-light)';
-            
-            blockExcel.style.display = 'block';
-            blockManual.style.display = 'none';
-        } else if (tabName === 'manual') {
-            btnManual.style.background = 'var(--bg-success-dim)';
-            btnManual.style.color = 'var(--accent-green)';
-            btnManual.style.borderColor = 'var(--accent-green)';
-            
-            btnExcel.style.background = 'transparent';
-            btnExcel.style.color = 'var(--text-muted)';
-            btnExcel.style.borderColor = 'var(--border-light)';
-            
-            blockManual.style.display = 'flex';
-            blockExcel.style.display = 'none';
-        }
-    };
-
-</script>
 
 <!-- ========================================= -->
 <!-- ОКНО БЫСТРОГО РЕДАКТИРОВАНИЯ (QUICK EDIT) -->
@@ -628,21 +556,22 @@
 </div>
 
 <!-- ПОЛНОЭКРАННЫЙ ПОИСК ПОСТАВЩИКА -->
-<div id="supplier-fullscreen-modal" class="supp-modal-bg" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 999999; flex-direction: column; transform: translateY(var(--vv-offset, 0px));">
+<div id="supplier-fullscreen-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; background: #121212; z-index: 999999; flex-direction: column; transform: translateY(var(--vv-offset, 0px));">
     
-    <!-- Шапка (теперь с крестиком) -->
-    <div class="supp-modal-header" style="flex-shrink: 0; display: flex; padding: 10px 15px; padding-top: max(10px, env(safe-area-inset-top)); gap: 10px;">
-        <input type="text" id="fullscreen-supplier-search" class="supp-modal-input" placeholder="Поиск или новый поставщик..." oninput="window.filterFullscreenSuppliers()" style="flex: 1; padding: 10px; border-radius: 6px; font-size: 16px;">
-        <button id="fullscreen-cancel-btn" onclick="window.closeFullscreenSupplier()" style="background: #d32f2f; color: #fff; border: none; width: 44px; border-radius: 6px; font-size: 20px; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer;">&#10005;</button>
+    <!-- Шапка -->
+    <div style="flex-shrink: 0; display: flex; padding: 10px 15px; padding-top: max(10px, env(safe-area-inset-top)); background: #1e1e1e; border-bottom: 1px solid #333; gap: 10px;">
+        <input type="text" id="fullscreen-supplier-search" placeholder="Поиск или новый поставщик..." oninput="window.filterFullscreenSuppliers()" style="flex: 1; background: #000; color: #fff; border: 1px solid #333; padding: 10px; border-radius: 6px; font-size: 16px;">
+        <button onclick="window.closeFullscreenSupplier()" style="background: #d32f2f; color: #fff; border: none; padding: 0 15px; border-radius: 6px; font-size: 14px; font-weight: bold;">Отмена</button>
     </div>
 
     <!-- Кнопка добавления -->
     <div id="fullscreen-add-new-btn" style="display: none; flex-shrink: 0; padding: 15px; background: rgba(76, 175, 80, 0.1); border-bottom: 1px solid #2e7d32; text-align: center; color: #4CAF50; font-weight: bold; cursor: pointer;" onclick="window.selectFullscreenSupplier(document.getElementById('fullscreen-supplier-search').value)">
-        <span id="fullscreen-add-text">+ Добавить:</span> <span id="new-supplier-name-preview"></span>
+        + Добавить: <span id="new-supplier-name-preview"></span>
     </div>
 
     <!-- Список -->
     <div id="fullscreen-supplier-list" style="flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 15px; padding-bottom: max(15px, env(safe-area-inset-bottom));">
+        <!-- Результаты -->
     </div>
 </div>
 
