@@ -465,32 +465,3 @@ html.lock, body.lock {
     width: 100% !important;
     height: 100% !important;
 }
-
-/* По умолчанию — ТЕМНАЯ ТЕМА (POS Noir) */
-.supp-modal-bg { background: #121212 !important; color: #fff; }
-.supp-modal-header { background: #1e1e1e !important; border-bottom: 1px solid #333; }
-.supp-modal-input { background: #000 !important; color: #fff !important; border: 1px solid #333; }
-.supp-list-item { border-bottom: 1px solid rgba(255,255,255,0.08); color: #fff !important; }
-
-/* СВЕТЛАЯ ТЕМА (когда на body висит класс light-theme) */
-body.light-theme .supp-modal-bg { background: #e4e6e8 !important; color: #000; }
-body.light-theme .supp-modal-header { background: #ffffff !important; border-bottom: 1px solid #ccc; }
-body.light-theme .supp-modal-input { background: #ffffff !important; color: #000 !important; border: 1px solid #aaa; }
-body.light-theme .supp-list-item { border-bottom: 1px solid #ddd; color: #000 !important; }
-/* Либо 100% рабочий вариант: добавляем рамки самим инпутам, чтобы они не сливались с фоном */
-body.light-theme #qe-supplier-input,
-body.light-theme .qe-input-group input {
-    background: #ffffff !important;
-    border: 1px solid #b0b0b0 !important;}
-/* 1. Затемняем фон зеленой рамки (Оформление прихода) в светлой теме */
-body.light-theme #qe-receive-block {
-    background: #e4e6e8 !important; 
-}
-
-/* 2. Делаем поля ввода внутри этого блока белыми с контрастным текстом и рамкой */
-body.light-theme #qe-receive-block input {
-    background: #ffffff !important; 
-    color: #000000 !important;      
-    border: 1px solid #b0b0b0 !important;
-    border-radius: 4px !important;
-}
