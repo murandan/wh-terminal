@@ -4332,29 +4332,24 @@ window.filterFullscreenSuppliers = function() {
     const filterText = searchInput.value.trim();
     const lowerFilter = filterText.toLowerCase();
     
-    // Берем массив и переводим в текст
     const suppliers = (window.suppliers || []).map(String);
     
-    // Фильтруем и сортируем список
     const filtered = suppliers.filter(s => s.toLowerCase().includes(lowerFilter));
     filtered.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
     
     const exactMatch = suppliers.find(s => s.toLowerCase() === lowerFilter);
     
-    // Логика кнопки "Добавить"
     if (filterText.length > 0 && !exactMatch) {
         if (addNewBtn) {
             addNewBtn.style.display = 'block';
-            // Используем безопасный доступ к переводам (на случай если translations не прогрузился)
             const addText = (typeof translations !== 'undefined' && translations[currentLang]) 
                             ? translations[currentLang].modal_add_supplier 
                             : "Добавить";
             
             addNewBtn.innerHTML = `${addText} "<b>${filterText}</b>"`;
             
-            // ЖЕЛЕЗОБЕТОННО: Говорим кнопке "Добавить" закрывать окно (передаем true)
             addNewBtn.onclick = function() {
-                window.selectFullscreenSupplier(filterText, true);
+                window.selectFullscreenSupplier(filterText);
             };
         }
     } else {
@@ -4363,16 +4358,14 @@ window.filterFullscreenSuppliers = function() {
         }
     }
     
-    // Генерация HTML. Обычным пунктам говорим НЕ закрывать окно (передаем false)
-    listContainer.innerHTML = filtered.map(s => `
-        <div class="supp-list-item" onclick="window.selectFullscreenSupplier('${s.replace(/'/g, "\\'")}', false)" style="padding: 12px 0; font-size: 15px; cursor: pointer;">
-            ${s}
-        </div>
-    `).join('');
+    // Генерируем список, заменяя любые кавычки на безопасные символы, чтобы не ломался клик
+    listContainer.innerHTML = filtered.map(s => {
+        const safeStr = s.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        return `<div class="supp-list-item" onclick="window.selectFullscreenSupplier('${safeStr}')" style="padding: 12px 0; font-size: 15px; cursor: pointer;">${s}</div>`;
+    }).join('');
 };
 
-// Добавлен второй параметр shouldClose
-window.selectFullscreenSupplier = function(val, shouldClose) {
+window.selectFullscreenSupplier = function(val) {
     val = val ? val.trim() : '';
     if (!val) return;
 
@@ -4380,25 +4373,24 @@ window.selectFullscreenSupplier = function(val, shouldClose) {
     const targetInput = document.getElementById('qe-supplier-input');
     if (targetInput) {
         targetInput.value = val;
+        // Дергаем события, чтобы касса "увидела", что поле заполнилось
         targetInput.dispatchEvent(new Event('input'));
         targetInput.dispatchEvent(new Event('change'));
     }
 
-    // 2. Очищаем поле поиска
+    // 2. Очищаем поле поиска для следующего раза
     const searchInput = document.getElementById('fullscreen-supplier-search');
     if (searchInput) searchInput.value = '';
 
-    // 3. Обновляем список
+    // 3. Обновляем (сбрасываем) список на фоне
     window.filterFullscreenSuppliers();
 
-    // 4. Закрываем окно ТОЛЬКО если shouldClose === true (то есть нажали на кнопку "Добавить")
-    if (shouldClose === true) {
-        if (typeof window.closeFullscreenSupplier === 'function') {
-            window.closeFullscreenSupplier();
-        } else {
-            const modal = document.getElementById('supplier-fullscreen-modal');
-            if (modal) modal.style.display = 'none';
-        }
+    // 4. ВСЕГДА ЗАКРЫВАЕМ ОКНО (и при выборе, и при добавлении)
+    if (typeof window.closeFullscreenSupplier === 'function') {
+        window.closeFullscreenSupplier();
+    } else {
+        const modal = document.getElementById('supplier-fullscreen-modal');
+        if (modal) modal.style.display = 'none';
     }
 };
 // --- ДИНАМИЧЕСКОЕ ФОРМАТИРОВАНИЕ ТЫСЯЧ ПРИ ВВОДЕ С ПК ---
