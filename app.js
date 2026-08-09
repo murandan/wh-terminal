@@ -4435,3 +4435,36 @@ document.addEventListener('keydown', function(e) {
         }
     }
 });
+
+window.switchIncomeTab = function(tabName) {
+    const tabImport = document.getElementById('tab-import');
+    const tabNew = document.getElementById('tab-new-product');
+    const btnImport = document.getElementById('tab-btn-import');
+    const btnNew = document.getElementById('tab-btn-new');
+
+    if (!tabImport || !tabNew || !btnImport || !btnNew) return;
+
+    if (tabName === 'import') {
+        tabImport.style.display = 'block';
+        tabNew.style.display = 'none';
+        
+        btnImport.style.background = 'var(--bg-overlay)';
+        btnImport.style.color = 'var(--text-main)';
+        btnImport.style.border = '1px solid var(--border-light)';
+        
+        btnNew.style.background = 'transparent';
+        btnNew.style.color = 'var(--text-muted)';
+        btnNew.style.border = '1px solid var(--border-main)';
+    } else {
+        tabImport.style.display = 'none';
+        tabNew.style.display = 'block';
+        
+        btnImport.style.background = 'transparent';
+        btnImport.style.color = 'var(--text-muted)';
+        btnImport.style.border = '1px solid var(--border-main)';
+        
+        btnNew.style.background = 'var(--bg-overlay)';
+        btnNew.style.color = 'var(--text-main)';
+        btnNew.style.border = '1px solid var(--border-light)';
+    }
+};

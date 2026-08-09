@@ -370,10 +370,25 @@
     <input type="file" id="gallery-input" accept="image/*" style="display: none;" onchange="handlePhoto(event)">
     <canvas id="resize-canvas" style="display: none;"></canvas>
 
-    <div id="income-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-overlay); z-index: 10000; justify-content: center; align-items: center; backdrop-filter: blur(3px);">
-        <div style="background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 8px; width: 95%; max-width: 600px; padding: 20px; color: var(--text-main); max-height: 90vh; display: flex; flex-direction: column; position: relative;">
-            <button onclick="toggleIncomeModule()" style="position: absolute; right: 15px; top: 15px; background: transparent; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer;">✕</button>
-            <h3 style="margin-bottom: 10px; color: var(--accent-green);" data-i18n="income_title">📦 Импорт накладной</h3>
+    <!-- Прием Нового товара -->
+   <div id="income-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-overlay); z-index: 10000; justify-content: center; align-items: center; backdrop-filter: blur(3px);">
+    <div style="background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 8px; width: 95%; max-width: 600px; padding: 20px; color: var(--text-main); max-height: 90vh; display: flex; flex-direction: column; position: relative;">
+        
+        <button onclick="toggleIncomeModule()" style="position: absolute; right: 15px; top: 15px; background: transparent; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer;">✕</button>
+        
+        <!-- Заголовок можно сделать общим или оставить "Импорт накладной", здесь я поставил нейтральное "Приемка товара" -->
+        <h3 style="margin-bottom: 15px; color: var(--accent-green);">
+            📦 <span data-i18n="reception_main_title">ПРИЕМКА ТОВАРА</span>
+        </h3>
+
+        <!-- ПЕРЕКЛЮЧАТЕЛЬ ВКЛАДОК -->
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <button id="tab-btn-import" onclick="switchIncomeTab('import')" style="flex: 1; padding: 12px; background: var(--bg-overlay); color: var(--text-main); border: 1px solid var(--border-light); border-radius: 6px; font-weight: bold; cursor: pointer;" data-i18n="tab_import">ИМПОРТ EXCEL</button>
+            <button id="tab-btn-new" onclick="switchIncomeTab('new')" style="flex: 1; padding: 12px; background: transparent; color: var(--text-muted); border: 1px solid var(--border-main); border-radius: 6px; font-weight: bold; cursor: pointer;" data-i18n="tab_new">НОВЫЙ ТОВАР</button>
+        </div>
+
+        <!-- ВКЛАДКА 1: ОРИГИНАЛЬНЫЙ ИМПОРТ -->
+        <div id="tab-import" style="display: block; width: 100%; overflow-y: auto;">
             
             <div class="minimal-input-container">
                 <div class="currency-minimal-container">
@@ -402,7 +417,7 @@
                 </div>
             </div>
             
-<button id="parseInvoiceBtn" onclick="processInvoiceFile()" style="background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); padding: 12px 15px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; font-size: 14px;" data-i18n="income_parse">ОБРАБОТАТЬ ФАЙЛ</button>
+            <button id="parseInvoiceBtn" onclick="processInvoiceFile()" style="background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); padding: 12px 15px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; font-size: 14px;" data-i18n="income_parse">ОБРАБОТАТЬ ФАЙЛ</button>
             
             <div id="debug-container" style="display: none; margin-top: 15px; flex-direction: column; overflow-y: auto; max-height: 50vh;"></div>
 
@@ -418,8 +433,8 @@
                                 <th style="padding: 8px;" data-i18n="income_cbm">Объем (CBM)</th>
                                 <th style="padding: 8px;" data-i18n="income_weight">Вес (кг)</th>
                                 <th style="padding: 8px;">
-    <span data-i18n="income_price">Цена</span> (<span id="dynamicCurrencySpan" style="color: var(--accent-yellow);">USD</span>)
-</th>
+                                    <span data-i18n="income_price">Цена</span> (<span id="dynamicCurrencySpan" style="color: var(--accent-yellow);">USD</span>)
+                                </th>
                             </tr>
                         </thead>
                         <tbody id="invoiceTableBody"></tbody>
@@ -441,7 +456,47 @@
                 </button>
             </div>
         </div>
+
+        <!-- ВКЛАДКА 2: НОВЫЙ ТОВАР -->
+        <div id="tab-new-product" style="display: none; width: 100%; overflow-y: auto;">
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                <!-- Важно: id="nt-barcode" уникальный -->
+                <input type="text" id="nt-barcode" placeholder="Штрихкод..." data-i18n-placeholder="ph_barcode" style="flex: 1; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 12px; border-radius: 4px; box-sizing: border-box;">
+                <!-- Функция камеры пока пустая, заменим на твою -->
+                <button onclick="openBarcodeScanner()" style="background: var(--bg-overlay); border: 1px dashed var(--border-main); padding: 0 15px; border-radius: 4px; color: var(--text-muted); cursor: pointer;">📷</button>
+            </div>
+
+            <input type="text" id="nt-name" placeholder="Наименование товара..." data-i18n-placeholder="ph_name" style="width: 100%; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 12px; border-radius: 4px; margin-bottom: 12px; box-sizing: border-box;">
+
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <!-- Клик по поставщику вызывает ту самую функцию, которую мы довели до ума! -->
+                <input type="text" id="nt-supplier-input" placeholder="Поставщик... ▼" data-i18n-placeholder="ph_supplier" onclick="window.openFullscreenSupplier()" readonly style="flex: 1; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 12px; border-radius: 4px; cursor: pointer; box-sizing: border-box;">
+                
+                <!-- Функция категории пока пустая, заменим на твою -->
+                <input type="text" id="nt-category-input" placeholder="Категория... ▼" data-i18n-placeholder="ph_category" onclick="openCategorySelector()" readonly style="flex: 1; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 12px; border-radius: 4px; cursor: pointer; box-sizing: border-box;">
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <div style="flex: 1; text-align: center;">
+                    <div style="color: var(--text-muted); font-size: 12px; margin-bottom: 5px;" data-i18n="nt_qty">Количество</div>
+                    <input type="number" id="nt-qty" value="0" style="width: 100%; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 10px; border-radius: 4px; text-align: center; box-sizing: border-box;">
+                </div>
+                <div style="flex: 1; text-align: center;">
+                    <div style="color: var(--text-muted); font-size: 12px; margin-bottom: 5px;" data-i18n="nt_price_in">Цена закупа</div>
+                    <input type="number" id="nt-price-in" value="0" style="width: 100%; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 10px; border-radius: 4px; text-align: center; box-sizing: border-box;">
+                </div>
+                <div style="flex: 1; text-align: center;">
+                    <div style="color: var(--text-muted); font-size: 12px; margin-bottom: 5px;" data-i18n="nt_price_out">Розница</div>
+                    <input type="number" id="nt-price-out" value="0" style="width: 100%; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 10px; border-radius: 4px; text-align: center; box-sizing: border-box;">
+                </div>
+            </div>
+
+            <button id="saveNewProductBtn" onclick="saveNewProduct()" style="background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); padding: 12px 15px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; font-size: 14px;" data-i18n="income_confirm">ОПРИХОДОВАТЬ ТОВАР</button>
+        </div>
+        
     </div>
+</div>
 
 <!-- ========================================= -->
 <!-- ОКНО БЫСТРОГО РЕДАКТИРОВАНИЯ (QUICK EDIT) -->
