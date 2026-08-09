@@ -4327,29 +4327,38 @@ window.filterFullscreenSuppliers = function() {
     const searchInput = document.getElementById('fullscreen-supplier-search');
     const addNewBtn = document.getElementById('fullscreen-add-new-btn');
     const newNamePreview = document.getElementById('new-supplier-name-preview');
-    
-    const filterText = searchInput.value.trim();
-    const lowerFilter = filterText.toLowerCase();
-    const suppliers = window.suppliers || []; // Предполагается, что window.suppliers существует
-    
-    const filtered = suppliers.filter(s => s.toLowerCase().includes(lowerFilter));
-    const exactMatch = suppliers.find(s => s.toLowerCase() === lowerFilter);
-    
-    if (filterText.length > 0 && !exactMatch) {
-        addNewBtn.style.display = 'block';
-        
-        // Читаем перевод и склеиваем его с введенным текстом
-        const addText = translations[currentLang].modal_add_supplier;
-        addNewBtn.innerHTML = `${addText} "<b>${filterText}</b>"`;
+
+    if (!listContainer || !searchInput) return;
+
+    const query = searchInput.value.trim().toLowerCase();
+
+    // 1. Пропускаем первые 3 строки шапки (.slice(3)), берем колонку C (индекс 2)
+    let suppliers = [...new Set(incomes.slice(3).map(row => row[2]).filter(Boolean))];
+
+    // 2. Сортировка по алфавиту (RU/EN)
+    suppliers.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+
+    // 3. Фильтруем список согласно поисковому запросу
+    const filtered = suppliers.filter(s => s.toLowerCase().includes(query));
+
+    // 4. Генерация HTML-разметки
+    listContainer.innerHTML = '';
+    let html = '';
+
+    filtered.forEach(s => {
+        html += `<div class="supp-list-item" onclick="window.selectFullscreenSupplier('${s.replace(/'/g, "\\'")}')">${s}</div>`;
+    });
+
+    listContainer.innerHTML = html;
+
+    // 5. Логика отображения кнопки "Добавить нового"
+    const exactMatch = suppliers.some(s => s.toLowerCase() === query);
+    if (query.length > 0 && !exactMatch) {
+        if (addNewBtn) addNewBtn.style.display = 'block';
+        if (newNamePreview) newNamePreview.innerText = searchInput.value;
     } else {
-        addNewBtn.style.display = 'none';
+        if (addNewBtn) addNewBtn.style.display = 'none';
     }
-    
-    listContainer.innerHTML = filtered.map(s => `
-        <div class="supp-list-item" onclick="window.selectFullscreenSupplier('${s}')" style="padding: 12px 0; font-size: 15px; cursor: pointer;">
-            ${s}
-        </div>
-    `).join('');
 };
 
 window.selectFullscreenSupplier = function(val) {
