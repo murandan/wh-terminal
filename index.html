@@ -505,28 +505,35 @@
                 </div>
             </div>
 
+            <!-- НАЧАЛО БЛОКА ПОСТАВЩИКА И КАТЕГОРИИ -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
-                <!-- Левая ячейка: Поставщик (Полноэкранный режим из Новой партии) -->
+                
+                <!-- Левая ячейка: Поставщик (Полноэкранный режим) -->
                 <div style="position: relative; min-width: 0;">
-                    <input id="qe-supplier-input" class="qe-input" type="text" placeholder="Поставщик... ▼" readonly onclick="window.openFullscreenSupplier()" style="width: 100%; padding: 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; box-sizing: border-box; outline: none; cursor: pointer; text-overflow: ellipsis;">
+                    <input id="qe-supplier-input" class="qe-input" type="text" placeholder="Поставщик... ▼" readonly onclick="window.openFullscreenSupplier()" style="width: 100%; padding: 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; box-sizing: border-box; outline: none; cursor: pointer; text-overflow: ellipsis; font-size: 16px;">
                 </div>
 
-                <!-- Правая ячейка: Категория (Выпадающий список) -->
+                <!-- Правая ячейка: Категория -->
                 <div style="position: relative; min-width: 0;">
+                    <!-- Триггер -->
                     <div id="inc-category-trigger" onclick="window.toggleIncDropdown(event, 'category')" style="padding: 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; display: flex; justify-content: space-between; cursor: pointer; align-items: center;">
-                        <div id="inc-category-display" style="color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Категория...</div>
+                        <div id="inc-category-display" style="color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 16px;">Категория...</div>
                         <input type="hidden" id="new-item-category" value="">
                         <span id="inc-category-arrow" style="transition: 0.2s; flex-shrink: 0; margin-left: 5px;">▼</span>
                     </div>
                     
+                    <!-- Поле ввода новой категории (скрыто) -->
                     <div id="inc-new-category-wrapper" style="display: none; width: 100%; position: relative;">
                         <input type="text" id="inc-new-category" class="qe-input" placeholder="Новая категория..." style="width: 100%; padding: 12px 35px 12px 12px; background: transparent; border: 1px dashed var(--border-light); color: var(--text-main); border-radius: 4px; box-sizing: border-box; outline: none; font-size: 16px;">
                         <button onclick="window.cancelIncNew('category')" style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; padding: 5px; display: flex; align-items: center; justify-content: center;">✕</button>
                     </div>
                     
+                    <!-- Выпадающий список -->
                     <div id="inc-category-dropdown" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 4px; max-height: 200px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.2);"></div>
                 </div>
+
             </div>
+            <!-- КОНЕЦ БЛОКА -->
 
             <button onclick="window.saveNewItemReceipt()" style="background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); padding: 12px 15px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; font-size: 14px;">ОПРИХОДОВАТЬ ТОВАР</button>
         </div>
