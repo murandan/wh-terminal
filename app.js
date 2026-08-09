@@ -139,7 +139,12 @@
                 qe_receive_price: "Цена закупа",
                 qe_btn_submit: "ВНЕСТИ ПРИХОД",
                 qe_btn_back: "НАЗАД",
-                qe_btn_open_receive: "+ Новая партия"
+                qe_btn_open_receive: "+ Новая партия",
+                modal_choose_supplier: "Выберите поставщика",
+                modal_enter_supplier: "Ввести поставщика",
+                modal_search_supplier: "Поиск или новый поставщик...",
+                modal_add_supplier: "+ Добавить",
+                modal_unknown_supplier: "Неизвестный поставщик"
             },
             kz: {
                 btn_sale: "САТУ", btn_return: "ҚАЙТАРУ", search_placeholder: "ІЗДЕУ...",
@@ -281,7 +286,12 @@
                 qe_receive_price: "Сатып алу бағасы",
                 qe_btn_submit: "КІРІСТІ ЕНГІЗУ",
                 qe_btn_back: "АРТҚА",
-                qe_btn_open_receive: "+ Жаңа топтама"
+                qe_btn_open_receive: "+ Жаңа топтама",
+                modal_choose_supplier: "Жеткізушіні таңдаңыз",
+                modal_enter_supplier: "Жеткізушіні енгізіңіз",
+                modal_search_supplier: "Іздеу немесе жаңа жеткізуші...",
+                modal_add_supplier: "+ Қосу",
+                modal_unknown_supplier: "Белгісіз жеткізуші"
             }
         };
         
@@ -375,24 +385,37 @@ window.currentQeInput = null;
 window.qeNeedsClear = false;
 
 window.setQeActive = function(el, event) {
-    if (event) event.stopPropagation();
-    
-    const numpad = document.getElementById('custom-numpad');
-    if (numpad) numpad.style.display = 'grid';
+    // 1. Проверяем, открыт ли блок прихода
+    const receiveBlock = document.getElementById('qe-receive-block');
+    const isReceiveMode = receiveBlock && window.getComputedStyle(receiveBlock).display !== 'none';
+    if (isReceiveMode) return;
 
+    if (event) event.stopPropagation();
+
+    // 2. --- ПРАВИЛЬНАЯ ПРОВЕРКА НА ПК ---
+    // Вызываем кастомную клаву ТОЛЬКО на устройствах с тачскрином
+    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+    const numpad = document.getElementById('custom-numpad');
+    if (numpad && isTouchDevice) {
+        numpad.style.display = 'grid';
+    }
+
+    // 3. --- ЭТО ДОЛЖНО РАБОТАТЬ ВЕЗДЕ (И НА ПК, И НА МОБИЛКЕ) ---
+    // Убираем подсветку со старых полей
     document.querySelectorAll('.qe-active-input').forEach(input => {
         input.classList.remove('qe-active-input');
     });
     
+    // Подсвечиваем текущее поле (даем зеленую рамку)
     window.currentQeInput = el;
     el.classList.add('qe-active-input');
 
-    // 1. Нативное выделение (чтобы сканер сразу затирал выделенный штрихкод)
+    // Нативное выделение текста синим цветом
     setTimeout(() => {
         el.setSelectionRange(0, el.value.length);
     }, 10);
 
-    // 2. Ставим флаг для Numpad: первое нажатие сотрет старые данные
+    // Флаг очистки: теперь он сработает и на ПК!
     window.qeNeedsClear = true;
 };
 
@@ -634,7 +657,7 @@ window.openQuickEditModal = function(id) {
                                 <span style="font-size: 10px; color: #2e7d32; font-weight: bold;"><span data-i18n="qe_current">${t('qe_current')}</span>: ${formattedPrice}</span>
                         </div>
                             <!-- Добавили formatNumberSpaces сюда -->
-                            <input type="text" class="no-spinners" id="qe-price" value="${formatNumberSpaces(item.price || 0)}" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%;">
+                            <input type="text" class="no-spinners" id="qe-price" value="${formattedPrice}" inputmode="none" onclick="window.setQeActive(this, event)" style="width: 100%;">
                         </div>
                         <div style="flex: 1;">
                             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2px;">
@@ -642,7 +665,7 @@ window.openQuickEditModal = function(id) {
                                 <span style="font-size: 10px; color: #2e7d32; font-weight: bold;"><span data-i18n="qe_fact">${t('qe_fact')}</span>: ${currentStock}</span>
                             </div>
                             <!-- И добавили formatNumberSpaces сюда -->
-                            <input type="text" class="no-spinners" id="qe-minstock" value="${formatNumberSpaces(minStockVal)}" inputmode="none" readonly onclick="window.setQeActive(this)" style="width: 100%;">
+                            <input type="text" class="no-spinners" id="qe-minstock" value="${formatNumberSpaces(minStockVal)}" inputmode="none" onclick="window.setQeActive(this, event)" style="width: 100%;">
                         </div>
                     </div>
                 </div>
@@ -662,11 +685,11 @@ window.openQuickEditModal = function(id) {
                 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                     <div style="flex: 1;">
                         <label data-i18n="qe_receive_qty" style="font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 2px; display: block;">${t('qe_receive_qty')}</label>
-                        <input type="text" id="qe-receive-qty" value="1" inputmode="none" readonly onclick="window.activateReceiveField(this)" style="width: 100%; text-align: center; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
+                        <input type="text" id="qe-receive-qty" value="1" inputmode="none" onclick="window.activateReceiveField(this, event)" style="width: 100%; text-align: center; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
                     </div>
                     <div style="flex: 1;">
                         <label data-i18n="qe_receive_price" style="font-size: 10px; color: #888; text-transform: uppercase; margin-bottom: 2px; display: block;">${t('qe_receive_price')}</label>
-                        <input type="text" id="qe-receive-price" value="0" inputmode="none" readonly onclick="window.activateReceiveField(this)" style="width: 100%; text-align: center; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
+                        <input type="text" id="qe-receive-price" value="0" inputmode="none" onclick="window.activateReceiveField(this, event)" style="width: 100%; text-align: center; background: #000; color: #fff; border: 1px solid #333; padding: 8px; border-radius: 4px;">
                     </div>
                 </div>
 
@@ -734,6 +757,14 @@ window.openQuickEditModal = function(id) {
     if (numpad) numpad.style.display = 'none';
     if (topSection) topSection.classList.remove('form-disabled');
     window.activeQeFieldId = null; // Сбрасываем глобальный стейт фокуса
+
+    // --- ПРИНУДИТЕЛЬНЫЙ ПЕРЕВОД ПЛЕЙСХОЛДЕРА ПРИ ОТКРЫТИИ ОКНА ---
+    try {
+        const mainSupplierInput = document.getElementById('qe-supplier-input');
+        if (mainSupplierInput) {
+            mainSupplierInput.placeholder = translations[currentLang].modal_choose_supplier;
+        }
+    } catch(e) {}
 };
 
 // Открывает/закрывает наш кастомный список
@@ -1098,8 +1129,8 @@ window.saveQuickEdit = function(id) {
         const qty = qtyInput ? parseInt(qtyInput.value.replace(/\D/g, ''), 10) || 0 : 0;
         const price = priceInput ? parseInt(priceInput.value.replace(/\D/g, ''), 10) || 0 : 0;
         
-        let supplier = "Неизвестный поставщик";
-        // ФИКС: Читаем значение из нашего нового поля
+        // Берем значение по умолчанию из активного словаря
+        let supplier = translations[currentLang].modal_unknown_supplier;
         const customSupplier = document.getElementById('qe-supplier-input');
 
         if (customSupplier && customSupplier.value.trim() !== '') {
@@ -1232,6 +1263,8 @@ window.saveQuickEdit = function(id) {
     .catch(err => {
         alert('Ошибка связи с сервером: ' + err.message);
     });
+    const numpad = document.getElementById('custom-numpad');
+    if (numpad) numpad.style.display = 'none';
 };
 
 // === (Конец П1) ===
@@ -3971,10 +4004,19 @@ document.addEventListener('click', function(e) {
     }
 
     // 3. Кнопка "Назад" в блоке прихода
+    // --- ЕДИНЫЙ БЛОК ДЛЯ КНОПКИ "НАЗАД" В ПРИХОДЕ ---
     if (e.target && e.target.closest('#btn-cancel-receive')) {
         e.preventDefault();
         document.getElementById('qe-receive-block').style.display = 'none';
-        document.getElementById('custom-numpad').style.display = 'none';
+        
+        // Прячем нижнюю клавиатуру
+        const numpad = document.getElementById('custom-numpad');
+        if (numpad) numpad.style.display = 'none';
+        
+        // Возвращаем футер с кнопками
+        const bottomButtons = document.getElementById('qe-bottom-buttons');
+        if (bottomButtons) bottomButtons.style.display = 'flex';
+        
         document.getElementById('qe-top-section').classList.remove('form-disabled');
         window.activeQeFieldId = null;
     }
@@ -3986,15 +4028,37 @@ document.addEventListener('click', function(e) {
 window.receiveNeedsClear = false; 
 
 // 1. Активация полей (Количество / Цена)
-window.activateReceiveField = function(el) {
-    window.activeQeFieldId = el.id;
-    window.receiveNeedsClear = true; // <-- ДОБАВЛЕНО: Даем команду стереть при первом вводе
+window.activateReceiveField = function(el, event) {
+    // 1. Блокируем всплытие клика, но НЕ блокируем работу самого инпута!
+    if (event) {
+        // Удалили event.preventDefault(); — именно он убивал значения на ПК
+        event.stopPropagation();
+    }
     
-    document.getElementById('receive-numpad').style.display = 'grid'; // Открываем внутреннюю клавиатуру
+    // Прячем основную нижнюю клаву
+    const mainNumpad = document.getElementById('custom-numpad');
+    if (mainNumpad) mainNumpad.style.display = 'none';
+
+    window.activeQeFieldId = el.id;
+    window.receiveNeedsClear = true; // Команда стереть при первом вводе
+    
+    // Показываем внутреннюю клаву прихода ТОЛЬКО на мобилках
+    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+    if (isTouchDevice) {
+        const receiveNumpad = document.getElementById('receive-numpad');
+        if (receiveNumpad) receiveNumpad.style.display = 'grid'; 
+    }
     
     // Подсветка активного поля
-    document.querySelectorAll('#qe-receive-block input[readonly]').forEach(inp => inp.style.borderColor = '#333');
+    document.querySelectorAll('#qe-receive-block input').forEach(inp => inp.style.borderColor = '#333');
     el.style.borderColor = '#4CAF50';
+
+    // Выделение текста синим цветом для ПК
+    setTimeout(() => {
+        if (el.value) {
+            el.setSelectionRange(0, el.value.length);
+        }
+    }, 10);
 };
 
 // 2. Ввод цифр с разделением на тысячи
@@ -4152,15 +4216,6 @@ document.addEventListener('click', function(e) {
         document.getElementById('qe-bottom-buttons').style.display = 'none'; // ПРЯЧЕМ ФУТЕР
         document.getElementById('qe-top-section').classList.add('form-disabled');
     }
-
-    // Если нажали НАЗАД в приходе
-    if (e.target && e.target.id === 'btn-cancel-receive') {
-        document.getElementById('qe-receive-block').style.display = 'none';
-        document.getElementById('receive-numpad').style.display = 'none';
-        document.getElementById('qe-bottom-buttons').style.display = 'flex'; // ВОЗВРАЩАЕМ ФУТЕР
-        document.getElementById('qe-top-section').classList.remove('form-disabled');
-        window.activeQeFieldId = null;
-    }
 });
 
 // Отрисовка и фильтрация списка
@@ -4232,15 +4287,17 @@ window.openFullscreenSupplier = function() {
     
     modal.style.display = 'flex';
     
-    // Безопасно подставляем перевод (если функция t доступна)
-    if (typeof t === 'function') {
-        try {
-            searchInput.placeholder = t('search_supplier') || 'Поиск или новый поставщик...';
-            // Переводим слово "Добавить", оставляем плюс
-            document.getElementById('fullscreen-add-text').textContent = '+ ' + (t('add') || 'Добавить') + ':';
-            // Строку с cancelBtn удалили, чтобы JS не стирал крестик
-        } catch(e) {}
-    }
+    // --- НОВЫЙ БЛОК ПЕРЕВОДОВ ---
+    try {
+        const mainSupplierInput = document.getElementById('qe-supplier-input');
+        if (mainSupplierInput) {
+            mainSupplierInput.placeholder = translations[currentLang].modal_choose_supplier;
+        }
+        if (searchInput) {
+            searchInput.placeholder = translations[currentLang].modal_search_supplier;
+        }
+    } catch(e) {}
+    // ----------------------------
     
     searchInput.value = ''; 
     window.filterFullscreenSuppliers(); 
@@ -4280,7 +4337,10 @@ window.filterFullscreenSuppliers = function() {
     
     if (filterText.length > 0 && !exactMatch) {
         addNewBtn.style.display = 'block';
-        newNamePreview.textContent = filterText;
+        
+        // Читаем перевод и склеиваем его с введенным текстом
+        const addText = translations[currentLang].modal_add_supplier;
+        addNewBtn.innerHTML = `${addText} "<b>${filterText}</b>"`;
     } else {
         addNewBtn.style.display = 'none';
     }
@@ -4293,16 +4353,61 @@ window.filterFullscreenSuppliers = function() {
 };
 
 window.selectFullscreenSupplier = function(val) {
-    // ВАЖНО: убедись, что 'qe-supplier-input' - это правильный ID твоего инпута
+    val = val ? val.trim() : '';
+    if (!val) return;
+
+    // 1. Инициализируем массив поставщиков, если его нет
+    if (!window.suppliers) window.suppliers = [];
+
+    // 2. Если такого поставщика еще нет в локальном списке — добавляем и сортируем
+    const exists = window.suppliers.some(s => s.toLowerCase() === val.toLowerCase());
+    if (!exists) {
+        window.suppliers.push(val);
+        window.suppliers.sort((a, b) => a.localeCompare(b));
+    }
+
+    // 3. Подставляем значение в инпут формы
     const mainInput = document.getElementById('qe-supplier-input'); 
-    
     if (mainInput) {
         mainInput.value = val;
-        
-        // ПИНАЕМ СИСТЕМУ: говорим основному коду, что значение изменилось
         mainInput.dispatchEvent(new Event('input', { bubbles: true }));
         mainInput.dispatchEvent(new Event('change', { bubbles: true }));
     }
     
+    // 4. Закрываем модалку
     window.closeFullscreenSupplier();
 };
+// --- ДИНАМИЧЕСКОЕ ФОРМАТИРОВАНИЕ ТЫСЯЧ ПРИ ВВОДЕ С ПК ---
+document.addEventListener('input', function(e) {
+    // Проверяем, что ввод происходит именно в наших числовых полях
+    const isNumberField = e.target && (
+        e.target.id === 'qe-price' || 
+        e.target.id === 'qe-minstock' || 
+        e.target.id === 'qe-receive-price' || 
+        e.target.id === 'qe-receive-qty'
+    );
+
+    if (isNumberField) {
+        // Вырезаем всё, кроме цифр
+        let rawDigits = e.target.value.replace(/\D/g, '');
+        
+        if (rawDigits) {
+            // Форматируем красивыми пробелами (например, 1 500 000)
+            e.target.value = Number(rawDigits).toLocaleString('ru-RU').replace(/,/g, ' ');
+        } else {
+            e.target.value = '';
+        }
+    }
+});
+// --- ПРИНУДИТЕЛЬНАЯ ОЧИСТКА ПРИ ПЕРВОМ ВВОДЕ С ФИЗИЧЕСКОЙ КЛАВИАТУРЫ ---
+document.addEventListener('keydown', function(e) {
+    // Проверяем, что клик в инпуте, и что пользователь нажал цифру
+    if (e.target && e.target.tagName === 'INPUT' && /\d/.test(e.key)) {
+        // Если стоит команда стереть при первом вводе
+        if (window.qeNeedsClear || window.receiveNeedsClear) {
+            e.target.value = ''; // Стираем старое значение
+            window.qeNeedsClear = false;
+            window.receiveNeedsClear = false;
+        }
+    }
+});
