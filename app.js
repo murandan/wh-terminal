@@ -4323,73 +4323,52 @@ window.closeFullscreenSupplier = function() {
 };
 
 window.filterFullscreenSuppliers = function() {
-    // 1. Проверяем HTML-элементы
     const listContainer = document.getElementById('fullscreen-supplier-list');
     const searchInput = document.getElementById('fullscreen-supplier-search');
+    const addNewBtn = document.getElementById('fullscreen-add-new-btn');
     
-    if (!listContainer) {
-        alert('ДИАГНОСТИКА: Не найден HTML-блок "fullscreen-supplier-list".');
-        return;
-    }
-    if (!searchInput) {
-        alert('ДИАГНОСТИКА: Не найдено поле поиска "fullscreen-supplier-search".');
-        return;
-    }
+    if (!listContainer || !searchInput) return;
 
-    // 2. Проверяем базу данных
-    if (typeof incomes === 'undefined') {
-        alert('ДИАГНОСТИКА: Массив данных "incomes" не существует или еще не загрузился!');
-        return;
-    }
-    if (!Array.isArray(incomes)) {
-        alert('ДИАГНОСТИКА: Данные "incomes" есть, но это не массив!');
-        return;
-    }
-
-    try {
-        const addNewBtn = document.getElementById('fullscreen-add-new-btn');
-        const newNamePreview = document.getElementById('new-supplier-name-preview');
-        const query = searchInput.value.trim().toLowerCase();
-
-        // 3. Пытаемся собрать данные
-        let suppliers = [...new Set(
-            incomes.slice(3)
-                .map(row => row[2])
-                .filter(val => val !== null && val !== undefined && val !== '')
-                .map(String) 
-        )];
-
-        suppliers.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-
-        const filtered = suppliers.filter(s => s.toLowerCase().includes(query));
-
-        listContainer.innerHTML = '';
-        let html = '';
-
-        filtered.forEach(s => {
-            html += `<div class="supp-list-item" onclick="window.selectFullscreenSupplier('${s.replace(/'/g, "\\'")}')">${s}</div>`;
-        });
-
-        listContainer.innerHTML = html;
-
-        const exactMatch = suppliers.some(s => s.toLowerCase() === query);
-        if (query.length > 0 && !exactMatch) {
-            if (addNewBtn) addNewBtn.style.display = 'block';
-            if (newNamePreview) newNamePreview.innerText = searchInput.value;
-        } else {
-            if (addNewBtn) addNewBtn.style.display = 'none';
+    const filterText = searchInput.value.trim();
+    const lowerFilter = filterText.toLowerCase();
+    
+    // 1. Берем родной массив и принудительно переводим всё в текст (защита от падений из-за цифр)
+    const suppliers = (window.suppliers || []).map(String);
+    
+    // 2. Фильтруем список
+    const filtered = suppliers.filter(s => s.toLowerCase().includes(lowerFilter));
+    
+    // 3. ДОБАВЛЕНО: Сортировка по алфавиту (RU/EN)
+    filtered.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    
+    const exactMatch = suppliers.find(s => s.toLowerCase() === lowerFilter);
+    
+    // Логика кнопки "Добавить" (сохранена твоя оригинальная мультиязычность)
+    if (filterText.length > 0 && !exactMatch) {
+        if (addNewBtn) {
+            addNewBtn.style.display = 'block';
+            const addText = translations[currentLang].modal_add_supplier;
+            addNewBtn.innerHTML = `${addText} "<b>${filterText}</b>"`;
         }
-    } catch (error) {
-        // 4. Ловим любые скрытые ошибки логики
-        alert('ДИАГНОСТИКА ОШИБКИ В КОДЕ: ' + error.message);
+    } else {
+        if (addNewBtn) {
+            addNewBtn.style.display = 'none';
+        }
     }
+    
+    // Генерация HTML с экранированием кавычек (replace)
+    listContainer.innerHTML = filtered.map(s => `
+        <div class="supp-list-item" onclick="window.selectFullscreenSupplier('${s.replace(/'/g, "\\'")}')" style="padding: 12px 0; font-size: 15px; cursor: pointer;">
+            ${s}
+        </div>
+    `).join('');
 };
 
 window.selectFullscreenSupplier = function(val) {
     val = val ? val.trim() : '';
     if (!val) return;
 
-    // 1. Подставляем выбранное значение в основное поле формы
+    // 1. Подставляем выбранное значение в целевое поле (убедись, что ID совпадает с твоим рабочим полем)
     const targetInput = document.getElementById('qe-supplier-input');
     if (targetInput) targetInput.value = val;
 
@@ -4397,11 +4376,12 @@ window.selectFullscreenSupplier = function(val) {
     const searchInput = document.getElementById('fullscreen-supplier-search');
     if (searchInput) searchInput.value = '';
 
-    // 3. Перерисовываем список, чтобы сбросить фильтры и применить сортировку
+    // 3. Перерисовываем список поставщиков
     window.filterFullscreenSuppliers();
     
-    // Вызов закрытия окна (window.closeFullscreenSupplier) удален, чтобы окно оставалось открытым
+    // Окно больше не закрывается! Команда window.closeFullscreenSupplier() убрана.
 };
+
 // --- ДИНАМИЧЕСКОЕ ФОРМАТИРОВАНИЕ ТЫСЯЧ ПРИ ВВОДЕ С ПК ---
 document.addEventListener('input', function(e) {
     // Проверяем, что ввод происходит именно в наших числовых полях
