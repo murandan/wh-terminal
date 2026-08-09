@@ -377,8 +377,11 @@ window.qeNeedsClear = false;
 window.setQeActive = function(el, event) {
     if (event) event.stopPropagation();
     
+    // Показываем кастомную клавиатуру ТОЛЬКО на мобильных устройствах
     const numpad = document.getElementById('custom-numpad');
-    if (numpad) numpad.style.display = 'grid';
+    if (numpad && window.innerWidth <= 1024) {
+        numpad.style.display = 'grid';
+    }
 
     document.querySelectorAll('.qe-active-input').forEach(input => {
         input.classList.remove('qe-active-input');
@@ -3988,9 +3991,13 @@ window.receiveNeedsClear = false;
 // 1. Активация полей (Количество / Цена)
 window.activateReceiveField = function(el) {
     window.activeQeFieldId = el.id;
-    window.receiveNeedsClear = true; // <-- ДОБАВЛЕНО: Даем команду стереть при первом вводе
+    window.receiveNeedsClear = true; // <-- Даем команду стереть при первом вводе
     
-    document.getElementById('receive-numpad').style.display = 'grid'; // Открываем внутреннюю клавиатуру
+    // Показываем внутреннюю клавиатуру ТОЛЬКО на мобильных/планшетах
+    const numpad = document.getElementById('receive-numpad');
+    if (numpad && window.innerWidth <= 1024) {
+        numpad.style.display = 'grid';
+    }
     
     // Подсветка активного поля
     document.querySelectorAll('#qe-receive-block input[readonly]').forEach(inp => inp.style.borderColor = '#333');
@@ -4474,3 +4481,38 @@ window.saveNewItemReceipt = function() {
     console.log("Пакет данных готов к отправке:", payload);
     alert('✅ Данные успешно собраны! Проверь консоль (F12).');
 };
+// =========================================
+// УМНАЯ ОБРАБОТКА ВВОДА С ФИЗИЧЕСКОЙ КЛАВИАТУРЫ ПК
+// =========================================
+
+// 1. Стираем старые данные при первом нажатии цифры
+document.addEventListener('keydown', function(e) {
+    if (/\d/.test(e.key)) { // Если нажата цифра
+        const el = e.target;
+        // Проверяем поля Распределения и Прихода
+        if (el.id === 'qe-price' || el.id === 'qe-stock' || el.id === 'qe-receive-qty' || el.id === 'qe-receive-price' || el.id === 'qe-minstock') {
+            if (window.qeNeedsClear && (el.id === 'qe-price' || el.id === 'qe-stock')) {
+                el.value = '';
+                window.qeNeedsClear = false;
+            }
+            if (window.receiveNeedsClear && (el.id === 'qe-receive-qty' || el.id === 'qe-receive-price' || el.id === 'qe-minstock')) {
+                el.value = '';
+                window.receiveNeedsClear = false;
+            }
+        }
+    }
+});
+
+// 2. Ставим пробелы (тысячные) и убираем нули на лету
+document.addEventListener('input', function(e) {
+    const el = e.target;
+    if (el.id === 'qe-price' || el.id === 'qe-stock' || el.id === 'qe-receive-qty' || el.id === 'qe-receive-price' || el.id === 'qe-minstock') {
+        let val = el.value.replace(/\D/g, ''); // Оставляем только цифры
+        if (val !== '') {
+            val = parseInt(val, 10).toString(); // Убираем ведущие нули
+            el.value = val.replace(/\B(?=(\d{3})+(?!\d))/g, ' '); // Разделяем тысячные
+        } else {
+            el.value = '';
+        }
+    }
+});
