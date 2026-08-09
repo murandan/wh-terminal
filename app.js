@@ -377,9 +377,10 @@ window.qeNeedsClear = false;
 window.setQeActive = function(el, event) {
     if (event) event.stopPropagation();
     
-    // Показываем кастомную клавиатуру ТОЛЬКО на мобильных устройствах
+    // Показываем клавиатуру ТОЛЬКО если есть тачскрин
     const numpad = document.getElementById('custom-numpad');
-    if (numpad && window.innerWidth <= 1024) {
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if (numpad && isTouch) {
         numpad.style.display = 'grid';
     }
 
@@ -390,12 +391,11 @@ window.setQeActive = function(el, event) {
     window.currentQeInput = el;
     el.classList.add('qe-active-input');
 
-    // 1. Нативное выделение (чтобы сканер сразу затирал выделенный штрихкод)
+    // Нативное выделение
     setTimeout(() => {
         el.setSelectionRange(0, el.value.length);
     }, 10);
 
-    // 2. Ставим флаг для Numpad: первое нажатие сотрет старые данные
     window.qeNeedsClear = true;
 };
 
@@ -3957,6 +3957,10 @@ document.addEventListener('click', function(e) {
     if (e.target && e.target.closest('#btn-open-receive')) {
         document.getElementById('qe-receive-block').style.display = 'block';
         document.getElementById('qe-top-section').classList.add('form-disabled'); // Затемняем верх
+        
+        // --- ДОБАВЛЕНО: Прячем старую клавиатуру ---
+        const oldNumpad = document.getElementById('custom-numpad');
+        if (oldNumpad) oldNumpad.style.display = 'none';
     }
 
     // 2. Клик по полям Количество или Цена закупа
@@ -3991,17 +3995,23 @@ window.receiveNeedsClear = false;
 // 1. Активация полей (Количество / Цена)
 window.activateReceiveField = function(el) {
     window.activeQeFieldId = el.id;
-    window.receiveNeedsClear = true; // <-- Даем команду стереть при первом вводе
+    window.receiveNeedsClear = true; 
     
-    // Показываем внутреннюю клавиатуру ТОЛЬКО на мобильных/планшетах
+    // Показываем клавиатуру ТОЛЬКО если есть тачскрин (телефоны/планшеты)
     const numpad = document.getElementById('receive-numpad');
-    if (numpad && window.innerWidth <= 1024) {
+    const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if (numpad && isTouch) {
         numpad.style.display = 'grid';
     }
     
     // Подсветка активного поля
     document.querySelectorAll('#qe-receive-block input[readonly]').forEach(inp => inp.style.borderColor = '#333');
     el.style.borderColor = '#4CAF50';
+
+    // ДОБАВЛЕНО: Нативное выделение текста (синий фон) для быстрого затирания
+    setTimeout(() => {
+        el.setSelectionRange(0, el.value.length);
+    }, 10);
 };
 
 // 2. Ввод цифр с разделением на тысячи
@@ -4158,6 +4168,10 @@ document.addEventListener('click', function(e) {
         document.getElementById('qe-receive-block').style.display = 'block';
         document.getElementById('qe-bottom-buttons').style.display = 'none'; // ПРЯЧЕМ ФУТЕР
         document.getElementById('qe-top-section').classList.add('form-disabled');
+        
+        // --- ДОБАВЛЕНО: Прячем старую клавиатуру ---
+        const oldNumpad = document.getElementById('custom-numpad');
+        if (oldNumpad) oldNumpad.style.display = 'none';
     }
 
     // Если нажали НАЗАД в приходе
