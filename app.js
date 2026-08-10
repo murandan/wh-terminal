@@ -4569,7 +4569,7 @@ window.renderNtCategories = function() {
 
 // Выбор "Новая категория"
 window.selectNtNewCategory = function(event) {
-    if (event) event.stopPropagation(); // Блокируем лишние срабатывания
+    if (event) event.stopPropagation(); // Блокируем всплытие клика
     
     const input = document.getElementById('nt-category-input');
     const arrow = document.getElementById('nt-category-arrow');
@@ -4583,18 +4583,28 @@ window.selectNtNewCategory = function(event) {
     
     const dropdown = document.getElementById('nt-category-dropdown');
     if (dropdown) dropdown.style.display = 'none';
+    
+    // Возвращаем стрелку на место
     if (arrow) arrow.style.transform = 'translateY(-50%) rotate(0deg)';
 };
 
 // Обновленная функция выбора существующей категории
-window.selectNtCategory = function(catName) {
+window.selectNtCategory = function(event, catName) {
+    if (event) event.stopPropagation(); // Блокируем всплытие клика
+    
     const input = document.getElementById('nt-category-input');
+    const arrow = document.getElementById('nt-category-arrow');
+    
     if (input) {
-        input.readOnly = true; // Снова блокируем ручной ввод
-        input.value = catName;
+        input.readOnly = true;
+        input.value = catName; // Теперь сюда точно попадет текст, а не событие
         input.dispatchEvent(new Event('input'));
         input.dispatchEvent(new Event('change'));
     }
+    
     const dropdown = document.getElementById('nt-category-dropdown');
     if (dropdown) dropdown.style.display = 'none';
+    
+    // Возвращаем стрелку на место
+    if (arrow) arrow.style.transform = 'translateY(-50%) rotate(0deg)';
 };
