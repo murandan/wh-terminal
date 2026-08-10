@@ -468,22 +468,21 @@
             
             <!-- Штрихкод и сканер -->
             <div style="display: flex; gap: 10px; margin-bottom: 8px;">
-                <input type="text" id="nt-barcode" placeholder="Штрихкод..." data-i18n-placeholder="ph_barcode" onpointerdown="window.setNtActive(this, event)" oninput="window.formatNtInput(this)" inputmode="none" style="flex: 1; font-size: 15px; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 10px 12px; border-radius: 4px; box-sizing: border-box; transition: background-color 0.2s;">
-                <!-- Изменен background и border -->
-                <button onpointerdown="window.startNtScanner()" style="background: var(--bg-body); border: 1px solid var(--border-light); padding: 0 15px; border-radius: 4px; color: var(--text-muted); cursor: pointer; font-size: 16px; transition: all 0.2s;">📷</button>
+                <input type="text" id="nt-barcode" placeholder="Штрихкод..." data-i18n-placeholder="ph_barcode" onpointerdown="window.setNtActive(this, event)" oninput="window.formatNtInput(this)" inputmode="none" style="flex: 1; font-size: 15px; background: transparent; border: 1px solid var(--border-main); color: var(--text-main); padding: 10px 12px; border-radius: 4px; box-sizing: border-box; transition: background-color 0.2s, border-color 0.2s;">
+                <button onpointerdown="window.startNtScanner()" style="background: var(--bg-body); border: 1px solid var(--border-main); padding: 0 15px; border-radius: 4px; color: var(--text-muted); cursor: pointer; font-size: 16px; transition: all 0.2s;">📷</button>
             </div>
 
-            <!-- Наименование (Без изменений, просто чтобы ты видел, где мы) -->
-            <input type="text" id="nt-name" placeholder="Наименование товара..." data-i18n-placeholder="ph_name" style="width: 100%; font-size: 15px; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 10px 12px; border-radius: 4px; margin-bottom: 8px; box-sizing: border-box;">
+            <!-- Наименование -->
+            <input type="text" id="nt-name" placeholder="Наименование товара..." data-i18n-placeholder="ph_name" style="width: 100%; font-size: 15px; background: transparent; border: 1px solid var(--border-main); color: var(--text-main); padding: 10px 12px; border-radius: 4px; margin-bottom: 8px; box-sizing: border-box;">
 
-            <!-- Поставщик и Категория (Без изменений) -->
+            <!-- Поставщик и Категория -->
             <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                 <div style="position: relative; flex: 1;">
-                    <input type="text" id="nt-supplier-input" placeholder="Поставщик..." data-i18n-placeholder="ph_supplier" onclick="window.openFullscreenSupplier()" readonly style="width: 100%; font-size: 14px; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 10px 25px 10px 12px; border-radius: 4px; cursor: pointer; box-sizing: border-box;">
+                    <input type="text" id="nt-supplier-input" placeholder="Поставщик..." data-i18n-placeholder="ph_supplier" onclick="window.openFullscreenSupplier()" readonly style="width: 100%; font-size: 14px; background: transparent; border: 1px solid var(--border-main); color: var(--text-main); padding: 10px 25px 10px 12px; border-radius: 4px; cursor: pointer; box-sizing: border-box;">
                     <span style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 10px; pointer-events: none;">▼</span>
                 </div>
                 <div style="position: relative; flex: 1;">
-                    <input type="text" id="nt-category-input" placeholder="Категория..." data-i18n-placeholder="ph_category" onclick="if(this.readOnly) toggleNtCategoryDropdown(event)" readonly style="width: 100%; font-size: 14px; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 10px 25px 10px 12px; border-radius: 4px; box-sizing: border-box;">
+                    <input type="text" id="nt-category-input" placeholder="Категория..." data-i18n-placeholder="ph_category" onclick="if(this.readOnly) toggleNtCategoryDropdown(event)" readonly style="width: 100%; font-size: 14px; background: transparent; border: 1px solid var(--border-main); color: var(--text-main); padding: 10px 25px 10px 12px; border-radius: 4px; box-sizing: border-box;">
                     <span id="nt-category-arrow" onclick="toggleNtCategoryDropdown(event)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%) rotate(0deg); color: var(--text-muted); font-size: 10px; cursor: pointer; padding: 5px; transition: transform 0.2s ease;">▼</span>
                     <div id="nt-category-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; width: 100%; max-height: 250px; overflow-y: auto; background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 9999;"></div>
                 </div>
