@@ -468,8 +468,8 @@
                 
                 <!-- Штрихкод и сканер -->
                 <div style="display: flex; gap: 10px; margin-bottom: 12px;">
-                    <input type="text" id="nt-barcode" placeholder="Штрихкод..." data-i18n-placeholder="ph_barcode" style="flex: 1; font-size: 15px; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 14px; border-radius: 4px; box-sizing: border-box;">
-                    <button onclick="openBarcodeScanner()" style="background: var(--bg-overlay); border: 1px dashed var(--border-main); padding: 0 15px; border-radius: 4px; color: var(--text-muted); cursor: pointer; font-size: 16px;">📷</button>
+                    <input type="text" id="nt-barcode" placeholder="Штрихкод..." data-i18n-placeholder="ph_barcode" onclick="window.setQeActive(this, event)" readonly style="flex: 1; font-size: 15px; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 14px; border-radius: 4px; box-sizing: border-box;">
+                    <button onclick="window.startQuaggaScanner()" style="background: var(--bg-overlay); border: 1px dashed var(--border-main); padding: 0 15px; border-radius: 4px; color: var(--text-muted); cursor: pointer; font-size: 16px;">📷</button>
                 </div>
 
                 <!-- Наименование -->
@@ -487,29 +487,27 @@
                     <!-- Категория -->
                     <div style="position: relative; flex: 1;">
                         <input type="text" id="nt-category-input" placeholder="Категория..." data-i18n-placeholder="ph_category" onclick="if(this.readOnly) toggleNtCategoryDropdown(event)" readonly style="width: 100%; font-size: 15px; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 14px; padding-right: 30px; border-radius: 4px; box-sizing: border-box;">
-                        <!-- Добавлен id и плавный переход (transition) -->
                         <span id="nt-category-arrow" onclick="toggleNtCategoryDropdown(event)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%) rotate(0deg); color: var(--text-muted); font-size: 12px; cursor: pointer; padding: 5px; transition: transform 0.2s ease;">▼</span>
                         
                         <!-- Выпадающий список -->
                         <div id="nt-category-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; width: 100%; max-height: 350px; overflow-y: auto; background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 9999;">
                         </div>
                     </div>
-
                 </div>
 
-                <!-- Цифры -->
+                <!-- Цифры (Вот этот блок, который мы искали) -->
                 <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                     <div style="flex: 1; text-align: center;">
                         <div style="color: var(--text-muted); font-size: 13px; margin-bottom: 5px;" data-i18n="nt_qty">Количество</div>
-                        <input type="number" id="nt-qty" value="0" style="width: 100%; font-size: 15px; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 12px; border-radius: 4px; text-align: center; box-sizing: border-box;">
+                        <input type="text" id="nt-qty" value="0" onclick="window.setQeActive(this, event)" readonly style="width: 100%; font-size: 15px; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 12px; border-radius: 4px; text-align: center; box-sizing: border-box;">
                     </div>
                     <div style="flex: 1; text-align: center;">
                         <div style="color: var(--text-muted); font-size: 13px; margin-bottom: 5px;" data-i18n="nt_price_in">Цена закупа</div>
-                        <input type="number" id="nt-price-in" value="0" style="width: 100%; font-size: 15px; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 12px; border-radius: 4px; text-align: center; box-sizing: border-box;">
+                        <input type="text" id="nt-price-in" value="0" onclick="window.setQeActive(this, event)" readonly style="width: 100%; font-size: 15px; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 12px; border-radius: 4px; text-align: center; box-sizing: border-box;">
                     </div>
                     <div style="flex: 1; text-align: center;">
                         <div style="color: var(--text-muted); font-size: 13px; margin-bottom: 5px;" data-i18n="nt_price_out">Розница</div>
-                        <input type="number" id="nt-price-out" value="0" style="width: 100%; font-size: 15px; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 12px; border-radius: 4px; text-align: center; box-sizing: border-box;">
+                        <input type="text" id="nt-price-out" value="0" onclick="window.setQeActive(this, event)" readonly style="width: 100%; font-size: 15px; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 12px; border-radius: 4px; text-align: center; box-sizing: border-box;">
                     </div>
                 </div>
 
