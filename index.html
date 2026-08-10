@@ -479,15 +479,17 @@
     
                 <!-- КАТЕГОРИЯ (Стрелка вправо + выпадающий список) -->
                     <div style="position: relative; flex: 1;">
-                        <input type="text" id="nt-category-input" placeholder="Категория..." data-i18n-placeholder="ph_category" onclick="toggleNtCategoryDropdown()" readonly style="width: 100%; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 12px; padding-right: 30px; border-radius: 4px; cursor: pointer; box-sizing: border-box;">
-                        <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 10px; pointer-events: none;">▼</span>
+                        <!-- Добавили условие в onclick: список открывается кликом по полю только если оно в режиме readonly -->
+                        <input type="text" id="nt-category-input" placeholder="Категория..." data-i18n-placeholder="ph_category" onclick="if(this.readOnly) toggleNtCategoryDropdown()" readonly style="width: 100%; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 12px; padding-right: 30px; border-radius: 4px; box-sizing: border-box;">
                         
-                        <!-- Сам список (скрыт по умолчанию) -->
-                        <div id="nt-category-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; width: 100%; max-height: 200px; overflow-y: auto; background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 9999;">
+                        <!-- Сделали саму стрелку кликабельной, чтобы список можно было открыть всегда -->
+                        <span onclick="toggleNtCategoryDropdown()" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 10px; cursor: pointer; padding: 5px;">▼</span>
+                        
+                        <!-- Увеличили max-height до 350px -->
+                        <div id="nt-category-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; width: 100%; max-height: 350px; overflow-y: auto; background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 9999;">
                             <!-- Пункты списка будут генерироваться через JS -->
                         </div>
                     </div>
-                </div>
 
                 <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                     <div style="flex: 1; text-align: center;">

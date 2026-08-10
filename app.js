@@ -4512,24 +4512,30 @@ window.renderNtCategories = function() {
     const dropdown = document.getElementById('nt-category-dropdown');
     if (!dropdown) return;
 
-    // Проверяем, существует ли переменная db в области видимости
     if (typeof db === 'undefined' || !Array.isArray(db)) {
         dropdown.innerHTML = `<div style="padding: 12px; color: #ff5252; text-align: center;">Данные загружаются...</div>`;
         return;
     }
 
-    // 1. Собираем уникальные категории точь-в-точь как в твоем коде
     let uniqueCategories = [...new Set(db.map(i => i.category).filter(Boolean))];
-    
-    // Очищаем от технических "пустышек" перед сортировкой
     uniqueCategories = uniqueCategories.filter(cat => cat !== '0' && cat !== 'Без категории');
     uniqueCategories.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
 
     let html = '';
 
-    // 2. Добавляем системный пункт "Без категории" (с поддержкой перевода)
-    const noCatText = (typeof t === 'function') ? t('qe_no_category') : 'Без категории';
-    
+    // 1. КНОПКА "НОВАЯ КАТЕГОРИЯ" (в самом верху)
+    const newCatText = (typeof t === 'function') ? t('qe_new_category_btn') || '+ Новая категория' : '+ Новая категория';
+    html += `
+        <div onclick="window.selectNtNewCategory()" 
+             style="padding: 12px 15px; font-size: 15px; cursor: pointer; border-bottom: 1px solid var(--accent-green); color: var(--accent-green); font-weight: bold; transition: background 0.2s;" 
+             onmouseover="this.style.background='var(--bg-overlay)'" 
+             onmouseout="this.style.background='transparent'">
+            ${newCatText}
+        </div>
+    `;
+
+    // 2. БЕЗ КАТЕГОРИИ
+    const noCatText = (typeof t === 'function') ? t('qe_no_category') || 'Без категории' : 'Без категории';
     html += `
         <div onclick="window.selectNtCategory('')" 
              style="padding: 12px 15px; font-size: 15px; cursor: pointer; border-bottom: 1px solid var(--border-light); color: var(--text-muted); font-style: italic; transition: background 0.2s;" 
@@ -4539,7 +4545,7 @@ window.renderNtCategories = function() {
         </div>
     `;
 
-    // 3. Генерируем остальные категории из базы
+    // 3. ОСТАЛЬНЫЕ КАТЕГОРИИ
     if (uniqueCategories.length > 0) {
         html += uniqueCategories.map(cat => {
             const safeCat = cat.replace(/'/g, "\\'").replace(/"/g, '&quot;');
@@ -4555,4 +4561,30 @@ window.renderNtCategories = function() {
     }
 
     dropdown.innerHTML = html;
+};
+
+// Функция при нажатии на "Новая категория"
+window.selectNtNewCategory = function() {
+    const input = document.getElementById('nt-category-input');
+    if (input) {
+        input.readOnly = false; // Разблокируем поле для клавиатуры
+        input.value = '';
+        input.placeholder = 'Введите название...';
+        input.focus(); // Сразу ставим курсор
+    }
+    const dropdown = document.getElementById('nt-category-dropdown');
+    if (dropdown) dropdown.style.display = 'none';
+};
+
+// Обновленная функция выбора существующей категории
+window.selectNtCategory = function(catName) {
+    const input = document.getElementById('nt-category-input');
+    if (input) {
+        input.readOnly = true; // Снова блокируем ручной ввод
+        input.value = catName;
+        input.dispatchEvent(new Event('input'));
+        input.dispatchEvent(new Event('change'));
+    }
+    const dropdown = document.getElementById('nt-category-dropdown');
+    if (dropdown) dropdown.style.display = 'none';
 };
