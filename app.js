@@ -4470,7 +4470,12 @@ window.switchIncomeTab = function(tabName) {
 };
 
 // Открытие/закрытие списка категорий
-window.toggleNtCategoryDropdown = function() {
+window.toggleNtCategoryDropdown = function(event) {
+    // Останавливаем клик, чтобы он не долетел до документа и не закрыл список мгновенно
+    if (event) {
+        event.stopPropagation();
+    }
+    
     const dropdown = document.getElementById('nt-category-dropdown');
     if (!dropdown) return;
     
@@ -4478,7 +4483,7 @@ window.toggleNtCategoryDropdown = function() {
         dropdown.style.display = 'none';
     } else {
         dropdown.style.display = 'block';
-        window.renderNtCategories(); // Отрисовываем список при открытии
+        window.renderNtCategories();
     }
 };
 
