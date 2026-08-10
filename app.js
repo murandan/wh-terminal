@@ -4640,37 +4640,53 @@ window.selectFullscreenSupplier = function(val, isAddingNew) {
     }
 };
 
-// ПАТЧ: Связь старых модулей с новым окном
+// ПАТЧ v2: Вытаскиваем модули из-под старой модалки в корень документа
 (function() {
-    // 1. Вытаскиваем кастомную клавиатуру поверх модалки
+    // 1. Вытаскиваем кастомную клавиатуру
     const originalSetQeActive = window.setQeActive;
     if (originalSetQeActive) {
         window.setQeActive = function(el, event) {
-            originalSetQeActive(el, event);
+            originalSetQeActive(el, event); // Запускаем старую логику
+            
             const numpad = document.getElementById('custom-numpad');
             const incomeModal = document.getElementById('income-modal');
+            
             if (numpad && incomeModal && incomeModal.style.display !== 'none') {
-                numpad.style.zIndex = '10005'; // Делаем выше модалки
+                // Магия: физически переносим клавиатуру в корень (body), если она еще не там
+                if (numpad.parentNode !== document.body) {
+                    document.body.appendChild(numpad);
+                }
+                // Теперь z-index точно сработает!
+                numpad.style.zIndex = '999999';
             }
         };
     }
 
-    // 2. Вытаскиваем сканер поверх модалки
+    // 2. Вытаскиваем сканер
     const originalStartQuagga = window.startQuaggaScanner;
     if (originalStartQuagga) {
         window.startQuaggaScanner = function() {
-            originalStartQuagga();
-            const quaggaContainer = document.getElementById('quagga-scanner-container');
-            const scannerContainer = document.getElementById('scanner-container');
+            originalStartQuagga(); // Запускаем старую логику
+            
             const incomeModal = document.getElementById('income-modal');
             if (incomeModal && incomeModal.style.display !== 'none') {
-                if (quaggaContainer) quaggaContainer.style.zIndex = '10005';
-                if (scannerContainer) scannerContainer.style.zIndex = '10005';
+                const quaggaContainer = document.getElementById('quagga-scanner-container');
+                const scannerContainer = document.getElementById('scanner-container');
+                
+                // Переносим оба возможных контейнера камеры
+                if (quaggaContainer) {
+                    if (quaggaContainer.parentNode !== document.body) document.body.appendChild(quaggaContainer);
+                    quaggaContainer.style.zIndex = '999999';
+                }
+                if (scannerContainer) {
+                    if (scannerContainer.parentNode !== document.body) document.body.appendChild(scannerContainer);
+                    scannerContainer.style.zIndex = '999999';
+                }
             }
         };
     }
 
-    // 3. Перехватываем результат сканирования (Непрерывный скан)
+    // 3. Перехватываем результат сканирования (Непрерывный режим)
     const originalHandleQuagga = window.handleQuaggaDetection;
     if (originalHandleQuagga) {
         window.handleQuaggaDetection = function(result) {
@@ -4679,7 +4695,7 @@ window.selectFullscreenSupplier = function(val, isAddingNew) {
         };
     }
 
-    // 4. Перехватываем результат сканирования (Снимок)
+    // 4. Перехватываем результат сканирования (Режим снимка)
     const originalCapture = window.captureAndDecode;
     if (originalCapture) {
         window.captureAndDecode = async function() {
@@ -4688,7 +4704,7 @@ window.selectFullscreenSupplier = function(val, isAddingNew) {
         };
     }
 
-    // Вспомогательная функция копирования штрихкода
+    // Вспомогательная функция: копирует штрихкод из старого окна в новое
     function syncBarcodeToNewModal() {
         const incomeModal = document.getElementById('income-modal');
         const qeBarcode = document.getElementById('qe-barcode');
@@ -4697,6 +4713,7 @@ window.selectFullscreenSupplier = function(val, isAddingNew) {
         if (incomeModal && incomeModal.style.display !== 'none' && qeBarcode && ntBarcode) {
             if (qeBarcode.value) {
                 ntBarcode.value = qeBarcode.value;
+                // Запускаем события, чтобы система поняла, что текст изменился
                 ntBarcode.dispatchEvent(new Event('input'));
                 ntBarcode.dispatchEvent(new Event('change'));
             }
