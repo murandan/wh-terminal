@@ -4639,3 +4639,67 @@ window.selectFullscreenSupplier = function(val, isAddingNew) {
         console.warn("Оригинальная функция поставщика проигнорировала отсутствие старого окна.");
     }
 };
+
+// ПАТЧ: Связь старых модулей с новым окном
+(function() {
+    // 1. Вытаскиваем кастомную клавиатуру поверх модалки
+    const originalSetQeActive = window.setQeActive;
+    if (originalSetQeActive) {
+        window.setQeActive = function(el, event) {
+            originalSetQeActive(el, event);
+            const numpad = document.getElementById('custom-numpad');
+            const incomeModal = document.getElementById('income-modal');
+            if (numpad && incomeModal && incomeModal.style.display !== 'none') {
+                numpad.style.zIndex = '10005'; // Делаем выше модалки
+            }
+        };
+    }
+
+    // 2. Вытаскиваем сканер поверх модалки
+    const originalStartQuagga = window.startQuaggaScanner;
+    if (originalStartQuagga) {
+        window.startQuaggaScanner = function() {
+            originalStartQuagga();
+            const quaggaContainer = document.getElementById('quagga-scanner-container');
+            const scannerContainer = document.getElementById('scanner-container');
+            const incomeModal = document.getElementById('income-modal');
+            if (incomeModal && incomeModal.style.display !== 'none') {
+                if (quaggaContainer) quaggaContainer.style.zIndex = '10005';
+                if (scannerContainer) scannerContainer.style.zIndex = '10005';
+            }
+        };
+    }
+
+    // 3. Перехватываем результат сканирования (Непрерывный скан)
+    const originalHandleQuagga = window.handleQuaggaDetection;
+    if (originalHandleQuagga) {
+        window.handleQuaggaDetection = function(result) {
+            originalHandleQuagga(result);
+            syncBarcodeToNewModal();
+        };
+    }
+
+    // 4. Перехватываем результат сканирования (Снимок)
+    const originalCapture = window.captureAndDecode;
+    if (originalCapture) {
+        window.captureAndDecode = async function() {
+            await originalCapture();
+            syncBarcodeToNewModal();
+        };
+    }
+
+    // Вспомогательная функция копирования штрихкода
+    function syncBarcodeToNewModal() {
+        const incomeModal = document.getElementById('income-modal');
+        const qeBarcode = document.getElementById('qe-barcode');
+        const ntBarcode = document.getElementById('nt-barcode');
+        
+        if (incomeModal && incomeModal.style.display !== 'none' && qeBarcode && ntBarcode) {
+            if (qeBarcode.value) {
+                ntBarcode.value = qeBarcode.value;
+                ntBarcode.dispatchEvent(new Event('input'));
+                ntBarcode.dispatchEvent(new Event('change'));
+            }
+        }
+    }
+})();
