@@ -374,7 +374,7 @@
     <div id="income-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-overlay); z-index: 10000; justify-content: center; align-items: flex-start; padding-top: 4vh; backdrop-filter: blur(3px);">
         <div style="background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 8px; width: 95%; max-width: 600px; padding: 20px; color: var(--text-main); max-height: 80vh; display: flex; flex-direction: column; position: relative;">
             
-            <button onclick="toggleIncomeModule()" style="position: absolute; right: 15px; top: 15px; background: transparent; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer;">✕</button>
+            <button onclick="toggleIncomeModule()" style="position: absolute; right: 15px; top: 15px; background: transparent; border: none; color: #ff4d4d; font-size: 20px; cursor: pointer; font-weight: bold;">✕</button>
             
             <h3 style="margin-bottom: 15px; color: var(--accent-green);">
                 📦 <span data-i18n="reception_main_title">ПРИЕМКА ТОВАРА</span>
@@ -468,21 +468,20 @@
             
             <!-- Штрихкод и сканер -->
             <div style="display: flex; gap: 10px; margin-bottom: 8px;">
-                <input type="text" id="nt-barcode" placeholder="Штрихкод..." data-i18n-placeholder="ph_barcode" onclick="window.setNtActive(this, event)" inputmode="none" style="flex: 1; font-size: 15px; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 10px 12px; border-radius: 4px; box-sizing: border-box;">
+                <!-- Добавлен oninput для фильтрации -->
+                <input type="text" id="nt-barcode" placeholder="Штрихкод..." data-i18n-placeholder="ph_barcode" onclick="window.setNtActive(this, event)" oninput="window.formatNtInput(this)" inputmode="none" style="flex: 1; font-size: 15px; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 10px 12px; border-radius: 4px; box-sizing: border-box;">
                 <button onclick="window.startNtScanner()" style="background: var(--bg-overlay); border: 1px dashed var(--border-main); padding: 0 15px; border-radius: 4px; color: var(--text-muted); cursor: pointer; font-size: 16px;">📷</button>
             </div>
 
-            <!-- Наименование -->
+            <!-- Наименование (Без изменений, просто чтобы ты видел, где мы) -->
             <input type="text" id="nt-name" placeholder="Наименование товара..." data-i18n-placeholder="ph_name" style="width: 100%; font-size: 15px; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 10px 12px; border-radius: 4px; margin-bottom: 8px; box-sizing: border-box;">
 
-            <!-- Поставщик и Категория -->
+            <!-- Поставщик и Категория (Без изменений) -->
             <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                <!-- Поставщик -->
                 <div style="position: relative; flex: 1;">
                     <input type="text" id="nt-supplier-input" placeholder="Поставщик..." data-i18n-placeholder="ph_supplier" onclick="window.openFullscreenSupplier()" readonly style="width: 100%; font-size: 14px; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 10px 25px 10px 12px; border-radius: 4px; cursor: pointer; box-sizing: border-box;">
                     <span style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 10px; pointer-events: none;">▼</span>
                 </div>
-                <!-- Категория -->
                 <div style="position: relative; flex: 1;">
                     <input type="text" id="nt-category-input" placeholder="Категория..." data-i18n-placeholder="ph_category" onclick="if(this.readOnly) toggleNtCategoryDropdown(event)" readonly style="width: 100%; font-size: 14px; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 10px 25px 10px 12px; border-radius: 4px; box-sizing: border-box;">
                     <span id="nt-category-arrow" onclick="toggleNtCategoryDropdown(event)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%) rotate(0deg); color: var(--text-muted); font-size: 10px; cursor: pointer; padding: 5px; transition: transform 0.2s ease;">▼</span>
@@ -494,45 +493,30 @@
             <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                 <div style="flex: 1; text-align: center;">
                     <div style="color: var(--text-muted); font-size: 12px; margin-bottom: 3px;" data-i18n="nt_qty">Количество</div>
-                    <input type="text" id="nt-qty" value="0" onclick="window.setNtActive(this, event)" inputmode="none" style="width: 100%; font-size: 15px; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 10px; border-radius: 4px; text-align: center; box-sizing: border-box;">
+                    <!-- Добавлен oninput для форматирования -->
+                    <input type="text" id="nt-qty" value="0" onclick="window.setNtActive(this, event)" oninput="window.formatNtInput(this)" inputmode="none" style="width: 100%; font-size: 15px; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 10px; border-radius: 4px; text-align: center; box-sizing: border-box;">
                 </div>
                 <div style="flex: 1; text-align: center;">
                     <div style="color: var(--text-muted); font-size: 12px; margin-bottom: 3px;" data-i18n="nt_price_in">Цена закупа</div>
-                    <input type="text" id="nt-price-in" value="0" onclick="window.setNtActive(this, event)" inputmode="none" style="width: 100%; font-size: 15px; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 10px; border-radius: 4px; text-align: center; box-sizing: border-box;">
+                    <input type="text" id="nt-price-in" value="0" onclick="window.setNtActive(this, event)" oninput="window.formatNtInput(this)" inputmode="none" style="width: 100%; font-size: 15px; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 10px; border-radius: 4px; text-align: center; box-sizing: border-box;">
                 </div>
                 <div style="flex: 1; text-align: center;">
                     <div style="color: var(--text-muted); font-size: 12px; margin-bottom: 3px;" data-i18n="nt_price_out">Розница</div>
-                    <input type="text" id="nt-price-out" value="0" onclick="window.setNtActive(this, event)" inputmode="none" style="width: 100%; font-size: 15px; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 10px; border-radius: 4px; text-align: center; box-sizing: border-box;">
+                    <input type="text" id="nt-price-out" value="0" onclick="window.setNtActive(this, event)" oninput="window.formatNtInput(this)" inputmode="none" style="width: 100%; font-size: 15px; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 10px; border-radius: 4px; text-align: center; box-sizing: border-box;">
                 </div>
             </div>
 
-            <!-- Встроенный сканер (Абсолютное позиционирование + Лазер) -->
+            <!-- Встроенный сканер (Без изменений) -->
             <div id="nt-scanner-container" style="display: none; position: absolute; top: 45px; left: 5px; right: 5px; height: 220px; z-index: 1000; border-radius: 8px; overflow: hidden; background: #000; border: 2px solid var(--accent-green, #4CAF50); box-shadow: 0 8px 24px rgba(0,0,0,0.6);">
                 <div id="nt-video-target" style="width: 100%; height: 100%;"></div>
-                <!-- Красная лазерная метка -->
                 <div style="position: absolute; top: 50%; left: 10%; right: 10%; height: 2px; background: rgba(255, 0, 0, 0.8); box-shadow: 0 0 10px red; transform: translateY(-50%); z-index: 5; pointer-events: none;"></div>
-                <!-- Кнопка закрытия -->
                 <button onclick="window.stopNtScanner()" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: #fff; border: 1px solid rgba(255,255,255,0.5); padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; z-index: 10;">✖</button>
             </div>
 
-            <!-- Встроенная клавиатура с ПРИНУДИТЕЛЬНЫМИ стилями -->
+            <!-- Встроенная клавиатура -->
             <style>
-                #nt-custom-numpad {
-                    gap: 6px !important; 
-                    margin-bottom: 12px !important;
-                    padding: 4px !important;
-                }
-                #nt-custom-numpad .np-btn {
-                    height: 50px !important; /* Увеличиваем высоту кнопок для удобного тапа */
-                    font-size: 22px !important; /* Крупные и читаемые цифры */
-                    font-weight: bold !important;
-                    border-radius: 6px !important;
-                    display: flex !important;
-                    align-items: center !important;
-                    justify-content: center !important;
-                    margin: 0 !important;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
-                }
+                #nt-custom-numpad { gap: 6px !important; margin-bottom: 12px !important; padding: 4px !important; }
+                #nt-custom-numpad .np-btn { height: 50px !important; font-size: 22px !important; font-weight: bold !important; border-radius: 6px !important; display: flex !important; align-items: center !important; justify-content: center !important; margin: 0 !important; box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important; }
             </style>
             
             <div id="nt-custom-numpad" style="display: none; grid-template-columns: repeat(3, 1fr);">
@@ -545,9 +529,10 @@
                 <button type="button" class="np-btn" onclick="window.qeNumpad('7', event)">7</button>
                 <button type="button" class="np-btn" onclick="window.qeNumpad('8', event)">8</button>
                 <button type="button" class="np-btn" onclick="window.qeNumpad('9', event)">9</button>
-                <button type="button" class="np-btn np-btn-action" onclick="window.qeNumpad('C', event)">C</button>
+                <!-- Жесткие inline-стили для красных кнопок -->
+                <button type="button" class="np-btn" style="background: #ff4d4d !important; color: #fff !important; border: none !important;" onclick="window.qeNumpad('C', event)">C</button>
                 <button type="button" class="np-btn" onclick="window.qeNumpad('0', event)">0</button>
-                <button type="button" class="np-btn np-btn-action" onclick="window.qeNumpad('DEL', event)">⌫</button>
+                <button type="button" class="np-btn" style="background: #ff4d4d !important; color: #fff !important; border: none !important;" onclick="window.qeNumpad('DEL', event)">⌫</button>
             </div>
 
             <!-- Кнопка сохранения -->

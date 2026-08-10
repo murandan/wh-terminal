@@ -4839,3 +4839,36 @@ window.stopNtScanner = function() {
     if (target) target.innerHTML = '';
     if (container) container.style.display = 'none';
 };
+// Фильтр и форматирование полей "Нового товара"
+window.formatNtInput = function(el) {
+    let val = el.value.toString();
+
+    if (el.id === 'nt-barcode') {
+        // Для штрихкода: оставляем ТОЛЬКО цифры и латинские буквы. Никаких пробелов и спецсимволов.
+        el.value = val.replace(/[^a-zA-Z0-9]/g, '');
+    } else if (el.id === 'nt-qty' || el.id === 'nt-price-in' || el.id === 'nt-price-out') {
+        // Для цифр: убираем всё кроме цифр, и добавляем красивые пробелы (тысячные)
+        let num = val.replace(/\D/g, '');
+        if (num !== '') {
+            el.value = Number(num).toLocaleString('ru-RU').replace(/,/g, ' ');
+        } else {
+            el.value = '';
+        }
+    }
+};
+
+// Перехват старой клавиатуры, чтобы она тоже форматировала наши новые поля
+if (!window.qeNumpadPatchedForNt) {
+    const originalQeNumpad = window.qeNumpad;
+    if (originalQeNumpad) {
+        window.qeNumpad = function(val, event) {
+            originalQeNumpad(val, event); // Выполняем стандартный ввод цифры
+            
+            // Если сейчас активно наше новое поле - сразу применяем к нему форматирование
+            if (window.currentQeInput && window.currentQeInput.id.startsWith('nt-')) {
+                window.formatNtInput(window.currentQeInput);
+            }
+        };
+        window.qeNumpadPatchedForNt = true; // Защита от двойного перехвата
+    }
+}
