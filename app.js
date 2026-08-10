@@ -4488,7 +4488,9 @@ window.toggleNtCategoryDropdown = function(event) {
 };
 
 // Выбор существующей категории
-window.selectNtCategory = function(catName) {
+window.selectNtCategory = function(event, catName) {
+    if (event) event.stopPropagation(); // Блокируем лишние срабатывания
+    
     const input = document.getElementById('nt-category-input');
     const arrow = document.getElementById('nt-category-arrow');
     
@@ -4501,17 +4503,19 @@ window.selectNtCategory = function(catName) {
     
     const dropdown = document.getElementById('nt-category-dropdown');
     if (dropdown) dropdown.style.display = 'none';
-    if (arrow) arrow.style.transform = 'translateY(-50%) rotate(0deg)'; // Сбрасываем стрелку
+    if (arrow) arrow.style.transform = 'translateY(-50%) rotate(0deg)';
 };
 
-// Закрытие списка при клике вне его области
+// Сброс списка и стрелки при тапе в любую пустую область экрана
 document.addEventListener('click', function(e) {
-    const categoryContainer = document.getElementById('nt-category-dropdown');
-    const categoryInput = document.getElementById('nt-category-input');
+    const dropdown = document.getElementById('nt-category-dropdown');
+    const input = document.getElementById('nt-category-input');
+    const arrow = document.getElementById('nt-category-arrow');
     
-    if (categoryContainer && categoryContainer.style.display === 'block') {
-        if (e.target !== categoryContainer && e.target !== categoryInput) {
-            categoryContainer.style.display = 'none';
+    if (dropdown && dropdown.style.display === 'block') {
+        if (e.target !== dropdown && e.target !== input && e.target !== arrow) {
+            dropdown.style.display = 'none';
+            if (arrow) arrow.style.transform = 'translateY(-50%) rotate(0deg)';
         }
     }
 });
@@ -4535,7 +4539,7 @@ window.renderNtCategories = function() {
     // 1. КНОПКА "НОВАЯ КАТЕГОРИЯ"
     const newCatText = (typeof t === 'function') ? t('qe_new_category_btn') || '+ Новая категория' : '+ Новая категория';
     html += `
-        <div onclick="window.selectNtNewCategory()" 
+        <div onclick="window.selectNtNewCategory(event)" 
              style="padding: 14px 15px; font-size: 15px; cursor: pointer; border-bottom: 1px solid var(--accent-green); color: var(--accent-green); font-weight: bold; transition: background 0.2s;" 
              onmouseover="this.style.background='var(--bg-overlay)'" 
              onmouseout="this.style.background='transparent'">
@@ -4550,7 +4554,7 @@ window.renderNtCategories = function() {
         html += uniqueCategories.map(cat => {
             const safeCat = cat.replace(/'/g, "\\'").replace(/"/g, '&quot;');
             return `
-                <div onclick="window.selectNtCategory('${safeCat}')" 
+                <div onclick="window.selectNtCategory(event, '${safeCat}')" 
                      style="padding: 14px 15px; font-size: 15px; cursor: pointer; border-bottom: 1px solid var(--border-light); color: var(--text-main); transition: background 0.2s;" 
                      onmouseover="this.style.background='var(--bg-overlay)'" 
                      onmouseout="this.style.background='transparent'">
@@ -4563,17 +4567,23 @@ window.renderNtCategories = function() {
     dropdown.innerHTML = html;
 };
 
-// Функция при нажатии на "Новая категория"
-window.selectNtNewCategory = function() {
+// Выбор "Новая категория"
+window.selectNtNewCategory = function(event) {
+    if (event) event.stopPropagation(); // Блокируем лишние срабатывания
+    
     const input = document.getElementById('nt-category-input');
+    const arrow = document.getElementById('nt-category-arrow');
+    
     if (input) {
-        input.readOnly = false; // Разблокируем поле для клавиатуры
+        input.readOnly = false;
         input.value = '';
         input.placeholder = 'Введите название...';
-        input.focus(); // Сразу ставим курсор
+        input.focus();
     }
+    
     const dropdown = document.getElementById('nt-category-dropdown');
     if (dropdown) dropdown.style.display = 'none';
+    if (arrow) arrow.style.transform = 'translateY(-50%) rotate(0deg)';
 };
 
 // Обновленная функция выбора существующей категории
