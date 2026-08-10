@@ -4613,19 +4613,29 @@ window.selectNtCategory = function(event, catName) {
 const originalSelectSupplier = window.selectFullscreenSupplier;
 
 window.selectFullscreenSupplier = function(val, isAddingNew) {
-    // 1. Позволяем твоей кассе сделать всю оригинальную работу (включая закрытие окна)
-    if (typeof originalSelectSupplier === 'function') {
-        originalSelectSupplier(val, isAddingNew);
-    }
-    
-    // 2. Ловим результат и закидываем в новое окно, если оно открыто
+    // 1. СНАЧАЛА забираем значение в наше новое окно (если оно открыто)
     const incomeModal = document.getElementById('income-modal');
-    const qeInput = document.getElementById('qe-supplier-input');
     const ntInput = document.getElementById('nt-supplier-input');
     
-    if (incomeModal && incomeModal.style.display !== 'none' && qeInput && ntInput) {
-        ntInput.value = qeInput.value;
-        ntInput.dispatchEvent(new Event('input'));
-        ntInput.dispatchEvent(new Event('change'));
+    if (incomeModal && incomeModal.style.display !== 'none' && ntInput) {
+        // Убеждаемся, что пришел текст
+        let finalVal = typeof val === 'string' ? val.trim() : String(val || '').trim();
+        
+        if (finalVal) {
+            ntInput.value = finalVal;
+            ntInput.dispatchEvent(new Event('input'));
+            ntInput.dispatchEvent(new Event('change'));
+        }
+    }
+    
+    // 2. ЗАТЕМ вызываем твою старую логику (чтобы она закрыла окно)
+    // Оборачиваем в try-catch: если она не найдет свое старое поле, 
+    // касса не зависнет и продолжит работать.
+    try {
+        if (typeof originalSelectSupplier === 'function') {
+            originalSelectSupplier(val, isAddingNew);
+        }
+    } catch (e) {
+        console.warn("Оригинальная функция поставщика проигнорировала отсутствие старого окна.");
     }
 };
