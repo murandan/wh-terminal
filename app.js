@@ -4437,35 +4437,45 @@ document.addEventListener('keydown', function(e) {
 });
 
 window.switchIncomeTab = function(tabName) {
-    const tabImport = document.getElementById('tab-import');
+    const tabImport = document.getElementById('tab-import'); 
     const tabNew = document.getElementById('tab-new-product');
     const btnImport = document.getElementById('tab-btn-import');
     const btnNew = document.getElementById('tab-btn-new');
 
     if (!tabImport || !tabNew || !btnImport || !btnNew) return;
 
+    // АКТИВНАЯ вкладка: голубой контур, легкий фон, приглушенный текст
+    const activeBg = 'var(--bg-overlay, rgba(0,0,0,0.05))';
+    const activeColor = 'var(--text-main)'; // Приглушенный базовый текст, не чисто белый
+    const activeBorder = '1px solid var(--accent-blue, #2196F3)'; // Голубой контур
+
+    // НЕАКТИВНАЯ вкладка: прозрачный фон, контрастный текст для читаемости
+    const inactiveBg = 'transparent';
+    const inactiveColor = 'var(--text-muted, #777777)'; 
+    const inactiveBorder = '1px solid var(--border-main)';
+
     if (tabName === 'import') {
         tabImport.style.display = 'block';
         tabNew.style.display = 'none';
-        
-        btnImport.style.background = 'var(--bg-overlay)';
-        btnImport.style.color = 'var(--text-main)';
-        btnImport.style.border = '1px solid var(--border-light)';
-        
-        btnNew.style.background = 'transparent';
-        btnNew.style.color = 'var(--text-muted)';
-        btnNew.style.border = '1px solid var(--border-main)';
+
+        btnImport.style.background = activeBg;
+        btnImport.style.color = activeColor;
+        btnImport.style.border = activeBorder;
+
+        btnNew.style.background = inactiveBg;
+        btnNew.style.color = inactiveColor;
+        btnNew.style.border = inactiveBorder;
     } else {
         tabImport.style.display = 'none';
         tabNew.style.display = 'block';
-        
-        btnImport.style.background = 'transparent';
-        btnImport.style.color = 'var(--text-muted)';
-        btnImport.style.border = '1px solid var(--border-main)';
-        
-        btnNew.style.background = 'var(--bg-overlay)';
-        btnNew.style.color = 'var(--text-main)';
-        btnNew.style.border = '1px solid var(--border-light)';
+
+        btnNew.style.background = activeBg;
+        btnNew.style.color = activeColor;
+        btnNew.style.border = activeBorder;
+
+        btnImport.style.background = inactiveBg;
+        btnImport.style.color = inactiveColor;
+        btnImport.style.border = inactiveBorder;
     }
 };
 

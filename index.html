@@ -390,13 +390,14 @@
             <div id="tab-import" style="display: block; width: 100%;">
                 
                 <div class="minimal-input-container" style="display: flex; gap: 10px;">
-                    
-                    <!-- Выбор валюты (Добавлен фон, рамка и правильное выравнивание) -->
+        
+            <!-- Выбор валюты (Желтый текст, выделенный фон) -->
                     <div class="currency-minimal-container" style="position: relative; width: 90px;">
-                        <div class="currency-minimal-header" id="dropdownHeader" onclick="toggleDropdown()" style="font-size: 15px; padding: 12px; background: var(--bg-overlay); border: 1px solid var(--border-main); border-radius: 4px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
-                            <span id="dropdownSelectedCode" style="color: var(--text-main); font-weight: bold;">USD</span>
+                        <div class="currency-minimal-header" id="dropdownHeader" onclick="toggleDropdown()" style="font-size: 15px; padding: 12px; background: var(--bg-body, rgba(0,0,0,0.03)); border: 1px solid var(--border-main); border-radius: 4px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                            <span id="dropdownSelectedCode" style="color: var(--accent-yellow, #FFD700); font-weight: bold;">USD</span>
                             <span class="curr-arrow-mini" style="color: var(--text-muted); font-size: 10px;">▼</span>
                         </div>
+                        <!-- Выпадающий список (без изменений) -->
                         <div class="currency-minimal-list" id="dropdownList" style="position: absolute; top: calc(100% + 4px); left: 0; width: 100%; z-index: 9999; background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
                             <div class="currency-minimal-item" onclick="selectCurrency('KZT')">KZT</div>
                             <div class="currency-minimal-item selected" onclick="selectCurrency('USD')">USD</div>
@@ -407,9 +408,9 @@
                         <input type="hidden" id="invoiceCurrency" value="USD">
                     </div>
 
-                    <!-- Поле загрузки файла (Заменен dashed на solid, удалена скрепка) -->
+                    <!-- Поле загрузки файла (Плотный фон для выделения в светлой теме) -->
                     <div class="file-input-wrapper" style="flex: 1;">
-                        <label for="invoiceFileInput" id="fileInputLabel" class="file-upload-label" style="padding: 12px; border: 1px solid var(--border-main) !important; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: transparent; transition: background-color 0.2s;">
+                        <label for="invoiceFileInput" id="fileInputLabel" class="file-upload-label" style="padding: 12px; border: 1px solid var(--border-main) !important; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: var(--bg-body, rgba(0,0,0,0.03)); transition: background-color 0.2s;">
                             <div class="file-content" style="display: flex; gap: 8px; align-items: center;">
                                 <span style="color: var(--text-muted); font-size: 16px;">📄</span>
                                 <span id="fileNameTextCompact" class="file-placeholder-text" style="font-size: 14px; color: var(--text-main);">Нажмите для выбора Excel</span>
@@ -469,21 +470,21 @@
             
             <!-- Штрихкод и сканер -->
             <div style="display: flex; gap: 10px; margin-bottom: 8px;">
-                <input type="text" id="nt-barcode" placeholder="Штрихкод..." data-i18n-placeholder="ph_barcode" onpointerdown="window.setNtActive(this, event)" oninput="window.formatNtInput(this)" inputmode="none" style="flex: 1; font-size: 15px; background: transparent; border: 1px solid var(--border-main); color: var(--text-main); padding: 10px 12px; border-radius: 4px; box-sizing: border-box; transition: background-color 0.2s, border-color 0.2s;">
-                <button onpointerdown="window.startNtScanner()" style="background: var(--bg-body); border: 1px solid var(--border-main); padding: 0 15px; border-radius: 4px; color: var(--text-muted); cursor: pointer; font-size: 16px; transition: all 0.2s;">📷</button>
+                <input type="text" id="nt-barcode" placeholder="Штрихкод..." data-i18n-placeholder="ph_barcode" onpointerdown="window.setNtActive(this, event)" oninput="window.formatNtInput(this)" inputmode="none" style="flex: 1; font-size: 15px; background: var(--bg-body, rgba(0,0,0,0.03)); border: 1px solid var(--border-main); color: var(--text-main); padding: 10px 12px; border-radius: 4px; box-sizing: border-box; transition: background-color 0.2s, border-color 0.2s;">
+                <button onpointerdown="window.startNtScanner()" style="background: var(--bg-body, rgba(0,0,0,0.03)); border: 1px solid var(--border-main); padding: 0 15px; border-radius: 4px; color: var(--text-muted); cursor: pointer; font-size: 16px; transition: all 0.2s;">📷</button>
             </div>
 
             <!-- Наименование -->
-            <input type="text" id="nt-name" placeholder="Наименование товара..." data-i18n-placeholder="ph_name" style="width: 100%; font-size: 15px; background: transparent; border: 1px solid var(--border-main); color: var(--text-main); padding: 10px 12px; border-radius: 4px; margin-bottom: 8px; box-sizing: border-box;">
+            <input type="text" id="nt-name" placeholder="Наименование товара..." data-i18n-placeholder="ph_name" style="width: 100%; font-size: 15px; background: var(--bg-body, rgba(0,0,0,0.03)); border: 1px solid var(--border-main); color: var(--text-main); padding: 10px 12px; border-radius: 4px; margin-bottom: 8px; box-sizing: border-box;">
 
             <!-- Поставщик и Категория -->
             <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                 <div style="position: relative; flex: 1;">
-                    <input type="text" id="nt-supplier-input" placeholder="Поставщик..." data-i18n-placeholder="ph_supplier" onclick="window.openFullscreenSupplier()" readonly style="width: 100%; font-size: 14px; background: transparent; border: 1px solid var(--border-main); color: var(--text-main); padding: 10px 25px 10px 12px; border-radius: 4px; cursor: pointer; box-sizing: border-box;">
+                    <input type="text" id="nt-supplier-input" placeholder="Поставщик..." data-i18n-placeholder="ph_supplier" onclick="window.openFullscreenSupplier()" readonly style="width: 100%; font-size: 14px; background: var(--bg-body, rgba(0,0,0,0.03)); border: 1px solid var(--border-main); color: var(--text-main); padding: 10px 25px 10px 12px; border-radius: 4px; cursor: pointer; box-sizing: border-box;">
                     <span style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 10px; pointer-events: none;">▼</span>
                 </div>
                 <div style="position: relative; flex: 1;">
-                    <input type="text" id="nt-category-input" placeholder="Категория..." data-i18n-placeholder="ph_category" onclick="if(this.readOnly) toggleNtCategoryDropdown(event)" readonly style="width: 100%; font-size: 14px; background: transparent; border: 1px solid var(--border-main); color: var(--text-main); padding: 10px 25px 10px 12px; border-radius: 4px; box-sizing: border-box;">
+                    <input type="text" id="nt-category-input" placeholder="Категория..." data-i18n-placeholder="ph_category" onclick="if(this.readOnly) toggleNtCategoryDropdown(event)" readonly style="width: 100%; font-size: 14px; background: var(--bg-body, rgba(0,0,0,0.03)); border: 1px solid var(--border-main); color: var(--text-main); padding: 10px 25px 10px 12px; border-radius: 4px; box-sizing: border-box;">
                     <span id="nt-category-arrow" onclick="toggleNtCategoryDropdown(event)" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%) rotate(0deg); color: var(--text-muted); font-size: 10px; cursor: pointer; padding: 5px; transition: transform 0.2s ease;">▼</span>
                     <div id="nt-category-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; width: 100%; max-height: 250px; overflow-y: auto; background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 9999;"></div>
                 </div>
