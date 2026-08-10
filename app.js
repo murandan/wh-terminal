@@ -4512,17 +4512,47 @@ window.renderNtCategories = function() {
     const dropdown = document.getElementById('nt-category-dropdown');
     if (!dropdown) return;
 
-    if (window.db && window.db.length > 0) {
-        // Берем первый товар из базы и превращаем его в текст
-        const firstItem = window.db[0];
-        const debugText = JSON.stringify(firstItem);
-        
-        // Выводим структуру прямо в список
-        dropdown.innerHTML = `
-            <div style="padding: 15px; background: #222; color: #ffeb3b; font-size: 11px; word-break: break-all; border-radius: 4px;">
-                <b>Структура данных:</b><br><br>${debugText}
-            </div>`;
-    } else {
-        dropdown.innerHTML = `<div style="padding: 12px; color: #ff5252; text-align: center;">Ошибка: Локальный кэш db пуст или не загружен!</div>`;
+    // Проверяем, существует ли переменная db в области видимости
+    if (typeof db === 'undefined' || !Array.isArray(db)) {
+        dropdown.innerHTML = `<div style="padding: 12px; color: #ff5252; text-align: center;">Данные загружаются...</div>`;
+        return;
     }
+
+    // 1. Собираем уникальные категории точь-в-точь как в твоем коде
+    let uniqueCategories = [...new Set(db.map(i => i.category).filter(Boolean))];
+    
+    // Очищаем от технических "пустышек" перед сортировкой
+    uniqueCategories = uniqueCategories.filter(cat => cat !== '0' && cat !== 'Без категории');
+    uniqueCategories.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+
+    let html = '';
+
+    // 2. Добавляем системный пункт "Без категории" (с поддержкой перевода)
+    const noCatText = (typeof t === 'function') ? t('qe_no_category') : 'Без категории';
+    
+    html += `
+        <div onclick="window.selectNtCategory('')" 
+             style="padding: 12px 15px; font-size: 15px; cursor: pointer; border-bottom: 1px solid var(--border-light); color: var(--text-muted); font-style: italic; transition: background 0.2s;" 
+             onmouseover="this.style.background='var(--bg-overlay)'" 
+             onmouseout="this.style.background='transparent'">
+            ${noCatText}
+        </div>
+    `;
+
+    // 3. Генерируем остальные категории из базы
+    if (uniqueCategories.length > 0) {
+        html += uniqueCategories.map(cat => {
+            const safeCat = cat.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            return `
+                <div onclick="window.selectNtCategory('${safeCat}')" 
+                     style="padding: 12px 15px; font-size: 15px; cursor: pointer; border-bottom: 1px solid var(--border-light); color: var(--text-main); transition: background 0.2s;" 
+                     onmouseover="this.style.background='var(--bg-overlay)'" 
+                     onmouseout="this.style.background='transparent'">
+                    ${cat}
+                </div>
+            `;
+        }).join('');
+    }
+
+    dropdown.innerHTML = html;
 };
