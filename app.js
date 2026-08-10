@@ -1294,6 +1294,7 @@ window.saveNewProduct = function() {
 
     // 3. Формируем пакет данных (payload)
     const requestFingerprint = "new_item_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+    const generatedItemId = Date.now().toString(); // 📌 ГЕНЕРИРУЕМ УНИКАЛЬНЫЙ ID (например: 1715600000000)
     
     const payload = {
         action: "income",
@@ -1305,11 +1306,12 @@ window.saveNewProduct = function() {
             {
                 doc_no: "AUTO-NEW-" + Date.now(),
                 supplier: supplier,
-                item_id: barcode,
+                item_id: generatedItemId, // 📌 Отправляем сгенерированный ID
+                barcode: barcode,         // 📌 Отправляем штрихкод отдельным полем
                 item_name: name,
                 qty: qty,
                 cost: priceIn,
-                price: priceOut, // Передаем розничную цену
+                price: priceOut,
                 category: category,
                 cbm: 0,
                 weight: 0
@@ -1338,8 +1340,8 @@ window.saveNewProduct = function() {
             // 5. Оптимистичное обновление UI: добавляем товар в кэш
             if (typeof db !== 'undefined') {
                 db.push({
-                    id: barcode,
-                    barcode: barcode,
+                    id: generatedItemId, // 📌 Сохраняем сгенерированный ID в локальный кэш
+                    barcode: barcode,    // 📌 Штрихкод остается штрихкодом
                     name: name,
                     category: category,
                     price: priceOut,
