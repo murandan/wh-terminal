@@ -144,7 +144,22 @@
                 modal_enter_supplier: "Ввести поставщика",
                 modal_search_supplier: "Поиск или новый поставщик...",
                 modal_add_supplier: "+ Добавить",
-                modal_unknown_supplier: "Неизвестный поставщик"
+                modal_unknown_supplier: "Неизвестный поставщик",
+                // Плейсхолдеры и заголовки полей нового товара
+                ph_barcode: "Штрихкод...",
+                ph_name: "Наименование товара...",
+                ph_supplier: "Поставщик...",
+                ph_category: "Категория...",
+                nt_qty: "Количество",
+                nt_price_in: "Цена закупа",
+                nt_price_out: "Розница",
+                // Системные сообщения и кнопки для сохранения
+                msg_barcode_req: "Штрихкод и Наименование обязательны для заполнения!",
+                msg_qty_req: "Количество должно быть больше нуля!",
+                btn_saving: "⏳ СОХРАНЕНИЕ...",
+                btn_save_ready: "✅ ОПРИХОДОВАТЬ НА СКЛАД",
+                msg_server_err: "Ошибка сервера: ",
+                msg_conn_err: "Ошибка связи с сервером: "
             },
             kz: {
                 btn_sale: "САТУ", btn_return: "ҚАЙТАРУ", search_placeholder: "ІЗДЕУ...",
@@ -291,7 +306,22 @@
                 modal_enter_supplier: "Жеткізушіні енгізіңіз",
                 modal_search_supplier: "Іздеу немесе жаңа жеткізуші...",
                 modal_add_supplier: "+ Қосу",
-                modal_unknown_supplier: "Белгісіз жеткізуші"
+                modal_unknown_supplier: "Белгісіз жеткізуші",
+                // Плейсхолдеры и заголовки полей нового товара
+                ph_barcode: "Штрихкод...",
+                ph_name: "Тауар атауы...",
+                ph_supplier: "Жеткізуші...",
+                ph_category: "Санат...",
+                nt_qty: "Саны",
+                nt_price_in: "Сатып алу бағасы",
+                nt_price_out: "Бөлшек баға",
+                // Системные сообщения и кнопки для сохранения
+                msg_barcode_req: "Штрихкод пен Атауы міндетті түрде толтырылуы тиіс!",
+                msg_qty_req: "Саны нөлден үлкен болуы керек!",
+                btn_saving: "⏳ САҚТАЛУДА...",
+                btn_save_ready: "✅ ҚОЙМАҒА ҚАБЫЛДАУ",
+                msg_server_err: "Сервер қателігі: ",
+                msg_conn_err: "Сервермен байланыс қатесі: "
             }
         };
         
@@ -1281,20 +1311,20 @@ window.saveNewProduct = function() {
     const priceIn = parseInt(document.getElementById('nt-price-in').value.replace(/\D/g, ''), 10) || 0;
     const priceOut = parseInt(document.getElementById('nt-price-out').value.replace(/\D/g, ''), 10) || 0;
 
-    // 2. Базовая валидация
+    // 2. Базовая валидация (ТЕПЕРЬ С ПЕРЕВОДОМ)
     if (!barcode || !name) {
-        alert("Штрихкод и Наименование обязательны для заполнения!");
+        alert(translations[currentLang].msg_barcode_req);
         return;
     }
     
     if (qty <= 0) {
-        alert("Количество должно быть больше нуля!");
+        alert(translations[currentLang].msg_qty_req);
         return;
     }
 
     // 3. Формируем пакет данных (payload)
     const requestFingerprint = "new_item_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
-    const generatedItemId = Date.now().toString(); // 📌 ГЕНЕРИРУЕМ УНИКАЛЬНЫЙ ID (например: 1715600000000)
+    const generatedItemId = "SKU-" + Date.now().toString(36).toUpperCase(); // 📌 ГЕНЕРИРУЕМ УНИКАЛЬНЫЙ ID например:SKU-LZZ12X45
     
     const payload = {
         action: "income",
@@ -1319,11 +1349,11 @@ window.saveNewProduct = function() {
         ]
     };
 
-    // Блокируем кнопку, чтобы избежать двойных нажатий
-    const saveBtn = document.querySelector('#tab-new-product button[onclick="saveNewProduct()"]');
+    // Блокируем кнопку (ТЕПЕРЬ С ПЕРЕВОДОМ)
+    const saveBtn = document.getElementById('saveNewProductBtn');
     if (saveBtn) {
         saveBtn.disabled = true;
-        saveBtn.innerText = "⏳ СОХРАНЕНИЕ...";
+        saveBtn.innerText = translations[currentLang].btn_saving;
     }
 
     // 4. Отправляем запрос на бэкенд
@@ -1335,7 +1365,7 @@ window.saveNewProduct = function() {
     .then(res => res.json())
     .then(response => {
         if (response && response.error) {
-            alert('Ошибка сервера: ' + response.error);
+            alert(translations[currentLang].msg_server_err + response.error); // ПЕРЕВОД
         } else {
             // 5. Оптимистичное обновление UI: добавляем товар в кэш
             if (typeof db !== 'undefined') {
@@ -1365,13 +1395,13 @@ window.saveNewProduct = function() {
         }
     })
     .catch(err => {
-        alert('Ошибка связи с сервером: ' + err.message);
+        alert(translations[currentLang].msg_conn_err + err.message); // ПЕРЕВОД
     })
     .finally(() => {
-        // Возвращаем кнопку в исходное состояние
+        // Возвращаем кнопку в исходное состояние (ТЕПЕРЬ С ПЕРЕВОДОМ)
         if (saveBtn) {
             saveBtn.disabled = false;
-            saveBtn.innerText = "✅ ОПРИХОДОВАТЬ НА СКЛАД";
+            saveBtn.innerText = translations[currentLang].btn_save_ready; 
         }
     });
 };
