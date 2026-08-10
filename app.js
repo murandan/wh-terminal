@@ -4512,48 +4512,17 @@ window.renderNtCategories = function() {
     const dropdown = document.getElementById('nt-category-dropdown');
     if (!dropdown) return;
 
-    let uniqueCategories = [];
-
-    // 1. УМНЫЙ ПАРСИНГ: Ищем старый список в DOM и берем категории оттуда
-    const originalDropdown = document.getElementById('qe-category-dropdown');
-    if (originalDropdown) {
-        // Находим все элементы, у которых есть data-val
-        const items = originalDropdown.querySelectorAll('[data-val]');
-        items.forEach(item => {
-            const val = item.getAttribute('data-val');
-            const text = item.getAttribute('data-text') || item.innerText.trim();
-            // Игнорируем кнопку "Новая категория" (value === 'new')
-            if (val && val !== 'new' && text) {
-                uniqueCategories.push(text);
-            }
-        });
+    if (window.db && window.db.length > 0) {
+        // Берем первый товар из базы и превращаем его в текст
+        const firstItem = window.db[0];
+        const debugText = JSON.stringify(firstItem);
+        
+        // Выводим структуру прямо в список
+        dropdown.innerHTML = `
+            <div style="padding: 15px; background: #222; color: #ffeb3b; font-size: 11px; word-break: break-all; border-radius: 4px;">
+                <b>Структура данных:</b><br><br>${debugText}
+            </div>`;
+    } else {
+        dropdown.innerHTML = `<div style="padding: 12px; color: #ff5252; text-align: center;">Ошибка: Локальный кэш db пуст или не загружен!</div>`;
     }
-
-    // 2. ЗАПАСНОЙ ВАРИАНТ: Если вдруг старый список еще не отрендерился
-    if (uniqueCategories.length === 0 && window.db) {
-        uniqueCategories = window.db.map(item => item.category).filter(c => c && c.trim() !== '');
-    }
-
-    // 3. Убираем дубликаты и сортируем по алфавиту
-    uniqueCategories = [...new Set(uniqueCategories)];
-    uniqueCategories.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-
-    // Если всё равно пусто
-    if (uniqueCategories.length === 0) {
-        dropdown.innerHTML = `<div style="padding: 12px; color: var(--text-muted); text-align: center;" data-i18n="no_categories">Нет доступных категорий</div>`;
-        return;
-    }
-
-    // 4. Генерируем HTML для нашего нового списка
-    dropdown.innerHTML = uniqueCategories.map(cat => {
-        const safeCat = cat.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-        return `
-            <div onclick="window.selectNtCategory('${safeCat}')" 
-                 style="padding: 12px 15px; font-size: 15px; cursor: pointer; border-bottom: 1px solid var(--border-light); color: var(--text-main); transition: background 0.2s;" 
-                 onmouseover="this.style.background='var(--bg-overlay)'" 
-                 onmouseout="this.style.background='transparent'">
-                ${cat}
-            </div>
-        `;
-    }).join('');
 };
