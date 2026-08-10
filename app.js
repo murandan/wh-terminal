@@ -4640,7 +4640,7 @@ window.selectFullscreenSupplier = function(val, isAddingNew) {
     }
 };
 
-// ПАТЧ v2: Вытаскиваем модули из-под старой модалки в корень документа
+// ПАТЧ v3: Принудительное открытие модулей
 (function() {
     // 1. Вытаскиваем кастомную клавиатуру
     const originalSetQeActive = window.setQeActive;
@@ -4652,12 +4652,15 @@ window.selectFullscreenSupplier = function(val, isAddingNew) {
             const incomeModal = document.getElementById('income-modal');
             
             if (numpad && incomeModal && incomeModal.style.display !== 'none') {
-                // Магия: физически переносим клавиатуру в корень (body), если она еще не там
-                if (numpad.parentNode !== document.body) {
-                    document.body.appendChild(numpad);
-                }
-                // Теперь z-index точно сработает!
+                if (numpad.parentNode !== document.body) document.body.appendChild(numpad);
+                
+                // ПРИНУДИТЕЛЬНО ПОКАЗЫВАЕМ КЛАВИАТУРУ
+                numpad.style.display = 'grid';
                 numpad.style.zIndex = '999999';
+                
+                // Жестко указываем клавиатуре, в какое поле печатать
+                window.currentQeInput = el;
+                el.classList.add('qe-active-input');
             }
         };
     }
@@ -4673,20 +4676,22 @@ window.selectFullscreenSupplier = function(val, isAddingNew) {
                 const quaggaContainer = document.getElementById('quagga-scanner-container');
                 const scannerContainer = document.getElementById('scanner-container');
                 
-                // Переносим оба возможных контейнера камеры
                 if (quaggaContainer) {
                     if (quaggaContainer.parentNode !== document.body) document.body.appendChild(quaggaContainer);
+                    // ПРИНУДИТЕЛЬНО ПОКАЗЫВАЕМ КАМЕРУ
+                    quaggaContainer.style.display = 'flex'; 
                     quaggaContainer.style.zIndex = '999999';
                 }
                 if (scannerContainer) {
                     if (scannerContainer.parentNode !== document.body) document.body.appendChild(scannerContainer);
+                    scannerContainer.style.display = 'block'; 
                     scannerContainer.style.zIndex = '999999';
                 }
             }
         };
     }
 
-    // 3. Перехватываем результат сканирования (Непрерывный режим)
+    // 3. Перехватываем результат сканирования
     const originalHandleQuagga = window.handleQuaggaDetection;
     if (originalHandleQuagga) {
         window.handleQuaggaDetection = function(result) {
@@ -4695,7 +4700,6 @@ window.selectFullscreenSupplier = function(val, isAddingNew) {
         };
     }
 
-    // 4. Перехватываем результат сканирования (Режим снимка)
     const originalCapture = window.captureAndDecode;
     if (originalCapture) {
         window.captureAndDecode = async function() {
@@ -4704,7 +4708,6 @@ window.selectFullscreenSupplier = function(val, isAddingNew) {
         };
     }
 
-    // Вспомогательная функция: копирует штрихкод из старого окна в новое
     function syncBarcodeToNewModal() {
         const incomeModal = document.getElementById('income-modal');
         const qeBarcode = document.getElementById('qe-barcode');
@@ -4713,7 +4716,6 @@ window.selectFullscreenSupplier = function(val, isAddingNew) {
         if (incomeModal && incomeModal.style.display !== 'none' && qeBarcode && ntBarcode) {
             if (qeBarcode.value) {
                 ntBarcode.value = qeBarcode.value;
-                // Запускаем события, чтобы система поняла, что текст изменился
                 ntBarcode.dispatchEvent(new Event('input'));
                 ntBarcode.dispatchEvent(new Event('change'));
             }
