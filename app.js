@@ -1267,6 +1267,113 @@ window.saveQuickEdit = function(id) {
     if (numpad) numpad.style.display = 'none';
 };
 
+window.saveNewProduct = function() {
+    // 1. Собираем данные из полей ввода
+    const barcode = document.getElementById('nt-barcode').value.trim();
+    const name = document.getElementById('nt-name').value.trim();
+    
+    // Берем поставщика и категорию, либо ставим значения по умолчанию
+    const supplier = document.getElementById('nt-supplier-input').value.trim() || "Не указан";
+    const category = document.getElementById('nt-category-input').value.trim() || "Без категории";
+    
+    // Очищаем цифры от пробелов
+    const qty = parseInt(document.getElementById('nt-qty').value.replace(/\D/g, ''), 10) || 0;
+    const priceIn = parseInt(document.getElementById('nt-price-in').value.replace(/\D/g, ''), 10) || 0;
+    const priceOut = parseInt(document.getElementById('nt-price-out').value.replace(/\D/g, ''), 10) || 0;
+
+    // 2. Базовая валидация
+    if (!barcode || !name) {
+        alert("Штрихкод и Наименование обязательны для заполнения!");
+        return;
+    }
+    
+    if (qty <= 0) {
+        alert("Количество должно быть больше нуля!");
+        return;
+    }
+
+    // 3. Формируем пакет данных (payload)
+    const requestFingerprint = "new_item_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+    
+    const payload = {
+        action: "income",
+        api_key: typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : "",
+        currency: "KZT",
+        vat: 0, 
+        fingerprint: requestFingerprint,
+        data: [
+            {
+                doc_no: "AUTO-NEW-" + Date.now(),
+                supplier: supplier,
+                item_id: barcode,
+                item_name: name,
+                qty: qty,
+                cost: priceIn,
+                price: priceOut, // Передаем розничную цену
+                category: category,
+                cbm: 0,
+                weight: 0
+            }
+        ]
+    };
+
+    // Блокируем кнопку, чтобы избежать двойных нажатий
+    const saveBtn = document.querySelector('#tab-new-product button[onclick="saveNewProduct()"]');
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerText = "⏳ СОХРАНЕНИЕ...";
+    }
+
+    // 4. Отправляем запрос на бэкенд
+    fetch(typeof GATEWAY_URL !== 'undefined' ? GATEWAY_URL : "", {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+    })
+    .then(res => res.json())
+    .then(response => {
+        if (response && response.error) {
+            alert('Ошибка сервера: ' + response.error);
+        } else {
+            // 5. Оптимистичное обновление UI: добавляем товар в кэш
+            if (typeof db !== 'undefined') {
+                db.push({
+                    id: barcode,
+                    barcode: barcode,
+                    name: name,
+                    category: category,
+                    price: priceOut,
+                    cost: priceIn,
+                    stock: qty
+                });
+            }
+            
+            // Если есть функция обновления витрины
+            if (typeof render === 'function') render();
+            
+            // Закрываем модалку
+            if (typeof toggleIncomeModule === 'function') toggleIncomeModule();
+            
+            // Очищаем форму для следующего раза
+            document.getElementById('nt-barcode').value = '';
+            document.getElementById('nt-name').value = '';
+            document.getElementById('nt-qty').value = '0';
+            document.getElementById('nt-price-in').value = '0';
+            document.getElementById('nt-price-out').value = '0';
+        }
+    })
+    .catch(err => {
+        alert('Ошибка связи с сервером: ' + err.message);
+    })
+    .finally(() => {
+        // Возвращаем кнопку в исходное состояние
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerText = "✅ ОПРИХОДОВАТЬ НА СКЛАД";
+        }
+    });
+};
+
 // === (Конец П1) ===
 
         // Криптографическое хеширование ПИН-кода на стороне кассы
