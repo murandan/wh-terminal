@@ -515,8 +515,27 @@
                 <button onclick="window.stopNtScanner()" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: #fff; border: 1px solid rgba(255,255,255,0.5); padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; z-index: 10;">✖</button>
             </div>
 
-            <!-- Встроенная клавиатура (Уменьшены зазоры) -->
-            <div id="nt-custom-numpad" style="display: none; grid-template-columns: repeat(3, 1fr); gap: 3px; margin-bottom: 10px;">
+            <!-- Встроенная клавиатура с ПРИНУДИТЕЛЬНЫМИ стилями -->
+            <style>
+                #nt-custom-numpad {
+                    gap: 6px !important; 
+                    margin-bottom: 12px !important;
+                    padding: 4px !important;
+                }
+                #nt-custom-numpad .np-btn {
+                    height: 50px !important; /* Увеличиваем высоту кнопок для удобного тапа */
+                    font-size: 22px !important; /* Крупные и читаемые цифры */
+                    font-weight: bold !important;
+                    border-radius: 6px !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    margin: 0 !important;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+                }
+            </style>
+            
+            <div id="nt-custom-numpad" style="display: none; grid-template-columns: repeat(3, 1fr);">
                 <button type="button" class="np-btn" onclick="window.qeNumpad('1', event)">1</button>
                 <button type="button" class="np-btn" onclick="window.qeNumpad('2', event)">2</button>
                 <button type="button" class="np-btn" onclick="window.qeNumpad('3', event)">3</button>
