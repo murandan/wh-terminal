@@ -390,10 +390,12 @@
             <div id="tab-import" style="display: block; width: 100%;">
                 
                 <div class="minimal-input-container" style="display: flex; gap: 10px;">
+                    
+                    <!-- Выбор валюты (Добавлен фон, рамка и правильное выравнивание) -->
                     <div class="currency-minimal-container" style="position: relative; width: 90px;">
-                        <!-- Увеличен шрифт валюты -->
-                        <div class="currency-minimal-header" id="dropdownHeader" onclick="toggleDropdown()" style="font-size: 15px; padding: 12px;">
-                            <span id="dropdownSelectedCode">USD</span><span class="curr-arrow-mini">▼</span>
+                        <div class="currency-minimal-header" id="dropdownHeader" onclick="toggleDropdown()" style="font-size: 15px; padding: 12px; background: var(--bg-overlay); border: 1px solid var(--border-main); border-radius: 4px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
+                            <span id="dropdownSelectedCode" style="color: var(--text-main); font-weight: bold;">USD</span>
+                            <span class="curr-arrow-mini" style="color: var(--text-muted); font-size: 10px;">▼</span>
                         </div>
                         <div class="currency-minimal-list" id="dropdownList" style="position: absolute; top: calc(100% + 4px); left: 0; width: 100%; z-index: 9999; background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
                             <div class="currency-minimal-item" onclick="selectCurrency('KZT')">KZT</div>
@@ -405,20 +407,19 @@
                         <input type="hidden" id="invoiceCurrency" value="USD">
                     </div>
 
+                    <!-- Поле загрузки файла (Заменен dashed на solid, удалена скрепка) -->
                     <div class="file-input-wrapper" style="flex: 1;">
-                        <label for="invoiceFileInput" id="fileInputLabel" class="file-upload-label" style="padding: 12px;">
-                            <div class="file-content">
-                                <!-- Увеличены иконки и текст загрузки файла -->
-                                <span style="color: var(--text-muted); font-size: 14px;">📄</span>
-                                <span id="fileNameTextCompact" class="file-placeholder-text" style="font-size: 14px;">Нажмите для выбора Excel</span>
+                        <label for="invoiceFileInput" id="fileInputLabel" class="file-upload-label" style="padding: 12px; border: 1px solid var(--border-main) !important; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: transparent; transition: background-color 0.2s;">
+                            <div class="file-content" style="display: flex; gap: 8px; align-items: center;">
+                                <span style="color: var(--text-muted); font-size: 16px;">📄</span>
+                                <span id="fileNameTextCompact" class="file-placeholder-text" style="font-size: 14px; color: var(--text-main);">Нажмите для выбора Excel</span>
                             </div>
-                            <span style="color: var(--text-muted); font-size: 16px;">📎</span>
                         </label>
                         <input type="file" id="invoiceFileInput" accept=".csv, .xls, .xlsx" style="display: none;" multiple onchange="updateFileNameCompactUI(this)">
                     </div>
                 </div>
                 
-                <!-- Увеличен шрифт кнопки -->
+                <!-- Кнопка обработки -->
                 <button id="parseInvoiceBtn" onclick="processInvoiceFile()" style="background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); padding: 14px 15px; margin-top: 15px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px;" data-i18n="income_parse">ОБРАБОТАТЬ ФАЙЛ</button>
                 
                 <div id="debug-container" style="display: none; margin-top: 15px; flex-direction: column; overflow-y: auto; max-height: 40vh;"></div>
