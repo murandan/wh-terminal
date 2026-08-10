@@ -159,7 +159,11 @@
                 btn_saving: "⏳ СОХРАНЕНИЕ...",
                 btn_save_ready: "✅ ОПРИХОДОВАТЬ НА СКЛАД",
                 msg_server_err: "Ошибка сервера: ",
-                msg_conn_err: "Ошибка связи с сервером: "
+                msg_conn_err: "Ошибка связи с сервером: ",
+                modal_income_title: "ПРИЕМКА ТОВАРА",
+                tab_import: "ИМПОРТ EXCEL",
+                tab_new: "НОВЫЙ ТОВАР",
+                file_select_excel: "Нажмите для выбора Excel"
             },
             kz: {
                 btn_sale: "САТУ", btn_return: "ҚАЙТАРУ", search_placeholder: "ІЗДЕУ...",
@@ -321,7 +325,11 @@
                 btn_saving: "⏳ САҚТАЛУДА...",
                 btn_save_ready: "✅ ҚОЙМАҒА ҚАБЫЛДАУ",
                 msg_server_err: "Сервер қателігі: ",
-                msg_conn_err: "Сервермен байланыс қатесі: "
+                msg_conn_err: "Сервермен байланыс қатесі: ",
+                modal_income_title: "ТАУАРДЫ ҚАБЫЛДАУ",
+                tab_import: "EXCEL ИМПОРТТАУ",
+                tab_new: "ЖАҢА ТАУАР",
+                file_select_excel: "Excel файлын таңдау үшін басыңыз"
             }
         };
         

@@ -377,7 +377,7 @@
             <button onclick="toggleIncomeModule()" style="position: absolute; right: 15px; top: 15px; background: transparent; border: none; color: #ff4d4d; font-size: 20px; cursor: pointer; font-weight: bold;">✕</button>
             
             <h3 style="margin-bottom: 15px; color: var(--accent-green);">
-                📦 <span data-i18n="reception_main_title">ПРИЕМКА ТОВАРА</span>
+                📦 <span data-i18n="modal_income_title">ПРИЕМКА ТОВАРА</span>
             </h3>
 
             <!-- ПЕРЕКЛЮЧАТЕЛЬ ВКЛАДОК -->
@@ -413,7 +413,7 @@
                         <label for="invoiceFileInput" id="fileInputLabel" class="file-upload-label" style="padding: 12px; border: 1px solid var(--border-main) !important; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: var(--bg-body, rgba(0,0,0,0.03)); transition: background-color 0.2s;">
                             <div class="file-content" style="display: flex; gap: 8px; align-items: center;">
                                 <span style="color: var(--text-muted); font-size: 16px;">📄</span>
-                                <span id="fileNameTextCompact" class="file-placeholder-text" style="font-size: 14px; color: var(--text-main);">Нажмите для выбора Excel</span>
+                                <span id="fileNameTextCompact" class="file-placeholder-text" style="font-size: 14px; color: var(--text-main);" data-i18n="file_select_excel">Нажмите для выбора Excel</span>
                             </div>
                         </label>
                         <input type="file" id="invoiceFileInput" accept=".csv, .xls, .xlsx" style="display: none;" multiple onchange="updateFileNameCompactUI(this)">
@@ -535,9 +535,9 @@
             </div>
 
             <!-- Кнопка сохранения -->
-            <button id="saveNewProductBtn" onclick="saveNewProduct()" style="background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); padding: 12px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px;" data-i18n="income_confirm">
-                ✅ ОПРИХОДОВАТЬ НА СКЛАД
-            </button>
+                    <button id="saveNewProductBtn" onclick="saveNewProduct()" style="background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); padding: 14px 15px; margin-top: 15px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px;" data-i18n="income_confirm">
+            ✅ ОПРИХОДОВАТЬ НА СКЛАД
+        </button>
             
         </div>
             
