@@ -382,8 +382,8 @@
 
             <!-- ПЕРЕКЛЮЧАТЕЛЬ ВКЛАДОК -->
             <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-shrink: 0;">
-                <button id="tab-btn-import" onclick="switchIncomeTab('import')" style="flex: 1; padding: 14px; font-size: 14px; background: var(--bg-overlay); color: var(--text-main); border: 1px solid var(--border-light); border-radius: 6px; font-weight: bold; cursor: pointer;" data-i18n="tab_import">ИМПОРТ EXCEL</button>
-                <button id="tab-btn-new" onclick="switchIncomeTab('new')" style="flex: 1; padding: 14px; font-size: 14px; background: transparent; color: var(--text-muted); border: 1px solid var(--border-main); border-radius: 6px; font-weight: bold; cursor: pointer;" data-i18n="tab_new">НОВЫЙ ТОВАР</button>
+                <button style="flex: 1; padding: 12px; font-weight: bold; background: transparent; color: var(--text-muted); border: 1px solid var(--border-light); border-radius: 4px; cursor: pointer;">ИМПОРТ EXCEL</button>
+                <button style="flex: 1; padding: 12px; font-weight: bold; background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); border-radius: 4px; cursor: default;">НОВЫЙ ТОВАР</button>
             </div>
 
             <!-- ВКЛАДКА 1: ОРИГИНАЛЬНЫЙ ИМПОРТ -->
@@ -469,7 +469,8 @@
             <!-- Штрихкод и сканер -->
             <div style="display: flex; gap: 10px; margin-bottom: 8px;">
                 <input type="text" id="nt-barcode" placeholder="Штрихкод..." data-i18n-placeholder="ph_barcode" onpointerdown="window.setNtActive(this, event)" oninput="window.formatNtInput(this)" inputmode="none" style="flex: 1; font-size: 15px; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 10px 12px; border-radius: 4px; box-sizing: border-box; transition: background-color 0.2s;">
-                <button onpointerdown="window.startNtScanner()" style="background: var(--bg-overlay); border: 1px dashed var(--border-main); padding: 0 15px; border-radius: 4px; color: var(--text-muted); cursor: pointer; font-size: 16px;">📷</button>
+                <!-- Изменен background и border -->
+                <button onpointerdown="window.startNtScanner()" style="background: var(--bg-body); border: 1px solid var(--border-light); padding: 0 15px; border-radius: 4px; color: var(--text-muted); cursor: pointer; font-size: 16px; transition: all 0.2s;">📷</button>
             </div>
 
             <!-- Наименование (Без изменений, просто чтобы ты видел, где мы) -->

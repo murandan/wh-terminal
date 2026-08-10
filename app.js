@@ -4844,21 +4844,25 @@ window.formatNtInput = function(el) {
     let val = el.value.toString();
 
     if (el.id === 'nt-barcode') {
-        // Оставляем ТОЛЬКО буквы и цифры, и жестко обрезаем до 13 символов
         let clean = val.replace(/[^a-zA-Z0-9]/g, '').substring(0, 13);
         el.value = clean;
 
-        // Умная цветовая индикация (EAN-8 и EAN-13)
+        // Адаптивные цвета под светлую/темную тему
         if (clean.length > 0 && clean.length < 8) {
-            el.style.backgroundColor = 'rgba(255, 193, 7, 0.15)'; // Желтый (в процессе)
+            el.style.backgroundColor = 'var(--bg-warning-dim, rgba(255, 193, 7, 0.15))'; 
+            el.style.borderColor = 'var(--accent-warning, #ffc107)';
         } else if (clean.length === 8) {
-            el.style.backgroundColor = 'rgba(76, 175, 80, 0.15)'; // Зеленый (найден EAN-8)
+            el.style.backgroundColor = 'var(--bg-success-dim, rgba(76, 175, 80, 0.15))'; 
+            el.style.borderColor = 'var(--accent-green, #4CAF50)';
         } else if (clean.length > 8 && clean.length < 13) {
-            el.style.backgroundColor = 'rgba(255, 193, 7, 0.15)'; // Желтый (в процессе до 13)
+            el.style.backgroundColor = 'var(--bg-warning-dim, rgba(255, 193, 7, 0.15))'; 
+            el.style.borderColor = 'var(--accent-warning, #ffc107)';
         } else if (clean.length === 13) {
-            el.style.backgroundColor = 'rgba(76, 175, 80, 0.15)'; // Зеленый (найден EAN-13)
+            el.style.backgroundColor = 'var(--bg-success-dim, rgba(76, 175, 80, 0.15))'; 
+            el.style.borderColor = 'var(--accent-green, #4CAF50)';
         } else {
-            el.style.backgroundColor = 'transparent'; // Пусто
+            el.style.backgroundColor = 'transparent'; 
+            el.style.borderColor = 'var(--border-main)'; 
         }
 
     } else if (el.id === 'nt-qty' || el.id === 'nt-price-in' || el.id === 'nt-price-out') {
