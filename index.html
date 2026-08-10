@@ -382,20 +382,19 @@
 
             <!-- ПЕРЕКЛЮЧАТЕЛЬ ВКЛАДОК -->
             <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-shrink: 0;">
-                <button id="tab-btn-import" onclick="switchIncomeTab('import')" style="flex: 1; padding: 12px; background: var(--bg-overlay); color: var(--text-main); border: 1px solid var(--border-light); border-radius: 6px; font-weight: bold; cursor: pointer;" data-i18n="tab_import">ИМПОРТ EXCEL</button>
-                <button id="tab-btn-new" onclick="switchIncomeTab('new')" style="flex: 1; padding: 12px; background: transparent; color: var(--text-muted); border: 1px solid var(--border-main); border-radius: 6px; font-weight: bold; cursor: pointer;" data-i18n="tab_new">НОВЫЙ ТОВАР</button>
+                <button id="tab-btn-import" onclick="switchIncomeTab('import')" style="flex: 1; padding: 14px; font-size: 14px; background: var(--bg-overlay); color: var(--text-main); border: 1px solid var(--border-light); border-radius: 6px; font-weight: bold; cursor: pointer;" data-i18n="tab_import">ИМПОРТ EXCEL</button>
+                <button id="tab-btn-new" onclick="switchIncomeTab('new')" style="flex: 1; padding: 14px; font-size: 14px; background: transparent; color: var(--text-muted); border: 1px solid var(--border-main); border-radius: 6px; font-weight: bold; cursor: pointer;" data-i18n="tab_new">НОВЫЙ ТОВАР</button>
             </div>
 
-            <!-- ВКЛАДКА 1: ОРИГИНАЛЬНЫЙ ИМПОРТ (Убрали overflow-y, чтобы список не срезался) -->
+            <!-- ВКЛАДКА 1: ОРИГИНАЛЬНЫЙ ИМПОРТ -->
             <div id="tab-import" style="display: block; width: 100%;">
                 
                 <div class="minimal-input-container" style="display: flex; gap: 10px;">
-                    <!-- Добавили position: relative для привязки списка к кнопке -->
-                    <div class="currency-minimal-container" style="position: relative; width: 80px;">
-                        <div class="currency-minimal-header" id="dropdownHeader" onclick="toggleDropdown()">
+                    <div class="currency-minimal-container" style="position: relative; width: 90px;">
+                        <!-- Увеличен шрифт валюты -->
+                        <div class="currency-minimal-header" id="dropdownHeader" onclick="toggleDropdown()" style="font-size: 15px; padding: 12px;">
                             <span id="dropdownSelectedCode">USD</span><span class="curr-arrow-mini">▼</span>
                         </div>
-                        <!-- Добавили абсолютное позиционирование и ширину 100% -->
                         <div class="currency-minimal-list" id="dropdownList" style="position: absolute; top: calc(100% + 4px); left: 0; width: 100%; z-index: 9999; background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
                             <div class="currency-minimal-item" onclick="selectCurrency('KZT')">KZT</div>
                             <div class="currency-minimal-item selected" onclick="selectCurrency('USD')">USD</div>
@@ -407,34 +406,37 @@
                     </div>
 
                     <div class="file-input-wrapper" style="flex: 1;">
-                        <label for="invoiceFileInput" id="fileInputLabel" class="file-upload-label">
+                        <label for="invoiceFileInput" id="fileInputLabel" class="file-upload-label" style="padding: 12px;">
                             <div class="file-content">
-                                <span style="color: var(--text-muted); font-size: 10px;">📄</span>
-                                <span id="fileNameTextCompact" class="file-placeholder-text">Нажмите для выбора Excel</span>
+                                <!-- Увеличены иконки и текст загрузки файла -->
+                                <span style="color: var(--text-muted); font-size: 14px;">📄</span>
+                                <span id="fileNameTextCompact" class="file-placeholder-text" style="font-size: 14px;">Нажмите для выбора Excel</span>
                             </div>
-                            <span style="color: var(--text-muted); font-size: 11px;">📎</span>
+                            <span style="color: var(--text-muted); font-size: 16px;">📎</span>
                         </label>
                         <input type="file" id="invoiceFileInput" accept=".csv, .xls, .xlsx" style="display: none;" multiple onchange="updateFileNameCompactUI(this)">
                     </div>
                 </div>
                 
-                <button id="parseInvoiceBtn" onclick="processInvoiceFile()" style="background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); padding: 12px 15px; margin-top: 15px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; font-size: 14px;" data-i18n="income_parse">ОБРАБОТАТЬ ФАЙЛ</button>
+                <!-- Увеличен шрифт кнопки -->
+                <button id="parseInvoiceBtn" onclick="processInvoiceFile()" style="background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); padding: 14px 15px; margin-top: 15px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px;" data-i18n="income_parse">ОБРАБОТАТЬ ФАЙЛ</button>
                 
                 <div id="debug-container" style="display: none; margin-top: 15px; flex-direction: column; overflow-y: auto; max-height: 40vh;"></div>
 
-                <!-- Зона таблицы (Здесь свой скролл для длинных таблиц) -->
                 <div id="invoicePreviewArea" style="display: none; margin-top: 20px; flex-direction: column; overflow: hidden; max-height: 45vh;">
-                    <div id="invoiceMetadata" style="margin-bottom: 10px; font-weight: bold; color: var(--accent-yellow); font-size: 13px; text-align: center;"></div>
+                    <!-- Увеличен шрифт метаданных -->
+                    <div id="invoiceMetadata" style="margin-bottom: 10px; font-weight: bold; color: var(--accent-yellow); font-size: 14px; text-align: center;"></div>
                     <div style="overflow-y: auto; border: 1px solid var(--border-light); margin-bottom: 15px; flex-grow: 1;">
-                        <table style="width: 100%; border-collapse: collapse; font-size: 12px; color: var(--text-main);">
+                        <!-- Увеличен базовый шрифт таблицы с 12px до 13px -->
+                        <table style="width: 100%; border-collapse: collapse; font-size: 13px; color: var(--text-main);">
                             <thead style="background: var(--border-main); position: sticky; top: 0; z-index: 10;">
                                 <tr style="border-bottom: 1px solid var(--text-muted); text-align: left;">
-                                    <th style="padding: 8px;" data-i18n="income_code">Код</th>
-                                    <th style="padding: 8px;" data-i18n="income_name">Наименование</th>
-                                    <th style="padding: 8px;" data-i18n="income_qty">Кол-во</th>
-                                    <th style="padding: 8px;" data-i18n="income_cbm">Объем (CBM)</th>
-                                    <th style="padding: 8px;" data-i18n="income_weight">Вес (кг)</th>
-                                    <th style="padding: 8px;">
+                                    <th style="padding: 10px 8px;" data-i18n="income_code">Код</th>
+                                    <th style="padding: 10px 8px;" data-i18n="income_name">Наименование</th>
+                                    <th style="padding: 10px 8px;" data-i18n="income_qty">Кол-во</th>
+                                    <th style="padding: 10px 8px;" data-i18n="income_cbm">Объем (CBM)</th>
+                                    <th style="padding: 10px 8px;" data-i18n="income_weight">Вес (кг)</th>
+                                    <th style="padding: 10px 8px;">
                                         <span data-i18n="income_price">Цена</span> (<span id="dynamicCurrencySpan" style="color: var(--accent-yellow);">USD</span>)
                                     </th>
                                 </tr>
@@ -444,16 +446,18 @@
                     </div>
                     
                     <div id="status-container" style="display: none; margin-bottom: 15px; padding: 10px; background: var(--bg-body); border: 1px solid var(--border-light); border-radius: 4px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px;">
+                        <!-- Увеличен шрифт статуса -->
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px;">
                             <span id="status-text" style="color: var(--accent-green);">Подготовка...</span>
                             <span id="status-percent" style="color: var(--text-muted);">0%</span>
                         </div>
-                        <div style="width: 100%; height: 4px; background: var(--border-main); border-radius: 2px; overflow: hidden;">
+                        <div style="width: 100%; height: 6px; background: var(--border-main); border-radius: 3px; overflow: hidden;">
                             <div id="status-bar" style="width: 0%; height: 100%; background: var(--accent-green); transition: width 0.3s;"></div>
                         </div>
                     </div>
                     
-                    <button id="sendInvoiceBtn" onclick="sendInvoiceToBackend()" style="background: var(--accent-blue); color: #ffffff; padding: 12px 20px; border: none; border-radius: 4px; width: 100%; cursor: pointer; font-weight: bold; flex-shrink: 0;" data-i18n="income_confirm">
+                    <!-- Увеличен шрифт финальной кнопки -->
+                    <button id="sendInvoiceBtn" onclick="sendInvoiceToBackend()" style="background: var(--accent-blue); color: #ffffff; padding: 14px 20px; border: none; border-radius: 4px; width: 100%; cursor: pointer; font-weight: bold; font-size: 15px; flex-shrink: 0;" data-i18n="income_confirm">
                         ✅ ОПРИХОДОВАТЬ НА СКЛАД
                     </button>
                 </div>
@@ -464,52 +468,53 @@
                 
                 <!-- Штрихкод и сканер -->
                 <div style="display: flex; gap: 10px; margin-bottom: 12px;">
-                    <input type="text" id="nt-barcode" placeholder="Штрихкод..." data-i18n-placeholder="ph_barcode" style="flex: 1; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 12px; border-radius: 4px; box-sizing: border-box;">
-                    <button onclick="openBarcodeScanner()" style="background: var(--bg-overlay); border: 1px dashed var(--border-main); padding: 0 15px; border-radius: 4px; color: var(--text-muted); cursor: pointer;">📷</button>
+                    <input type="text" id="nt-barcode" placeholder="Штрихкод..." data-i18n-placeholder="ph_barcode" style="flex: 1; font-size: 15px; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 14px; border-radius: 4px; box-sizing: border-box;">
+                    <button onclick="openBarcodeScanner()" style="background: var(--bg-overlay); border: 1px dashed var(--border-main); padding: 0 15px; border-radius: 4px; color: var(--text-muted); cursor: pointer; font-size: 16px;">📷</button>
                 </div>
 
                 <!-- Наименование -->
-                <input type="text" id="nt-name" placeholder="Наименование товара..." data-i18n-placeholder="ph_name" style="width: 100%; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 12px; border-radius: 4px; margin-bottom: 12px; box-sizing: border-box;">
+                <input type="text" id="nt-name" placeholder="Наименование товара..." data-i18n-placeholder="ph_name" style="width: 100%; font-size: 15px; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 14px; border-radius: 4px; margin-bottom: 12px; box-sizing: border-box;">
 
                 <!-- Поставщик и Категория -->
                 <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                     
                     <!-- Поставщик -->
                     <div style="position: relative; flex: 1;">
-                        <input type="text" id="nt-supplier-input" placeholder="Поставщик..." data-i18n-placeholder="ph_supplier" onclick="window.openFullscreenSupplier()" readonly style="width: 100%; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 12px; padding-right: 30px; border-radius: 4px; cursor: pointer; box-sizing: border-box;">
-                        <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 10px; pointer-events: none;">▼</span>
+                        <input type="text" id="nt-supplier-input" placeholder="Поставщик..." data-i18n-placeholder="ph_supplier" onclick="window.openFullscreenSupplier()" readonly style="width: 100%; font-size: 15px; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 14px; padding-right: 30px; border-radius: 4px; cursor: pointer; box-sizing: border-box;">
+                        <span style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 12px; pointer-events: none;">▼</span>
                     </div>
                     
                     <!-- Категория -->
                     <div style="position: relative; flex: 1;">
-                        <input type="text" id="nt-category-input" placeholder="Категория..." data-i18n-placeholder="ph_category" onclick="if(this.readOnly) toggleNtCategoryDropdown(event)" readonly style="width: 100%; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 12px; padding-right: 30px; border-radius: 4px; box-sizing: border-box;">
-                        <span onclick="toggleNtCategoryDropdown(event)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 10px; cursor: pointer; padding: 5px;">▼</span>
+                        <input type="text" id="nt-category-input" placeholder="Категория..." data-i18n-placeholder="ph_category" onclick="if(this.readOnly) toggleNtCategoryDropdown(event)" readonly style="width: 100%; font-size: 15px; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 14px; padding-right: 30px; border-radius: 4px; box-sizing: border-box;">
+                        <!-- Добавлен id и плавный переход (transition) -->
+                        <span id="nt-category-arrow" onclick="toggleNtCategoryDropdown(event)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%) rotate(0deg); color: var(--text-muted); font-size: 12px; cursor: pointer; padding: 5px; transition: transform 0.2s ease;">▼</span>
                         
                         <!-- Выпадающий список -->
                         <div id="nt-category-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); left: 0; width: 100%; max-height: 350px; overflow-y: auto; background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 9999;">
                         </div>
                     </div>
 
-                </div> <!-- ВОТ ЭТОТ ЗАКРЫВАЮЩИЙ ТЕГ БЫЛ ПОТЕРЯН -->
+                </div>
 
                 <!-- Цифры -->
                 <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                     <div style="flex: 1; text-align: center;">
-                        <div style="color: var(--text-muted); font-size: 12px; margin-bottom: 5px;" data-i18n="nt_qty">Количество</div>
-                        <input type="number" id="nt-qty" value="0" style="width: 100%; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 10px; border-radius: 4px; text-align: center; box-sizing: border-box;">
+                        <div style="color: var(--text-muted); font-size: 13px; margin-bottom: 5px;" data-i18n="nt_qty">Количество</div>
+                        <input type="number" id="nt-qty" value="0" style="width: 100%; font-size: 15px; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 12px; border-radius: 4px; text-align: center; box-sizing: border-box;">
                     </div>
                     <div style="flex: 1; text-align: center;">
-                        <div style="color: var(--text-muted); font-size: 12px; margin-bottom: 5px;" data-i18n="nt_price_in">Цена закупа</div>
-                        <input type="number" id="nt-price-in" value="0" style="width: 100%; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 10px; border-radius: 4px; text-align: center; box-sizing: border-box;">
+                        <div style="color: var(--text-muted); font-size: 13px; margin-bottom: 5px;" data-i18n="nt_price_in">Цена закупа</div>
+                        <input type="number" id="nt-price-in" value="0" style="width: 100%; font-size: 15px; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 12px; border-radius: 4px; text-align: center; box-sizing: border-box;">
                     </div>
                     <div style="flex: 1; text-align: center;">
-                        <div style="color: var(--text-muted); font-size: 12px; margin-bottom: 5px;" data-i18n="nt_price_out">Розница</div>
-                        <input type="number" id="nt-price-out" value="0" style="width: 100%; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 10px; border-radius: 4px; text-align: center; box-sizing: border-box;">
+                        <div style="color: var(--text-muted); font-size: 13px; margin-bottom: 5px;" data-i18n="nt_price_out">Розница</div>
+                        <input type="number" id="nt-price-out" value="0" style="width: 100%; font-size: 15px; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 12px; border-radius: 4px; text-align: center; box-sizing: border-box;">
                     </div>
                 </div>
 
                 <!-- Кнопка сохранения -->
-                <button id="saveNewProductBtn" onclick="saveNewProduct()" style="background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); padding: 12px 15px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; font-size: 14px;" data-i18n="income_confirm">
+                <button id="saveNewProductBtn" onclick="saveNewProduct()" style="background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); padding: 15px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px;" data-i18n="income_confirm">
                     ✅ ОПРИХОДОВАТЬ НА СКЛАД
                 </button>
                 

@@ -4469,36 +4469,39 @@ window.switchIncomeTab = function(tabName) {
     }
 };
 
-// Открытие/закрытие списка категорий
+// Функция открытия/закрытия списка (с вращением стрелки)
 window.toggleNtCategoryDropdown = function(event) {
-    // Останавливаем клик, чтобы он не долетел до документа и не закрыл список мгновенно
-    if (event) {
-        event.stopPropagation();
-    }
+    if (event) event.stopPropagation();
     
     const dropdown = document.getElementById('nt-category-dropdown');
+    const arrow = document.getElementById('nt-category-arrow');
     if (!dropdown) return;
     
     if (dropdown.style.display === 'block') {
         dropdown.style.display = 'none';
+        if (arrow) arrow.style.transform = 'translateY(-50%) rotate(0deg)';
     } else {
         dropdown.style.display = 'block';
+        if (arrow) arrow.style.transform = 'translateY(-50%) rotate(180deg)';
         window.renderNtCategories();
     }
 };
 
-// Выбор категории из списка
+// Выбор существующей категории
 window.selectNtCategory = function(catName) {
     const input = document.getElementById('nt-category-input');
+    const arrow = document.getElementById('nt-category-arrow');
+    
     if (input) {
+        input.readOnly = true;
         input.value = catName;
-        // Генерируем события, чтобы касса зафиксировала выбор
         input.dispatchEvent(new Event('input'));
         input.dispatchEvent(new Event('change'));
     }
-    // Прячем список после выбора
+    
     const dropdown = document.getElementById('nt-category-dropdown');
     if (dropdown) dropdown.style.display = 'none';
+    if (arrow) arrow.style.transform = 'translateY(-50%) rotate(0deg)'; // Сбрасываем стрелку
 };
 
 // Закрытие списка при клике вне его области
@@ -4523,40 +4526,32 @@ window.renderNtCategories = function() {
     }
 
     let uniqueCategories = [...new Set(db.map(i => i.category).filter(Boolean))];
-    uniqueCategories = uniqueCategories.filter(cat => cat !== '0' && cat !== 'Без категории');
+    // Убираем системные пустышки
+    uniqueCategories = uniqueCategories.filter(cat => cat !== '0' && cat !== 'Без категории' && cat !== 'Не выбрано');
     uniqueCategories.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
 
     let html = '';
 
-    // 1. КНОПКА "НОВАЯ КАТЕГОРИЯ" (в самом верху)
+    // 1. КНОПКА "НОВАЯ КАТЕГОРИЯ"
     const newCatText = (typeof t === 'function') ? t('qe_new_category_btn') || '+ Новая категория' : '+ Новая категория';
     html += `
         <div onclick="window.selectNtNewCategory()" 
-             style="padding: 12px 15px; font-size: 15px; cursor: pointer; border-bottom: 1px solid var(--accent-green); color: var(--accent-green); font-weight: bold; transition: background 0.2s;" 
+             style="padding: 14px 15px; font-size: 15px; cursor: pointer; border-bottom: 1px solid var(--accent-green); color: var(--accent-green); font-weight: bold; transition: background 0.2s;" 
              onmouseover="this.style.background='var(--bg-overlay)'" 
              onmouseout="this.style.background='transparent'">
             ${newCatText}
         </div>
     `;
 
-    // 2. БЕЗ КАТЕГОРИИ
-    const noCatText = (typeof t === 'function') ? t('qe_no_category') || 'Без категории' : 'Без категории';
-    html += `
-        <div onclick="window.selectNtCategory('')" 
-             style="padding: 12px 15px; font-size: 15px; cursor: pointer; border-bottom: 1px solid var(--border-light); color: var(--text-muted); font-style: italic; transition: background 0.2s;" 
-             onmouseover="this.style.background='var(--bg-overlay)'" 
-             onmouseout="this.style.background='transparent'">
-            ${noCatText}
-        </div>
-    `;
+    // Пункт "Без категории" удален. 
 
-    // 3. ОСТАЛЬНЫЕ КАТЕГОРИИ
+    // 2. ОСТАЛЬНЫЕ КАТЕГОРИИ
     if (uniqueCategories.length > 0) {
         html += uniqueCategories.map(cat => {
             const safeCat = cat.replace(/'/g, "\\'").replace(/"/g, '&quot;');
             return `
                 <div onclick="window.selectNtCategory('${safeCat}')" 
-                     style="padding: 12px 15px; font-size: 15px; cursor: pointer; border-bottom: 1px solid var(--border-light); color: var(--text-main); transition: background 0.2s;" 
+                     style="padding: 14px 15px; font-size: 15px; cursor: pointer; border-bottom: 1px solid var(--border-light); color: var(--text-main); transition: background 0.2s;" 
                      onmouseover="this.style.background='var(--bg-overlay)'" 
                      onmouseout="this.style.background='transparent'">
                     ${cat}
