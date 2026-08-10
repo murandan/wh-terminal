@@ -4647,34 +4647,34 @@ window.selectFullscreenSupplier = function(val, isAddingNew) {
 // 1. Своя функция вызова клавиатуры
 window.setNtActive = function(el, event) {
     if (event) event.stopPropagation();
-
-    // Снимаем подсветку со всех полей и ставим на текущее
-    document.querySelectorAll('.qe-active-input').forEach(input => input.classList.remove('qe-active-input'));
-    window.currentQeInput = el; 
-    el.classList.add('qe-active-input'); // Класс нужен для работы старой логики набора цифр
     
-    setTimeout(() => { el.setSelectionRange(0, el.value.length); }, 10);
-    window.qeNeedsClear = true;
+    // Отчет 1
+    alert("Шаг 1: Клик прошел, функция запустилась!");
 
-    // Вызываем клаву только на смартфонах/планшетах
-    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+    window.currentQeInput = el; 
+    el.classList.add('qe-active-input');
+
     const numpad = document.getElementById('custom-numpad');
-    const incomeModal = document.getElementById('income-modal');
-
-    if (numpad && incomeModal && isTouchDevice) {
-        // Жестко переносим клавиатуру внутрь нашей новой модалки
-        if (numpad.parentNode !== incomeModal) {
-            incomeModal.appendChild(numpad);
-        }
-        
-        // Железобетонные стили, чтобы она 100% отобразилась поверх всего
-        numpad.style.position = 'absolute';
-        numpad.style.bottom = '0';
-        numpad.style.left = '0';
-        numpad.style.width = '100%';
-        numpad.style.zIndex = '999999';
-        numpad.style.display = 'grid';
+    
+    // Отчет 2
+    if (!numpad) {
+        alert("Шаг 2: ОШИБКА! Элемент custom-numpad не найден в коде страницы.");
+        return;
+    } else {
+        alert("Шаг 2: Клавиатура найдена!");
     }
+
+    // Вытаскиваем клаву в корень сайта и жестко фиксируем поверх всего
+    document.body.appendChild(numpad);
+    numpad.style.position = 'fixed'; // Заменил absolute на fixed
+    numpad.style.bottom = '0';
+    numpad.style.left = '0';
+    numpad.style.width = '100%';
+    numpad.style.zIndex = '9999999';
+    numpad.style.display = 'grid';
+
+    // Отчет 3
+    alert("Шаг 3: Команда на показ отправлена. Если клавы не видно — её блокируют CSS-стили.");
 };
 
 // 2. Своя функция вызова сканера
