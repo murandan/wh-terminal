@@ -4640,85 +4640,129 @@ window.selectFullscreenSupplier = function(val, isAddingNew) {
     }
 };
 
-// ПАТЧ v3: Принудительное открытие модулей
-(function() {
-    // 1. Вытаскиваем кастомную клавиатуру
-    const originalSetQeActive = window.setQeActive;
-    if (originalSetQeActive) {
-        window.setQeActive = function(el, event) {
-            originalSetQeActive(el, event); // Запускаем старую логику
-            
-            const numpad = document.getElementById('custom-numpad');
-            const incomeModal = document.getElementById('income-modal');
-            
-            if (numpad && incomeModal && incomeModal.style.display !== 'none') {
-                if (numpad.parentNode !== document.body) document.body.appendChild(numpad);
-                
-                // ПРИНУДИТЕЛЬНО ПОКАЗЫВАЕМ КЛАВИАТУРУ
-                numpad.style.display = 'grid';
-                numpad.style.zIndex = '999999';
-                
-                // Жестко указываем клавиатуре, в какое поле печатать
-                window.currentQeInput = el;
-                el.classList.add('qe-active-input');
-            }
-        };
-    }
+// ==========================================
+// НЕЗАВИСИМЫЕ МОДУЛИ ДЛЯ ОКНА "НОВЫЙ ТОВАР"
+// ==========================================
 
-    // 2. Вытаскиваем сканер
-    const originalStartQuagga = window.startQuaggaScanner;
-    if (originalStartQuagga) {
-        window.startQuaggaScanner = function() {
-            originalStartQuagga(); // Запускаем старую логику
-            
-            const incomeModal = document.getElementById('income-modal');
-            if (incomeModal && incomeModal.style.display !== 'none') {
-                const quaggaContainer = document.getElementById('quagga-scanner-container');
-                const scannerContainer = document.getElementById('scanner-container');
-                
-                if (quaggaContainer) {
-                    if (quaggaContainer.parentNode !== document.body) document.body.appendChild(quaggaContainer);
-                    // ПРИНУДИТЕЛЬНО ПОКАЗЫВАЕМ КАМЕРУ
-                    quaggaContainer.style.display = 'flex'; 
-                    quaggaContainer.style.zIndex = '999999';
-                }
-                if (scannerContainer) {
-                    if (scannerContainer.parentNode !== document.body) document.body.appendChild(scannerContainer);
-                    scannerContainer.style.display = 'block'; 
-                    scannerContainer.style.zIndex = '999999';
-                }
-            }
-        };
-    }
+// 1. Своя функция вызова клавиатуры
+window.setNtActive = function(el, event) {
+    if (event) event.stopPropagation();
 
-    // 3. Перехватываем результат сканирования
-    const originalHandleQuagga = window.handleQuaggaDetection;
-    if (originalHandleQuagga) {
-        window.handleQuaggaDetection = function(result) {
-            originalHandleQuagga(result);
-            syncBarcodeToNewModal();
-        };
-    }
+    // Снимаем подсветку со всех полей и ставим на текущее
+    document.querySelectorAll('.qe-active-input').forEach(input => input.classList.remove('qe-active-input'));
+    window.currentQeInput = el; 
+    el.classList.add('qe-active-input'); // Класс нужен для работы старой логики набора цифр
+    
+    setTimeout(() => { el.setSelectionRange(0, el.value.length); }, 10);
+    window.qeNeedsClear = true;
 
-    const originalCapture = window.captureAndDecode;
-    if (originalCapture) {
-        window.captureAndDecode = async function() {
-            await originalCapture();
-            syncBarcodeToNewModal();
-        };
-    }
+    // Вызываем клаву только на смартфонах/планшетах
+    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+    const numpad = document.getElementById('custom-numpad');
+    const incomeModal = document.getElementById('income-modal');
 
-    function syncBarcodeToNewModal() {
-        const incomeModal = document.getElementById('income-modal');
-        const qeBarcode = document.getElementById('qe-barcode');
-        const ntBarcode = document.getElementById('nt-barcode');
+    if (numpad && incomeModal && isTouchDevice) {
+        // Жестко переносим клавиатуру внутрь нашей новой модалки
+        if (numpad.parentNode !== incomeModal) {
+            incomeModal.appendChild(numpad);
+        }
         
-        if (incomeModal && incomeModal.style.display !== 'none' && qeBarcode && ntBarcode) {
-            if (qeBarcode.value) {
-                ntBarcode.value = qeBarcode.value;
-                ntBarcode.dispatchEvent(new Event('input'));
-                ntBarcode.dispatchEvent(new Event('change'));
-            }
+        // Железобетонные стили, чтобы она 100% отобразилась поверх всего
+        numpad.style.position = 'absolute';
+        numpad.style.bottom = '0';
+        numpad.style.left = '0';
+        numpad.style.width = '100%';
+        numpad.style.zIndex = '999999';
+        numpad.style.display = 'grid';
+    }
+};
+
+// 2. Своя функция вызова сканера
+window.startNtScanner = function() {
+    const container = document.getElementById('quagga-scanner-container');
+    const target = document.getElementById('quagga-video-target');
+    const incomeModal = document.getElementById('income-modal');
+    
+    if (!container || !target || !incomeModal) return;
+    
+    // Переносим камеру внутрь новой модалки
+    if (container.parentNode !== incomeModal) {
+        incomeModal.appendChild(container);
+    }
+    
+    // Задаем стили окна сканера напрямую, чтобы он не пропал
+    container.style.position = 'absolute';
+    container.style.top = '10%';
+    container.style.left = '50%';
+    container.style.transform = 'translateX(-50%)';
+    container.style.width = '90%';
+    container.style.maxWidth = '400px';
+    container.style.zIndex = '999999';
+    container.style.background = '#000';
+    container.style.borderRadius = '8px';
+    container.style.overflow = 'hidden';
+
+    // Закрываем, если уже открыто
+    if (container.style.display === 'block') {
+        window.stopNtScanner();
+        return;
+    }
+    
+    container.style.display = 'block';
+
+    // Инициализация ядра Quagga
+    Quagga.init({
+        inputStream: {
+            name: "Live",
+            type: "LiveStream",
+            target: target,
+            constraints: { facingMode: "environment" } // Задняя камера
+        },
+        decoder: { 
+            readers: ["ean_reader", "ean_8_reader", "upc_reader", "upc_e_reader", "code_128_reader"] 
+        }
+    }, function(err) {
+        if (err) {
+            console.error("Ошибка камеры:", err);
+            window.stopNtScanner();
+            return;
+        }
+        const videoEl = target.querySelector('video');
+        if (videoEl) {
+            videoEl.style.width = '100%';
+            videoEl.style.height = '100%';
+            videoEl.style.objectFit = 'cover';
+        }
+        Quagga.start();
+    });
+
+    Quagga.onDetected(window.handleNtQuaggaDetection);
+};
+
+// 3. Свой перехватчик результата сканирования
+window.handleNtQuaggaDetection = function(result) {
+    if (!result || !result.codeResult || !result.codeResult.code) return;
+    const code = result.codeResult.code;
+    
+    if (code && code.length >= 3) {
+        const barcodeInput = document.getElementById('nt-barcode'); // Шлем сразу в наше поле!
+        if (barcodeInput) {
+            barcodeInput.value = code;
+            barcodeInput.dispatchEvent(new Event('input'));
+            barcodeInput.dispatchEvent(new Event('change'));
+            
+            window.stopNtScanner();
+            barcodeInput.blur();
         }
     }
-})();
+};
+
+// 4. Остановка камеры
+window.stopNtScanner = function() {
+    const container = document.getElementById('quagga-scanner-container');
+    try {
+        Quagga.stop();
+        Quagga.offDetected(window.handleNtQuaggaDetection);
+    } catch (e) {}
+    if (container) container.style.display = 'none';
+};

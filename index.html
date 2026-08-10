@@ -468,8 +468,8 @@
                 
                 <!-- Штрихкод и сканер -->
                 <div style="display: flex; gap: 10px; margin-bottom: 12px;">
-                    <input type="text" id="nt-barcode" placeholder="Штрихкод..." data-i18n-placeholder="ph_barcode" onclick="window.setQeActive(this, event)" inputmode="none" style="flex: 1; font-size: 15px; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 14px; border-radius: 4px; box-sizing: border-box;">
-                    <button onclick="window.startQuaggaScanner()" style="background: var(--bg-overlay); border: 1px dashed var(--border-main); padding: 0 15px; border-radius: 4px; color: var(--text-muted); cursor: pointer; font-size: 16px;">📷</button>
+                    <input type="text" id="nt-barcode" placeholder="Штрихкод..." data-i18n-placeholder="ph_barcode" onclick="window.setNtActive(this, event)" inputmode="none" style="flex: 1; font-size: 15px; background: transparent; border: 1px dashed var(--border-main); color: var(--text-main); padding: 14px; border-radius: 4px; box-sizing: border-box;">
+                    <button onclick="window.startNtScanner()" style="background: var(--bg-overlay); border: 1px dashed var(--border-main); padding: 0 15px; border-radius: 4px; color: var(--text-muted); cursor: pointer; font-size: 16px;">📷</button>
                 </div>
 
                 <!-- Наименование -->
@@ -499,15 +499,15 @@
                 <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                     <div style="flex: 1; text-align: center;">
                         <div style="color: var(--text-muted); font-size: 13px; margin-bottom: 5px;" data-i18n="nt_qty">Количество</div>
-                        <input type="text" id="nt-qty" value="0" onclick="window.setQeActive(this, event)" inputmode="none" style="width: 100%; font-size: 15px; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 12px; border-radius: 4px; text-align: center; box-sizing: border-box;">
+                        <input type="text" id="nt-qty" value="0" onclick="window.setNtActive(this, event)" inputmode="none" style="width: 100%; font-size: 15px; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 12px; border-radius: 4px; text-align: center; box-sizing: border-box;">
                     </div>
                     <div style="flex: 1; text-align: center;">
                         <div style="color: var(--text-muted); font-size: 13px; margin-bottom: 5px;" data-i18n="nt_price_in">Цена закупа</div>
-                        <input type="text" id="nt-price-in" value="0" onclick="window.setQeActive(this, event)" inputmode="none" style="width: 100%; font-size: 15px; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 12px; border-radius: 4px; text-align: center; box-sizing: border-box;">
+                        <input type="text" id="nt-price-in" value="0" onclick="window.setNtActive(this, event)" inputmode="none" style="width: 100%; font-size: 15px; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 12px; border-radius: 4px; text-align: center; box-sizing: border-box;">
                     </div>
                     <div style="flex: 1; text-align: center;">
                         <div style="color: var(--text-muted); font-size: 13px; margin-bottom: 5px;" data-i18n="nt_price_out">Розница</div>
-                        <input type="text" id="nt-price-out" value="0" onclick="window.setQeActive(this, event)"inputmode="none" style="width: 100%; font-size: 15px; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 12px; border-radius: 4px; text-align: center; box-sizing: border-box;">
+                        <input type="text" id="nt-price-out" value="0" onclick="window.setNtActive(this, event)"inputmode="none" style="width: 100%; font-size: 15px; background: var(--bg-body); border: 1px solid var(--border-light); color: var(--text-main); padding: 12px; border-radius: 4px; text-align: center; box-sizing: border-box;">
                     </div>
                 </div>
 
