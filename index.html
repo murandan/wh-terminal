@@ -382,8 +382,8 @@
 
             <!-- ПЕРЕКЛЮЧАТЕЛЬ ВКЛАДОК -->
             <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-shrink: 0;">
-                <button style="flex: 1; padding: 12px; font-weight: bold; background: transparent; color: var(--text-muted); border: 1px solid var(--border-light); border-radius: 4px; cursor: pointer;">ИМПОРТ EXCEL</button>
-                <button style="flex: 1; padding: 12px; font-weight: bold; background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); border-radius: 4px; cursor: default;">НОВЫЙ ТОВАР</button>
+                <button id="tab-btn-import" onclick="switchIncomeTab('import')" style="flex: 1; padding: 14px; font-size: 14px; background: var(--bg-overlay); color: var(--text-main); border: 1px solid var(--border-light); border-radius: 6px; font-weight: bold; cursor: pointer;" data-i18n="tab_import">ИМПОРТ EXCEL</button>
+                <button id="tab-btn-new" onclick="switchIncomeTab('new')" style="flex: 1; padding: 14px; font-size: 14px; background: transparent; color: var(--text-muted); border: 1px solid var(--border-main); border-radius: 6px; font-weight: bold; cursor: pointer;" data-i18n="tab_new">НОВЫЙ ТОВАР</button>
             </div>
 
             <!-- ВКЛАДКА 1: ОРИГИНАЛЬНЫЙ ИМПОРТ -->
