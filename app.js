@@ -4367,40 +4367,45 @@ window.filterFullscreenSuppliers = function() {
     }).join('');
 };
 
+// Функция срабатывает при выборе поставщика из полноэкранного списка
 window.selectFullscreenSupplier = function(val, isAddingNew) {
+    // Очистка и проверка входящего значения
     val = val ? val.trim() : '';
     if (!val) return;
 
-    // 1. Всегда отправляем значение в главное окно кассы
-    const targetInput = document.getElementById('qe-supplier-input');
-    if (targetInput) {
-        targetInput.value = val;
-        targetInput.dispatchEvent(new Event('input'));
-        targetInput.dispatchEvent(new Event('change'));
+    // 1. Ищем оба целевых поля и саму новую модалку
+    const qeInput = document.getElementById('qe-supplier-input');
+    const ntInput = document.getElementById('nt-supplier-input');
+    const incomeModal = document.getElementById('income-modal');
+
+    // 2. УМНАЯ МАРШРУТИЗАЦИЯ
+    // Если новая модалка "Приемка товара" существует и сейчас открыта на экране
+    if (incomeModal && incomeModal.style.display !== 'none' && ntInput) {
+        ntInput.value = val;
+        ntInput.dispatchEvent(new Event('input'));
+        ntInput.dispatchEvent(new Event('change'));
+    } 
+    // В противном случае работаем по старой логике для окна "Распределение товара"
+    else if (qeInput) {
+        qeInput.value = val;
+        qeInput.dispatchEvent(new Event('input'));
+        qeInput.dispatchEvent(new Event('change'));
     }
 
+    // 3. Дополнительная логика (очистка поиска и обновление списка)
     const searchInput = document.getElementById('fullscreen-supplier-search');
+    if (searchInput) searchInput.value = '';
 
-    if (isAddingNew === true) {
-        // НАЖАТИЕ НА КНОПКУ ПОДТВЕРЖДЕНИЯ: 
-        // Очищаем поиск и закрываем окно
-        if (searchInput) searchInput.value = '';
-        
-        if (typeof window.closeFullscreenSupplier === 'function') {
-            window.closeFullscreenSupplier();
-        } else {
-            const modal = document.getElementById('supplier-fullscreen-modal');
-            if (modal) modal.style.display = 'none';
-        }
-    } else {
-        // КЛИК ПО СПИСКУ: 
-        // Подставляем текст в строку поиска
-        if (searchInput) searchInput.value = val;
-        
-        // Перерисовываем интерфейс (и так как текст есть, кнопка подтверждения сразу появится!)
+    // Перерисовка списка для сброса фильтров
+    if (typeof window.filterFullscreenSuppliers === 'function') {
         window.filterFullscreenSuppliers();
     }
+    
+    // ВАЖНО: Если ты хочешь, чтобы окно поставщиков автоматически 
+    // закрывалось после клика, раскомментируй строку ниже:
+    // if (typeof window.closeFullscreenSupplier === 'function') window.closeFullscreenSupplier();
 };
+
 // --- ДИНАМИЧЕСКОЕ ФОРМАТИРОВАНИЕ ТЫСЯЧ ПРИ ВВОДЕ С ПК ---
 document.addEventListener('input', function(e) {
     // Проверяем, что ввод происходит именно в наших числовых полях
