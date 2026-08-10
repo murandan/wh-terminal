@@ -4645,37 +4645,6 @@ window.selectFullscreenSupplier = function(val, isAddingNew) {
 // ==========================================
 
 // 1. Своя функция вызова клавиатуры
-window.setNtActive = function(el, event) {
-    if (event) event.stopPropagation();
-    
-    // Отчет 1
-    alert("Шаг 1: Клик прошел, функция запустилась!");
-
-    window.currentQeInput = el; 
-    el.classList.add('qe-active-input');
-
-    const numpad = document.getElementById('custom-numpad');
-    
-    // Отчет 2
-    if (!numpad) {
-        alert("Шаг 2: ОШИБКА! Элемент custom-numpad не найден в коде страницы.");
-        return;
-    } else {
-        alert("Шаг 2: Клавиатура найдена!");
-    }
-
-    // Вытаскиваем клаву в корень сайта и жестко фиксируем поверх всего
-    document.body.appendChild(numpad);
-    numpad.style.position = 'fixed'; // Заменил absolute на fixed
-    numpad.style.bottom = '0';
-    numpad.style.left = '0';
-    numpad.style.width = '100%';
-    numpad.style.zIndex = '9999999';
-    numpad.style.display = 'grid';
-
-    // Отчет 3
-    alert("Шаг 3: Команда на показ отправлена. Если клавы не видно — её блокируют CSS-стили.");
-};
 
 // 2. Своя функция вызова сканера
 window.startNtScanner = function() {
@@ -4764,5 +4733,109 @@ window.stopNtScanner = function() {
         Quagga.stop();
         Quagga.offDetected(window.handleNtQuaggaDetection);
     } catch (e) {}
+    if (container) container.style.display = 'none';
+};
+
+// ==========================================
+// НЕЗАВИСИМЫЕ МОДУЛИ ДЛЯ ОКНА "НОВЫЙ ТОВАР"
+// ==========================================
+
+// 1. Вызов встроенной клавиатуры
+window.setNtActive = function(el, event) {
+    if (event) event.stopPropagation();
+
+    // Снимаем подсветку со всех полей и ставим на текущее
+    document.querySelectorAll('.qe-active-input').forEach(input => input.classList.remove('qe-active-input'));
+    window.currentQeInput = el; // Привязываем родную функцию qeNumpad к нашему полю
+    el.classList.add('qe-active-input'); 
+    
+    setTimeout(() => { el.setSelectionRange(0, el.value.length); }, 10);
+    window.qeNeedsClear = true;
+
+    // Вызываем нашу встроенную клаву
+    const numpad = document.getElementById('nt-custom-numpad');
+    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+    
+    if (numpad && isTouchDevice) {
+        numpad.style.display = 'grid';
+    }
+};
+
+// 2. Вызов встроенного сканера
+window.startNtScanner = function() {
+    const container = document.getElementById('nt-scanner-container');
+    const target = document.getElementById('nt-video-target');
+    
+    if (!container || !target) return;
+    
+    // Скрываем, если открыт
+    if (container.style.display === 'block') {
+        window.stopNtScanner();
+        return;
+    }
+    
+    container.style.display = 'block';
+
+    Quagga.init({
+        inputStream: {
+            name: "Live",
+            type: "LiveStream",
+            target: target,
+            constraints: { 
+                // Убираем жесткое требование задней камеры, чтобы работало везде!
+                facingMode: "environment" 
+            }
+        },
+        decoder: { 
+            readers: ["ean_reader", "ean_8_reader", "upc_reader", "upc_e_reader", "code_128_reader"] 
+        }
+    }, function(err) {
+        if (err) {
+            console.error("Ошибка камеры:", err);
+            alert("Не удалось запустить камеру. Проверьте разрешения.");
+            window.stopNtScanner();
+            return;
+        }
+        
+        const videoEl = target.querySelector('video');
+        if (videoEl) {
+            videoEl.style.width = '100%';
+            videoEl.style.height = '100%';
+            videoEl.style.objectFit = 'cover';
+        }
+        Quagga.start();
+    });
+
+    Quagga.onDetected(window.handleNtQuaggaDetection);
+};
+
+// 3. Обработка штрихкода
+window.handleNtQuaggaDetection = function(result) {
+    if (!result || !result.codeResult || !result.codeResult.code) return;
+    const code = result.codeResult.code;
+    
+    if (code && code.length >= 3) {
+        const barcodeInput = document.getElementById('nt-barcode');
+        if (barcodeInput) {
+            barcodeInput.value = code;
+            barcodeInput.dispatchEvent(new Event('input'));
+            barcodeInput.dispatchEvent(new Event('change'));
+            
+            window.stopNtScanner();
+        }
+    }
+};
+
+// 4. Остановка камеры
+window.stopNtScanner = function() {
+    const container = document.getElementById('nt-scanner-container');
+    const target = document.getElementById('nt-video-target');
+    
+    try {
+        Quagga.stop();
+        Quagga.offDetected(window.handleNtQuaggaDetection);
+    } catch (e) {}
+    
+    if (target) target.innerHTML = '';
     if (container) container.style.display = 'none';
 };

@@ -511,6 +511,28 @@
                     </div>
                 </div>
 
+                <!-- Встроенный сканер для новой вкладки -->
+                <div id="nt-scanner-container" style="display: none; width: 100%; margin-bottom: 15px; border-radius: 8px; overflow: hidden; background: #000; position: relative; border: 1px solid var(--border-main);">
+                    <div id="nt-video-target" style="width: 100%; min-height: 250px;"></div>
+                    <button onclick="window.stopNtScanner()" style="position: absolute; top: 10px; right: 10px; background: var(--bg-danger); color: #fff; border: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; z-index: 10;">Закрыть ✖</button>
+                </div>
+
+                <!-- Встроенная клавиатура для новой вкладки -->
+                <div id="nt-custom-numpad" style="display: none; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-bottom: 15px;">
+                    <button type="button" class="np-btn" onclick="window.qeNumpad('1', event)">1</button>
+                    <button type="button" class="np-btn" onclick="window.qeNumpad('2', event)">2</button>
+                    <button type="button" class="np-btn" onclick="window.qeNumpad('3', event)">3</button>
+                    <button type="button" class="np-btn" onclick="window.qeNumpad('4', event)">4</button>
+                    <button type="button" class="np-btn" onclick="window.qeNumpad('5', event)">5</button>
+                    <button type="button" class="np-btn" onclick="window.qeNumpad('6', event)">6</button>
+                    <button type="button" class="np-btn" onclick="window.qeNumpad('7', event)">7</button>
+                    <button type="button" class="np-btn" onclick="window.qeNumpad('8', event)">8</button>
+                    <button type="button" class="np-btn" onclick="window.qeNumpad('9', event)">9</button>
+                    <button type="button" class="np-btn np-btn-action" onclick="window.qeNumpad('C', event)">C</button>
+                    <button type="button" class="np-btn" onclick="window.qeNumpad('0', event)">0</button>
+                    <button type="button" class="np-btn np-btn-action" onclick="window.qeNumpad('DEL', event)">⌫</button>
+                </div>
+
                 <!-- Кнопка сохранения -->
                 <button id="saveNewProductBtn" onclick="saveNewProduct()" style="background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); padding: 15px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px;" data-i18n="income_confirm">
                     ✅ ОПРИХОДОВАТЬ НА СКЛАД
