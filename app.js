@@ -677,8 +677,8 @@ window.openQuickEditModal = function(id) {
                     <div style="margin-bottom: 10px;">
                         <label data-i18n="qe_barcode" style="display: block; font-size: 10px; margin-bottom: 2px;">${t('qe_barcode')}</label>
                         <div style="display: flex; margin-bottom: 8px;">
-                            <input type="text" id="qe-barcode" value="${item.barcode || ''}" placeholder="${t('qe_barcode_placeholder')}" inputmode="numeric" maxlength="13" onfocus="this.select()" onclick="this.select()" oninput="window.formatNtInput(this)" style="flex: 1; border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: none; background: var(--bg-card); border-top: 1px solid var(--border-main); border-bottom: 1px solid var(--border-main); border-left: 1px solid var(--border-main); color: var(--text-main); padding: 12px; font-size: 15px; box-sizing: border-box; transition: all 0.2s ease;">
-                            <button type="button" onclick="window.startQuaggaScanner()" style="padding: 0 15px; border: 1px solid var(--border-main); background: var(--bg-overlay); border-top-right-radius: 4px; border-bottom-right-radius: 4px; color: var(--text-main); font-size: 18px; cursor: pointer; transition: all 0.2s ease;">📷</button>
+                            <input type="text" id="qe-barcode" value="${item.barcode || ''}" placeholder="${t('qe_barcode_placeholder')}" inputmode="none" readonly onclick="window.setQeActive(this)" style="flex: 1; border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: none;">
+                            <button type="button" onclick="window.startQuaggaScanner()" style="padding: 0 15px; border: 1px solid rgba(128,128,128,0.3); background: rgba(128,128,128,0.1); border-top-right-radius: 4px; border-bottom-right-radius: 4px; color: inherit; font-size: 18px; cursor: pointer;">📷</button>
                         </div>
                         
                         <div id="quagga-scanner-container" style="display: none; position: relative; width: 100%; height: 180px; background: #000; border-radius: 4px; overflow: hidden; border: 1px solid #444;">
@@ -803,8 +803,6 @@ window.openQuickEditModal = function(id) {
             mainSupplierInput.placeholder = translations[currentLang].modal_choose_supplier;
         }
     } catch(e) {}
-    // 📌 НАШ КОД: Запускаем проверку цвета штрихкода при открытии
-    window.formatNtInput(document.getElementById('qe-barcode'));
 };
 
 // Открывает/закрывает наш кастомный список
@@ -3704,30 +3702,21 @@ function qeAddDigit(digit, e) {
     if (e) e.preventDefault();
     if (activeQeFieldId === 'qe-title') return;
     const input = document.getElementById(activeQeFieldId);
-    if (input) {
-        input.value += digit;
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-    }
+    if (input) input.value += digit;
 }
 
 function qeDelDigit(e) {
     if (e) e.preventDefault();
     if (activeQeFieldId === 'qe-title') return;
     const input = document.getElementById(activeQeFieldId);
-    if (input && input.value.length > 0) {
-        input.value = input.value.slice(0, -1);
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-    }
+    if (input && input.value.length > 0) input.value = input.value.slice(0, -1);
 }
 
 function qeClearField(e) {
     if (e) e.preventDefault();
     if (activeQeFieldId === 'qe-title') return;
     const input = document.getElementById(activeQeFieldId);
-    if (input) {
-        input.value = '';
-        input.dispatchEvent(new Event('input', { bubbles: true }));
-    }
+    if (input) input.value = '';
 }
 
 function initQeNumpad() {
@@ -5009,27 +4998,36 @@ window.stopNtScanner = function() {
 };
 // Фильтр и форматирование полей "Нового товара"
 window.formatNtInput = function(el) {
-    if (!el) return;
-    
-    // Оставляем только цифры
-    let val = el.value.replace(/\D/g, ''); 
-    
-    // Программный ограничитель на 13 символов (страховка для быстрых сканеров)
-    if (val.length > 13) {
-        val = val.slice(0, 13);
-        el.value = val;
-    }
-    
-    // Включаем светофор
-    if (el.id === 'nt-barcode' || el.id === 'qe-barcode') {
-        if (val.length === 8 || val.length === 13) {
-            // Принудительно ставим зеленый цвет (пробиваем !important светлой темы)
-            el.style.setProperty('border-color', 'var(--accent-green, #4CAF50)', 'important');
-            el.style.setProperty('background-color', 'var(--bg-success-dim, rgba(76, 175, 80, 0.15))', 'important');
+    let val = el.value.toString();
+
+    if (el.id === 'nt-barcode') {
+        let clean = val.replace(/[^a-zA-Z0-9]/g, '').substring(0, 13);
+        el.value = clean;
+
+        // Адаптивные цвета под светлую/темную тему
+        if (clean.length > 0 && clean.length < 8) {
+            el.style.backgroundColor = 'var(--bg-warning-dim, rgba(255, 193, 7, 0.15))'; 
+            el.style.borderColor = 'var(--accent-warning, #ffc107)';
+        } else if (clean.length === 8) {
+            el.style.backgroundColor = 'var(--bg-success-dim, rgba(76, 175, 80, 0.15))'; 
+            el.style.borderColor = 'var(--accent-green, #4CAF50)';
+        } else if (clean.length > 8 && clean.length < 13) {
+            el.style.backgroundColor = 'var(--bg-warning-dim, rgba(255, 193, 7, 0.15))'; 
+            el.style.borderColor = 'var(--accent-warning, #ffc107)';
+        } else if (clean.length === 13) {
+            el.style.backgroundColor = 'var(--bg-success-dim, rgba(76, 175, 80, 0.15))'; 
+            el.style.borderColor = 'var(--accent-green, #4CAF50)';
         } else {
-            // Принудительно возвращаем базовый цвет
-            el.style.setProperty('border-color', 'var(--border-main, #ccc)', 'important');
-            el.style.setProperty('background-color', 'var(--bg-card, #fff)', 'important');
+            el.style.backgroundColor = 'transparent'; 
+            el.style.borderColor = 'var(--border-main)'; 
+        }
+
+    } else if (el.id === 'nt-qty' || el.id === 'nt-price-in' || el.id === 'nt-price-out') {
+        let num = val.replace(/\D/g, '');
+        if (num !== '') {
+            el.value = Number(num).toLocaleString('ru-RU').replace(/,/g, ' ');
+        } else {
+            el.value = '';
         }
     }
 };
