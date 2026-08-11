@@ -516,3 +516,17 @@ body.light-theme #fullscreen-supplier-list {
     position: relative !important;
     z-index: 9999 !important; 
 }
+/* Отключаем задержку и зум для всего окна быстрого редактирования */
+#qe-receive-block,
+#custom-numpad {
+    touch-action: manipulation !important;
+}
+/* ЖЕСТКАЯ БЛОКИРОВКА ЗУМА И ЗАДЕРЖЕК ДЛЯ iOS SAFARI */
+button, 
+.num-btn, 
+.numpad-btn, 
+.q-btn,
+#custom-numpad,
+#qe-receive-block {
+    touch-action: manipulation !important;
+}
