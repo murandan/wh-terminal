@@ -511,3 +511,8 @@ body.light-theme #fullscreen-supplier-modal > div:first-child {
 body.light-theme #fullscreen-supplier-list {
     background-color: transparent !important;
 }
+/* ИСПРАВЛЕНИЕ: ВЫВОДИМ КАСТОМНУЮ КЛАВИАТУРУ ПОВЕРХ ВСЕХ ОКОН (ИСПРАВЛЕНИЕ ЗАВИСАНИЯ iOS) */
+#custom-numpad {
+    position: relative !important;
+    z-index: 9999 !important; 
+}
