@@ -3705,9 +3705,11 @@ function qeAddDigit(digit, e) {
     if (activeQeFieldId === 'qe-title') return;
     const input = document.getElementById(activeQeFieldId);
     if (input) input.value += digit;
-    // Запускаем проверку цвета для активного поля штрихкода
-    const activeField = document.getElementById(activeQeFieldId);
-    if (activeField) window.formatNtInput(activeField);
+    // Железобетонное обновление цвета штрихкода при любом вводе
+    const qeBarcodeField = document.getElementById('qe-barcode');
+    if (qeBarcodeField) {
+        window.formatNtInput(qeBarcodeField);
+    }
 }
 
 function qeDelDigit(e) {
@@ -3715,9 +3717,11 @@ function qeDelDigit(e) {
     if (activeQeFieldId === 'qe-title') return;
     const input = document.getElementById(activeQeFieldId);
     if (input && input.value.length > 0) input.value = input.value.slice(0, -1);
-    // Запускаем проверку цвета для активного поля штрихкода
-    const activeField = document.getElementById(activeQeFieldId);
-    if (activeField) window.formatNtInput(activeField);
+    // Железобетонное обновление цвета штрихкода при любом вводе
+    const qeBarcodeField = document.getElementById('qe-barcode');
+    if (qeBarcodeField) {
+        window.formatNtInput(qeBarcodeField);
+    }
 }
 
 function qeClearField(e) {
@@ -3725,9 +3729,11 @@ function qeClearField(e) {
     if (activeQeFieldId === 'qe-title') return;
     const input = document.getElementById(activeQeFieldId);
     if (input) input.value = '';
-    // Запускаем проверку цвета для активного поля штрихкода
-    const activeField = document.getElementById(activeQeFieldId);
-    if (activeField) window.formatNtInput(activeField);
+    // Железобетонное обновление цвета штрихкода при любом вводе
+    const qeBarcodeField = document.getElementById('qe-barcode');
+    if (qeBarcodeField) {
+        window.formatNtInput(qeBarcodeField);
+    }
 }
 
 function initQeNumpad() {
