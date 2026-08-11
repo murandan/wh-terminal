@@ -3704,21 +3704,30 @@ function qeAddDigit(digit, e) {
     if (e) e.preventDefault();
     if (activeQeFieldId === 'qe-title') return;
     const input = document.getElementById(activeQeFieldId);
-    if (input) input.value += digit;
+    if (input) {
+        input.value += digit;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
 }
 
 function qeDelDigit(e) {
     if (e) e.preventDefault();
     if (activeQeFieldId === 'qe-title') return;
     const input = document.getElementById(activeQeFieldId);
-    if (input && input.value.length > 0) input.value = input.value.slice(0, -1);
+    if (input && input.value.length > 0) {
+        input.value = input.value.slice(0, -1);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
 }
 
 function qeClearField(e) {
     if (e) e.preventDefault();
     if (activeQeFieldId === 'qe-title') return;
     const input = document.getElementById(activeQeFieldId);
-    if (input) input.value = '';
+    if (input) {
+        input.value = '';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
 }
 
 function initQeNumpad() {
