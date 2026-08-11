@@ -677,8 +677,7 @@ window.openQuickEditModal = function(id) {
                     <div style="margin-bottom: 10px;">
                         <label data-i18n="qe_barcode" style="display: block; font-size: 10px; margin-bottom: 2px;">${t('qe_barcode')}</label>
                         <div style="display: flex; margin-bottom: 8px;">
-                            <!-- Убрали readonly и onclick, добавили inputmode="numeric" и oninput -->
-                            <input type="text" id="qe-barcode" value="${item.barcode || ''}" placeholder="${t('qe_barcode_placeholder')}" inputmode="numeric" oninput="window.formatNtInput(this)" style="flex: 1; border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: none; background: var(--bg-card); border-top: 1px solid var(--border-main); border-bottom: 1px solid var(--border-main); border-left: 1px solid var(--border-main); color: var(--text-main); padding: 12px; font-size: 15px; box-sizing: border-box; transition: all 0.2s ease;">
+                            <input type="text" id="qe-barcode" value="${item.barcode || ''}" placeholder="${t('qe_barcode_placeholder')}" inputmode="numeric" maxlength="13" onfocus="this.select()" onclick="this.select()" oninput="window.formatNtInput(this)" style="flex: 1; border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: none; background: var(--bg-card); border-top: 1px solid var(--border-main); border-bottom: 1px solid var(--border-main); border-left: 1px solid var(--border-main); color: var(--text-main); padding: 12px; font-size: 15px; box-sizing: border-box; transition: all 0.2s ease;">
                             <button type="button" onclick="window.startQuaggaScanner()" style="padding: 0 15px; border: 1px solid var(--border-main); background: var(--bg-overlay); border-top-right-radius: 4px; border-bottom-right-radius: 4px; color: var(--text-main); font-size: 18px; cursor: pointer; transition: all 0.2s ease;">📷</button>
                         </div>
                         
@@ -804,6 +803,8 @@ window.openQuickEditModal = function(id) {
             mainSupplierInput.placeholder = translations[currentLang].modal_choose_supplier;
         }
     } catch(e) {}
+    // 📌 НАШ КОД: Запускаем проверку цвета штрихкода при открытии
+    window.formatNtInput(document.getElementById('qe-barcode'));
 };
 
 // Открывает/закрывает наш кастомный список
@@ -5001,19 +5002,25 @@ window.stopNtScanner = function() {
 window.formatNtInput = function(el) {
     if (!el) return;
     
-    // Оставляем только цифры (убивает любые пробелы и буквы)
-    const val = el.value.replace(/\D/g, ''); 
+    // Оставляем только цифры
+    let val = el.value.replace(/\D/g, ''); 
     
-    // Включаем светофор для нужных полей
+    // Программный ограничитель на 13 символов (страховка для быстрых сканеров)
+    if (val.length > 13) {
+        val = val.slice(0, 13);
+        el.value = val;
+    }
+    
+    // Включаем светофор
     if (el.id === 'nt-barcode' || el.id === 'qe-barcode') {
         if (val.length === 8 || val.length === 13) {
-            // Зеленый цвет для правильного штрихкода
-            el.style.borderColor = 'var(--accent-green, #4CAF50)';
-            el.style.backgroundColor = 'var(--bg-success-dim, rgba(76, 175, 80, 0.15))';
+            // Принудительно ставим зеленый цвет (пробиваем !important светлой темы)
+            el.style.setProperty('border-color', 'var(--accent-green, #4CAF50)', 'important');
+            el.style.setProperty('background-color', 'var(--bg-success-dim, rgba(76, 175, 80, 0.15))', 'important');
         } else {
-            // Базовый цвет карточки (поддерживает обе темы)
-            el.style.borderColor = 'var(--border-main)';
-            el.style.backgroundColor = 'var(--bg-card)'; 
+            // Принудительно возвращаем базовый цвет
+            el.style.setProperty('border-color', 'var(--border-main, #ccc)', 'important');
+            el.style.setProperty('background-color', 'var(--bg-card, #fff)', 'important');
         }
     }
 };
