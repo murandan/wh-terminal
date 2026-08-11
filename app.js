@@ -2190,15 +2190,29 @@ function handleItemClick(id, event) {
         }
 
         function updateQueueCounter() {
-            let queue = JSON.parse(localStorage.getItem('txQueue') || '[]');
+            // 1. Достаем обе очереди из локальной памяти
+            let txQueue = JSON.parse(localStorage.getItem('txQueue') || '[]');
+            let incomesQueue = JSON.parse(localStorage.getItem('incomes_offline_queue') || '[]');
+            
+            // 2. Считаем общее количество зависших операций
+            let totalPending = txQueue.length + incomesQueue.length;
+            
             const badge = document.getElementById('queue-counter');
             const settingsBtn = document.getElementById('btn-settings');
-            if (queue.length > 0) {
-                badge.innerText = queue.length; badge.style.display = 'inline-block';
-                settingsBtn.style.background = 'var(--bg-danger-dim)'; settingsBtn.style.borderColor = 'var(--accent-red)'; settingsBtn.style.color = 'var(--accent-red)';
+            
+            if (totalPending > 0) {
+                // Включаем индикатор, если есть хотя бы одна задача в любой из очередей
+                badge.innerText = totalPending; 
+                badge.style.display = 'inline-block';
+                settingsBtn.style.background = 'var(--bg-danger-dim)'; 
+                settingsBtn.style.borderColor = 'var(--accent-red)'; 
+                settingsBtn.style.color = 'var(--accent-red)';
             } else {
+                // Прячем индикатор, когда всё чисто
                 badge.style.display = 'none';
-                settingsBtn.style.background = 'var(--bg-panel)'; settingsBtn.style.borderColor = 'var(--border-light)'; settingsBtn.style.color = 'var(--text-main)';
+                settingsBtn.style.background = 'var(--bg-panel)'; 
+                settingsBtn.style.borderColor = 'var(--border-light)'; 
+                settingsBtn.style.color = 'var(--text-main)';
             }
         }
 
@@ -5102,6 +5116,8 @@ function saveIncomeToQueue(payload) {
     payload._timestamp = new Date().getTime(); 
     queue.push(payload);
     localStorage.setItem(INCOMES_QUEUE_KEY, JSON.stringify(queue));
+
+    if (typeof updateQueueCounter === 'function') updateQueueCounter();
     
     alert(`⚡ Нет интернета. Приход сохранен в локальную очередь (всего в ожидании: ${queue.length}).`);
 }
@@ -5109,6 +5125,8 @@ function saveIncomeToQueue(payload) {
 // 3. Очистить очередь (после успешной отправки на сервер)
 function clearIncomesQueue() {
     localStorage.removeItem(INCOMES_QUEUE_KEY);
+
+    if (typeof updateQueueCounter === 'function') updateQueueCounter();
 }
 
 // 4. ФОНОВАЯ СИНХРОНИЗАЦИЯ: Выгрузка при появлении сети
