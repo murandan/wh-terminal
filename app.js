@@ -1294,23 +1294,40 @@ window.saveQuickEdit = function(id) {
     // НОВАЯ СТРОКА ДЛЯ ОЧИСТКИ ХВОСТОВ:
     document.querySelectorAll('[data-tippy-root], .tippy-box, .dropdown-menu').forEach(t => t.remove());
 
-    // 6. Отправляем в Google Таблицу
-    fetch(GATEWAY_URL, {
-        method: 'POST',
-        body: JSON.stringify(payload),
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-    })
-    .then(res => res.json())
-    .then(response => {
-        if (response && response.error) {
-            alert('Ошибка сервера: ' + response.error);
+    // 6. Отправляем в Google Таблицу ИЛИ в офлайн-очередь
+    if (navigator.onLine) {
+        // ИНТЕРНЕТ ЕСТЬ: Стандартная отправка
+        fetch(GATEWAY_URL, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        })
+        .then(res => res.json())
+        .then(response => {
+            if (response && response.error) {
+                alert('Ошибка сервера: ' + response.error);
+            } else {
+                console.log('Успешно записано на сервер!');
+            }
+        })
+        .catch(err => {
+            alert('Ошибка связи с сервером: ' + err.message);
+        });
+    } else {
+        // ИНТЕРНЕТА НЕТ: Маршрутизация по типу операции
+        if (payload.action === "income") {
+            // Ветка приемки: безопасно складываем в локальную копилку
+            if (typeof saveIncomeToQueue === 'function') {
+                saveIncomeToQueue(payload);
+            } else {
+                alert("Ошибка: Функция офлайн-очереди не найдена!");
+            }
         } else {
-            console.log('Успешно записано в таблицу!');
+            // Ветка редактирования: жестко блокируем и предупреждаем
+            alert("❌ ВНИМАНИЕ: Нет интернета! Изменение карточки товара отменено. Дождитесь сети и повторите.");
         }
-    })
-    .catch(err => {
-        alert('Ошибка связи с сервером: ' + err.message);
-    });
+    }
+
     const numpad = document.getElementById('custom-numpad');
     if (numpad) numpad.style.display = 'none';
 };
@@ -5057,3 +5074,80 @@ if (!window.qeNumpadPatchedForNt) {
         window.qeNumpadPatchedForNt = true; // Защита от двойного перехвата
     }
 }
+
+/* =================================================================
+   📦 МОДУЛЬ ОФЛАЙН-ОЧЕРЕДИ (ПРИЕМКА ТОВАРА)
+   ================================================================= */
+const INCOMES_QUEUE_KEY = 'incomes_offline_queue';
+
+// 1. Получить текущую очередь
+function getIncomesQueue() {
+    try {
+        const queue = localStorage.getItem(INCOMES_QUEUE_KEY);
+        return queue ? JSON.parse(queue) : [];
+    } catch (e) {
+        console.error("Ошибка чтения очереди приходов:", e);
+        return [];
+    }
+}
+
+// 2. Добавить новый приход в очередь (когда нет сети)
+function saveIncomeToQueue(payload) {
+    const queue = getIncomesQueue();
+    payload._timestamp = new Date().getTime(); 
+    queue.push(payload);
+    localStorage.setItem(INCOMES_QUEUE_KEY, JSON.stringify(queue));
+    
+    alert(`⚡ Нет интернета. Приход сохранен в локальную очередь (всего в ожидании: ${queue.length}).`);
+}
+
+// 3. Очистить очередь (после успешной отправки на сервер)
+function clearIncomesQueue() {
+    localStorage.removeItem(INCOMES_QUEUE_KEY);
+}
+
+// 4. ФОНОВАЯ СИНХРОНИЗАЦИЯ: Выгрузка при появлении сети
+async function syncIncomesQueue() {
+    if (!navigator.onLine) return;
+    
+    let queue = getIncomesQueue();
+    if (queue.length === 0) return;
+
+    console.log(`🔄 Восстановлена связь. Начинаем отправку офлайн-приходов (${queue.length} шт.)...`);
+    let remainingQueue = [];
+
+    for (let i = 0; i < queue.length; i++) {
+        let payload = queue[i];
+        
+        try {
+            let res = await fetch(GATEWAY_URL, {
+                method: 'POST',
+                body: JSON.stringify(payload),
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            });
+            
+            let result = await res.json();
+            
+            if (result && result.error) {
+                console.error("❌ Сервер отклонил офлайн-приход:", result.error);
+            } else {
+                console.log(`✅ Офлайн-приход успешно отправлен!`);
+            }
+        } catch (err) {
+            console.warn("⚠️ Интернет снова пропал во время отправки:", err);
+            remainingQueue.push(payload); 
+        }
+    }
+
+    if (remainingQueue.length > 0) {
+        localStorage.setItem(INCOMES_QUEUE_KEY, JSON.stringify(remainingQueue));
+    } else {
+        clearIncomesQueue();
+        alert("✅ Все отложенные офлайн-приходы успешно выгружены на сервер!");
+    }
+}
+
+// 5. ТРИГГЕРЫ: Запуск синхронизации автоматически
+window.addEventListener('online', syncIncomesQueue);
+document.addEventListener('DOMContentLoaded', syncIncomesQueue);
+/* ================================================================= */
