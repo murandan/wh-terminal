@@ -2920,29 +2920,34 @@ function setReportView(view) {
                 if (header) header.classList.remove('active');
             }
             // 4. Кнопка "Внести приход" (Связываем с главной функцией сохранения)
-            if (event.target && event.target.closest('#btn-submit-receive')) {
-                event.preventDefault();
-                
-                let itemId = null;
-                // Ищем обычную кнопку "Сохранить" по ее уникальному атрибуту
-                const mainSaveBtn = document.querySelector('[data-i18n="qe_save"]');
-                
-                if (mainSaveBtn && mainSaveBtn.getAttribute('onclick')) {
-                    // Вытаскиваем цифры из строки вида window.saveQuickEdit('7')
-                    const match = mainSaveBtn.getAttribute('onclick').match(/saveQuickEdit\(['"]?(\d+)['"]?\)/);
-                    if (match) {
-                        itemId = match[1];
+                if (event.target && event.target.closest('#btn-submit-receive')) {
+                    event.preventDefault();
+                    
+                    let itemId = null;
+                    
+                    // Ищем ВСЕ кнопки "Сохранить", так как из-за адаптива их может быть несколько (скрытые и видимые)
+                    const saveBtns = document.querySelectorAll('[data-i18n="qe_save"]');
+                    
+                    for (let btn of saveBtns) {
+                        const onclickText = btn.getAttribute('onclick');
+                        if (onclickText) {
+                            // Улучшенная регулярка: ищет любые символы (цифры/буквы) внутри скобок и игнорирует пустые saveQuickEdit()
+                            const match = onclickText.match(/saveQuickEdit\(\s*['"]?([^'"\)]+)['"]?\s*\)/);
+                            if (match && match[1]) {
+                                itemId = match[1];
+                                break; // Как только нашли валидный ID, останавливаем поиск!
+                            }
+                        }
                     }
-                }
 
-                if (typeof window.saveQuickEdit === 'function') {
-                    if (itemId) {
-                        window.saveQuickEdit(itemId); // Запускаем сохранение с найденным ID
-                    } else {
-                        alert('Ошибка: Не удалось найти ID товара для оформления прихода!');
+                    if (typeof window.saveQuickEdit === 'function') {
+                        if (itemId) {
+                            window.saveQuickEdit(itemId); // Запускаем сохранение с найденным ID
+                        } else {
+                            alert('Ошибка: Не удалось найти ID товара для оформления прихода!');
+                        }
                     }
                 }
-            }
         });
 
         function updateFileNameCompactUI(input) {
