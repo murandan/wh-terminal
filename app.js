@@ -5119,7 +5119,7 @@ function saveIncomeToQueue(payload) {
 
     if (typeof updateQueueCounter === 'function') updateQueueCounter();
     
-    alert(`⚡ Нет интернета. Приход сохранен в локальную очередь (всего в ожидании: ${queue.length}).`);
+    // alert(`⚡ Нет интернета. Приход сохранен в локальную очередь (всего в ожидании: ${queue.length}).`);
 }
 
 // 3. Очистить очередь (после успешной отправки на сервер)
@@ -5168,6 +5168,9 @@ async function syncIncomesQueue() {
         clearIncomesQueue();
         alert("✅ Все отложенные офлайн-приходы успешно выгружены на сервер!");
     }
+    
+    // КРИТИЧНОЕ ДОБАВЛЕНИЕ: Заставляем шестеренку пересчитать остатки после синхронизации
+    if (typeof updateQueueCounter === 'function') updateQueueCounter();
 }
 
 // 5. ТРИГГЕРЫ: Запуск синхронизации автоматически
