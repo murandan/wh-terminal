@@ -4436,64 +4436,58 @@ if (window.visualViewport) {
     window.visualViewport.addEventListener("scroll", scheduleUpdate);
 }
 
+// ==========================================
+// 1. ОТКРЫТИЕ ОКНА ПОСТАВЩИКОВ
+// ==========================================
 window.openFullscreenSupplier = function() {
-    const modal = document.getElementById('supplier-fullscreen-modal');
-    const searchInput = document.getElementById('fullscreen-supplier-search');
-    const cancelBtn = document.getElementById('fullscreen-cancel-btn');
-    
-    // Блокируем фон
     document.documentElement.classList.add("lock");
     document.body.classList.add("lock");
     
-    modal.style.display = 'flex';
+    // МГНОВЕННО открываем ВСЕ копии окна (и для ПК, и для телефона)
+    document.querySelectorAll('#supplier-fullscreen-modal').forEach(modal => {
+        modal.style.display = 'flex';
+    });
     
-    // --- НОВЫЙ БЛОК ПЕРЕВОДОВ ---
+    // Очищаем ВСЕ поля поиска
+    document.querySelectorAll('#fullscreen-supplier-search').forEach(input => {
+        input.value = '';
+    });
+    
+    // Устанавливаем переводы
     try {
-        const mainSupplierInput = document.getElementById('qe-supplier-input');
-        if (mainSupplierInput) {
-            mainSupplierInput.placeholder = translations[currentLang].modal_choose_supplier;
-        }
-        if (searchInput) {
-            searchInput.placeholder = translations[currentLang].modal_search_supplier;
-        }
+        document.querySelectorAll('#qe-supplier-input').forEach(input => {
+            input.placeholder = translations[currentLang].modal_choose_supplier;
+        });
+        document.querySelectorAll('#fullscreen-supplier-search').forEach(input => {
+            input.placeholder = translations[currentLang].modal_search_supplier;
+        });
     } catch(e) {}
-    // ----------------------------
     
-    searchInput.value = ''; 
+    // Запускаем фильтр
     window.filterFullscreenSuppliers(); 
-    
-    scheduleUpdate();
+    if (typeof scheduleUpdate === 'function') scheduleUpdate();
     
     setTimeout(() => {
-        searchInput.focus();
+        // Умно ставим фокус только в то поле поиска, которое сейчас видимо на экране
+        const visibleSearch = Array.from(document.querySelectorAll('#fullscreen-supplier-search')).find(i => i.offsetParent !== null);
+        if (visibleSearch) visibleSearch.focus();
     }, 100);
 };
 
-window.closeFullscreenSupplier = function() {
-    const modal = document.getElementById('supplier-fullscreen-modal');
-    modal.style.display = 'none';
-    
-    // Снимаем блокировку
-    document.documentElement.classList.remove("lock");
-    document.body.classList.remove("lock");
-    
-    // Сбрасываем стили
-    modal.style.height = '100%';
-    modal.style.setProperty('--vv-offset', '0px');
-};
-
+// ==========================================
+// 2. ФИЛЬТРАЦИЯ И ОТРИСОВКА СПИСКА
+// ==========================================
 window.filterFullscreenSuppliers = function() {
-    // 1. Ищем ВСЕ копии элементов на странице
     const listContainers = document.querySelectorAll('#fullscreen-supplier-list');
     const searchInputs = document.querySelectorAll('#fullscreen-supplier-search');
     const addNewBtns = document.querySelectorAll('#fullscreen-add-new-btn');
     
-    if (listContainers.length === 0 || searchInputs.length === 0) return;
+    if (listContainers.length === 0) return;
 
-    // 2. Умно достаем текст поиска (ищем то поле, которое сейчас видимо на экране)
+    // Читаем текст только из видимого поля поиска
     let filterText = '';
     for (let input of searchInputs) {
-        if (input.offsetParent !== null) { // Если элемент не скрыт
+        if (input.offsetParent !== null) { 
             filterText = input.value.trim();
             break;
         }
@@ -4504,41 +4498,39 @@ window.filterFullscreenSuppliers = function() {
     const filtered = suppliers.filter(s => s.toLowerCase().includes(lowerFilter));
     filtered.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
     
-    // 3. Формируем HTML списка
+    // Генерируем HTML списка
     const htmlStr = filtered.map(s => {
         const safeStr = s.replace(/'/g, "\\'").replace(/"/g, '&quot;');
         return `<div class="supp-list-item" onclick="window.selectFullscreenSupplier('${safeStr}', false)" style="padding: 12px 0; font-size: 15px; cursor: pointer;">${s}</div>`;
     }).join('');
 
-    // 4. Заполняем ВСЕ контейнеры на странице (и для ПК, и для телефона)
+    // Вставляем список во ВСЕ контейнеры
     listContainers.forEach(container => {
         container.innerHTML = htmlStr;
     });
 
-    // 5. Настраиваем ВСЕ кнопки добавления
+    // Настраиваем ВСЕ кнопки добавления нового поставщика
     addNewBtns.forEach(btn => {
         if (filterText.length > 0) {
             btn.style.display = 'block';
-            const addText = (typeof translations !== 'undefined' && translations[currentLang]) 
-                            ? translations[currentLang].modal_add_supplier 
-                            : "Добавить";
+            const addText = (typeof translations !== 'undefined' && translations[currentLang]) ? translations[currentLang].modal_add_supplier : "Добавить";
             btn.innerHTML = `${addText} "<b>${filterText}</b>"`;
-            btn.onclick = function() {
-                window.selectFullscreenSupplier(filterText, true);
-            };
+            btn.onclick = function() { window.selectFullscreenSupplier(filterText, true); };
         } else {
             btn.style.display = 'none';
         }
     });
 };
 
+// ==========================================
+// 3. ВЫБОР ПОСТАВЩИКА И ЗАКРЫТИЕ
+// ==========================================
 window.selectFullscreenSupplier = function(val, isAddingNew) {
     val = val ? val.trim() : '';
     if (!val) return;
 
-    // 1. Вставляем выбранного поставщика во ВСЕ инпуты (скрытые и видимые)
-    const targetInputs = document.querySelectorAll('#qe-supplier-input');
-    targetInputs.forEach(targetInput => {
+    // Вписываем поставщика во ВСЕ инпуты карточки товара
+    document.querySelectorAll('#qe-supplier-input').forEach(targetInput => {
         targetInput.value = val;
         targetInput.dispatchEvent(new Event('input'));
         targetInput.dispatchEvent(new Event('change'));
@@ -4547,22 +4539,34 @@ window.selectFullscreenSupplier = function(val, isAddingNew) {
     const searchInputs = document.querySelectorAll('#fullscreen-supplier-search');
 
     if (isAddingNew === true) {
-        // НАЖАТИЕ НА КНОПКУ ПОДТВЕРЖДЕНИЯ
-        searchInputs.forEach(input => input.value = ''); // Очищаем всё
+        // Если добавляем нового - очищаем поиск и закрываем все окна
+        searchInputs.forEach(input => input.value = ''); 
         
         if (typeof window.closeFullscreenSupplier === 'function') {
             window.closeFullscreenSupplier();
         } else {
-            // Закрываем все модалки
             document.querySelectorAll('#supplier-fullscreen-modal').forEach(modal => {
                 modal.style.display = 'none';
             });
         }
     } else {
-        // КЛИК ПО СПИСКУ
+        // Если просто кликнули по списку - подставляем в строку поиска
         searchInputs.forEach(input => input.value = val);
         window.filterFullscreenSuppliers();
     }
+};
+// ==========================================
+// 4. ЗАКРЫТИЕ ОКНА ПОСТАВЩИКОВ
+// ==========================================
+window.closeFullscreenSupplier = function() {
+    // Разблокируем фон экрана
+    document.documentElement.classList.remove("lock");
+    document.body.classList.remove("lock");
+    
+    // Прячем ВСЕ копии окна (и мобильные, и десктопные)
+    document.querySelectorAll('#supplier-fullscreen-modal').forEach(modal => {
+        modal.style.display = 'none';
+    });
 };
 // --- ДИНАМИЧЕСКОЕ ФОРМАТИРОВАНИЕ ТЫСЯЧ ПРИ ВВОДЕ С ПК ---
 document.addEventListener('input', function(e) {
