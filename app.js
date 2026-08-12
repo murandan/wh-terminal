@@ -424,6 +424,15 @@
             setTimeout(window.syncOfflineQueue, 2000); // Ждем 2 секунды, чтобы сеть стабилизировалась
         });
 
+        // 5. Запасной фоновый таймер (страховка)
+        setInterval(() => {
+            let queue = JSON.parse(localStorage.getItem('offlineQueue') || '[]');
+            if (queue.length > 0 && navigator.onLine && !window.isSyncing) {
+                console.log("🕒 Сработал запасной таймер: отправляем накопившиеся данные...");
+                window.syncOfflineQueue();
+            }
+        }, 10000);
+
         // Запускаем проверку при загрузке страницы
         document.addEventListener("DOMContentLoaded", () => {
             window.updateQueueBadge();
@@ -2204,10 +2213,10 @@ function handleItemClick(id, event) {
             };
 
             try {
-                let queue = JSON.parse(localStorage.getItem('txQueue') || '[]');
-                queue.push(p);
-                localStorage.setItem('txQueue', JSON.stringify(queue));
-                updateQueueCounter();
+                // Отправляем чек в новый кузов диспетчера
+                if (typeof window.addToOfflineQueue === 'function') {
+                    window.addToOfflineQueue(p);
+                }
 
                 const cartTotal = cart.reduce((sum, item) => sum + (item.qty * item.price), 0);
                 const methodMap = { 'cash': 'sum-cash', 'qr_kaspi': 'sum-qr', 'qr': 'sum-qr', 'installment': 'sum-red', 'pos_terminal': 'sum-card', 'card': 'sum-card', 'transfer': 'sum-trans' };
@@ -2295,44 +2304,6 @@ function handleItemClick(id, event) {
         }
 
         let isSyncing = false; 
-        async function syncQueue() {
-            if (isSyncing || !navigator.onLine || !currentUser) return; 
-            let queue = JSON.parse(localStorage.getItem('txQueue') || '[]');
-            if (queue.length === 0) return; 
-            isSyncing = true;
-            try {
-                const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ api_key: CLIENT_API_KEY, action: 'syncQueue', transactions: [queue[0]] }) });
-                if ((await res.json()).success) { 
-                    moveTxToCacheLocally(queue[0]); 
-                    queue.shift(); 
-                    localStorage.setItem('txQueue', JSON.stringify(queue)); 
-                    updateQueueCounter(); 
-                }
-            } catch (e) {} finally { isSyncing = false; }
-        }
-        setInterval(syncQueue, 5000);
-
-        async function manualSync() {
-            if (!navigator.onLine) return alert(translations[currentLang].msg_sync_error);
-            let queue = JSON.parse(localStorage.getItem('txQueue') || '[]');
-            if (queue.length === 0) return alert(translations[currentLang].msg_sync_empty);
-            document.getElementById('sync-status').innerText = '⏳';
-            let hasError = false;
-            while(queue.length > 0) {
-                try {
-                    const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ api_key: CLIENT_API_KEY, action: 'syncQueue', transactions: [queue[0]] }) });
-                    if ((await res.json()).success) { 
-                        moveTxToCacheLocally(queue[0]); 
-                        queue.shift(); 
-                        localStorage.setItem('txQueue', JSON.stringify(queue)); 
-                        updateQueueCounter(); 
-                    }
-                    else { hasError = true; break; }
-                } catch (e) { hasError = true; break; }
-            }
-            document.getElementById('sync-status').innerText = '📡';
-            alert(hasError ? translations[currentLang].msg_sync_error : translations[currentLang].msg_sync_success);
-        }
 
         function openHelpDocument() {
     // По умолчанию ставим русский
@@ -3737,10 +3708,10 @@ function cancelResetHold(btn, e) {
                     value: value
                 };
 
-                // Кладем команду в очередь и зажигаем красный бейдж
-                queue.push(commandTx);
-                localStorage.setItem('txQueue', JSON.stringify(queue));
-                updateQueueCounter();
+                // Отправляем команду в новый кузов диспетчера
+                if (typeof window.addToOfflineQueue === 'function') {
+                    window.addToOfflineQueue(commandTx);
+                }
                 
                 // Легкая вибрация, подтверждающая успех (для мобилок)
                 if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
