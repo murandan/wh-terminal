@@ -401,6 +401,18 @@
             .then(response => {
                 if (response && response.success) {
                     console.log("✅ Грузовик успешно разгружен:", response);
+                    
+                    // --- НОВЫЙ БЛОК: Переливаем чеки в локальный кэш ---
+                    queue.forEach(task => {
+                        // Ищем в кузове только продажи
+                        if (task.tx_type === 'sale') {
+                            if (typeof moveTxToCacheLocally === 'function') {
+                                moveTxToCacheLocally(task);
+                            }
+                        }
+                    });
+                    // ----------------------------------------------------
+
                     // Очищаем локальную очередь только после подтверждения от сервера!
                     localStorage.setItem('offlineQueue', '[]');
                     window.updateQueueBadge();
@@ -2255,20 +2267,7 @@ function handleItemClick(id, event) {
             } catch (e) { alert("ОШИБКА: " + e.message); } 
             finally { btn.disabled = false; }
         }
-
-        function updateQueueCounter() {
-            let queue = JSON.parse(localStorage.getItem('txQueue') || '[]');
-            const badge = document.getElementById('queue-counter');
-            const settingsBtn = document.getElementById('btn-settings');
-            if (queue.length > 0) {
-                badge.innerText = queue.length; badge.style.display = 'inline-block';
-                settingsBtn.style.background = 'var(--bg-danger-dim)'; settingsBtn.style.borderColor = 'var(--accent-red)'; settingsBtn.style.color = 'var(--accent-red)';
-            } else {
-                badge.style.display = 'none';
-                settingsBtn.style.background = 'var(--bg-panel)'; settingsBtn.style.borderColor = 'var(--border-light)'; settingsBtn.style.color = 'var(--text-main)';
-            }
-        }
-
+        
         function moveTxToCacheLocally(tx) {
             try {
                 const qDate = tx.created_at.split(' ')[0]; 
@@ -2425,7 +2424,9 @@ async function renderReport() {
         }
     }
 
-    let queue = JSON.parse(localStorage.getItem('txQueue') || '[]');
+    let fullQueue = JSON.parse(localStorage.getItem('offlineQueue') || '[]');
+    // Выбираем из очереди только чеки продаж
+    let queue = fullQueue.filter(item => item.tx_type === 'sale' || item.cart);
     if (queue.length > 0) {
         queue.forEach(qTx => {
             if (currentUser && currentUser.role !== 'manager' && qTx.seller_id !== currentUser.uid) return;
@@ -3693,8 +3694,6 @@ function cancelResetHold(btn, e) {
                 closeCategoryMarkup();
                 
                 // 2. ФОНОВАЯ ОЧЕРЕДЬ: Создаем "команду" вместо тяжелого массива
-                let queue = JSON.parse(localStorage.getItem('txQueue') || '[]');
-                
                 const now = new Date();
                 const localTime = now.toLocaleDateString('ru-RU') + ' ' + now.toLocaleTimeString('ru-RU');
                 const cmdId = 'BM-' + Math.random().toString(36).substring(7).toUpperCase();
