@@ -1155,34 +1155,48 @@ function getLatestValue(id) {
     return elements[elements.length - 1].value || '';
 }
 
+// Функция для защиты от фантомных окон на iOS и адаптивной верстке
+window.getLatestValue = function(idPrefix) {
+    const elements = document.querySelectorAll(`[id="${idPrefix}"]`);
+    for (let el of elements) {
+        // Проверяем, видимо ли поле на экране
+        if (el.offsetParent !== null) { 
+            return el.value || '';
+        }
+    }
+    // Если видимого нет, пытаемся взять хотя бы из первого попавшегося
+    return elements.length > 0 ? (elements[0].value || '') : '';
+};
+
 window.saveQuickEdit = function(id) {
-    // 0. Находим товар в базе данных по его ID
     const item = db.find(i => String(i.id) === String(id));
     if (!item) {
         console.error("Ошибка: Товар не найден!");
         return;
     }
     
-    const qtyInput = document.getElementById('qe-receive-qty');
-    const isReceiveMode = qtyInput && qtyInput.offsetParent !== null;
+    // Адаптивная проверка режима (Приемка или Редактирование)
+    const receiveBlocks = document.querySelectorAll('#qe-receive-block');
+    let isReceiveMode = false;
+    receiveBlocks.forEach(b => { if (b.offsetParent !== null) isReceiveMode = true; });
 
     let payload = {};
 
     if (isReceiveMode) {
         // ==========================================
-        // ВЕТКА А: ОФОРМЛЕНИЕ НОВОЙ ПАРТИИ (ПРИХОД)
+        // ВЕТКА А: ПРИХОД (с защитой полей для iOS)
         // ==========================================
-        const priceInput = document.getElementById('qe-receive-price');
+        const rawQty = window.getLatestValue('qe-receive-qty');
+        const rawPrice = window.getLatestValue('qe-receive-price');
+        const rawSupplier = window.getLatestValue('qe-supplier-input');
         
-        const qty = qtyInput ? parseInt(qtyInput.value.replace(/\D/g, ''), 10) || 0 : 0;
-        const price = priceInput ? parseInt(priceInput.value.replace(/\D/g, ''), 10) || 0 : 0;
+        const qty = parseInt(String(rawQty).replace(/\D/g, ''), 10) || 0;
+        const price = parseInt(String(rawPrice).replace(/\D/g, ''), 10) || 0;
         
-        // Берем значение по умолчанию из активного словаря
-        let supplier = translations[currentLang].modal_unknown_supplier;
-        const customSupplier = document.getElementById('qe-supplier-input');
-
-        if (customSupplier && customSupplier.value.trim() !== '') {
-            supplier = customSupplier.value.trim(); 
+        let supplier = (typeof translations !== 'undefined' && translations[currentLang] && translations[currentLang].modal_unknown_supplier) ? translations[currentLang].modal_unknown_supplier : "Неизвестный поставщик";
+        
+        if (rawSupplier && rawSupplier.trim() !== '') {
+            supplier = rawSupplier.trim(); 
         }
 
         if (qty <= 0) {
@@ -1196,44 +1210,35 @@ window.saveQuickEdit = function(id) {
             action: "income",
             api_key: CLIENT_API_KEY, 
             currency: "KZT", 
-            vat: 0, // ДОБАВЛЕНО: принудительно обнуляем НДС для этой операции
+            vat: 0, 
             fingerprint: requestFingerprint,
-            data: [
-                {
-                    doc_no: "AUTO-" + Date.now(), 
-                    supplier: supplier,
-                    item_id: String(item.id),
-                    item_name: item.name,
-                    qty: qty,
-                    cost: price, // ИСПРАВЛЕНО: было price_curr
-                    category: item.category || "Без категории",
-                    cbm: 0,
-                    weight: 0
-                }
-            ]
+            data: [{
+                doc_no: "AUTO-" + Date.now(), 
+                supplier: supplier,
+                item_id: String(item.id),
+                item_name: item.name,
+                qty: qty,
+                cost: price, 
+                category: item.category || "Без категории",
+                cbm: 0,
+                weight: 0
+            }]
         };
 
-        // ИСПРАВЛЕНО: Мгновенно обновляем интерфейс для пользователя
-        // (Предполагается, что остаток хранится в item.stock, если у тебя item.qty - поменяй слово)
         item.stock = (parseFloat(item.stock) || 0) + qty; 
 
     } else {
-        // =========================================================
-        // ВЕТКА Б: ОБЫЧНОЕ РЕДАКТИРОВАНИЕ КАРТОЧКИ 
-        // (Ваш оригинальный код без изменений)
-        // =========================================================
+        // ==========================================
+        // ВЕТКА Б: РЕДАКТИРОВАНИЕ (с защитой полей)
+        // ==========================================
+        const rawName = window.getLatestValue('qe-name');
+        const rawPrice = window.getLatestValue('qe-price');
+        const rawCategory = window.getLatestValue('qe-category');
+        const rawBarcode = window.getLatestValue('qe-barcode');
+        const rawMinStock = window.getLatestValue('qe-minstock');
 
-        // 2. Читаем актуальные данные, игнорируя скрытые и старые окна
-        const rawName = getLatestValue('qe-name');
-        const rawPrice = getLatestValue('qe-price');
-        const rawCategory = getLatestValue('qe-category');
-        const rawBarcode = getLatestValue('qe-barcode');
-        const rawMinStock = getLatestValue('qe-minstock');
-
-        // 3. Очистка и подготовка данных
         const newName = rawName.trim();
         
-        // Если скрипт поймал пустое имя (а товар не был безымянным), блокируем отправку для защиты таблицы
         if (newName === "" && item.name !== "" && item.name !== "Без названия") {
             alert("Сработала защита: скрипт попытался сохранить пустое имя. Попробуйте еще раз.");
             return; 
@@ -1242,23 +1247,16 @@ window.saveQuickEdit = function(id) {
         const newPrice = parseFloat(String(rawPrice).replace(/\s/g, '').replace(',', '.')) || 0;
         const newMinStock = parseFloat(String(rawMinStock).replace(/\s/g, '').replace(',', '.')) || 0;
 
-        // === НАЧАЛО ПУНКТА 3 ===
         let newCategory = rawCategory;
-        
-        // Если выбрали создание новой категории, читаем данные из скрытого поля через твой перехватчик
         if (newCategory === 'new') {
-            newCategory = getLatestValue('qe-new-category').trim();
-            
-            // Защита от пустой строки
+            newCategory = window.getLatestValue('qe-new-category').trim();
             if (!newCategory || newCategory.trim() === '') {
-                newCategory = "Без категории"; // Сразу ставим правильное значение здесь
+                newCategory = "Без категории"; 
             }
         } else if (newCategory === '0' || newCategory === 'Не выбрано') {
             newCategory = "Без категории"; 
         }
-        // === КОНЕЦ ПУНКТА 3 ===
 
-        // 4. Формируем правильный пакет данных для бэкенда (редактирование)
         payload = {
             action: "update_single_item",
             api_key: CLIENT_API_KEY,
@@ -1272,29 +1270,19 @@ window.saveQuickEdit = function(id) {
             }
         };
 
-        // 5. Мгновенно обновляем интерфейс приложения
-        item.name = newName;
-        item.item_name = newName;
-        item.price = newPrice;
-        item.category = newCategory;
-        item.min_stock = newMinStock;
-        item.barcode = rawBarcode.trim();
+        item.name = newName; item.item_name = newName; item.price = newPrice; item.category = newCategory; item.min_stock = newMinStock; item.barcode = rawBarcode.trim();
     }
 
-    // =========================================================
-    // ОБЩАЯ ЧАСТЬ ДЛЯ ОБЕИХ ВЕТОК (Ваш оригинальный код)
-    // =========================================================
-
+    // ==========================================
+    // ОТПРАВКА НА СЕРВЕР
+    // ==========================================
     console.log("Улетает на сервер:", payload);
 
-    // ЖЕСТКАЯ ОЧИСТКА: удаляем вообще все окна редактирования из кода, чтобы не плодить дубликаты
     document.querySelectorAll('#quickEditModal').forEach(m => m.remove());
     if (typeof render === 'function') render();
     document.querySelectorAll('#quickEditModal').forEach(m => m.remove());
-    // НОВАЯ СТРОКА ДЛЯ ОЧИСТКИ ХВОСТОВ:
     document.querySelectorAll('[data-tippy-root], .tippy-box, .dropdown-menu').forEach(t => t.remove());
 
-    // 6. Отправляем в Google Таблицу
     fetch(GATEWAY_URL, {
         method: 'POST',
         body: JSON.stringify(payload),
@@ -1311,6 +1299,7 @@ window.saveQuickEdit = function(id) {
     .catch(err => {
         alert('Ошибка связи с сервером: ' + err.message);
     });
+    
     const numpad = document.getElementById('custom-numpad');
     if (numpad) numpad.style.display = 'none';
 };
@@ -2903,29 +2892,34 @@ function setReportView(view) {
                 if (header) header.classList.remove('active');
             }
             // 4. Кнопка "Внести приход" (Связываем с главной функцией сохранения)
-            if (event.target && event.target.closest('#btn-submit-receive')) {
-                event.preventDefault();
-                
-                let itemId = null;
-                // Ищем обычную кнопку "Сохранить" по ее уникальному атрибуту
-                const mainSaveBtn = document.querySelector('[data-i18n="qe_save"]');
-                
-                if (mainSaveBtn && mainSaveBtn.getAttribute('onclick')) {
-                    // Вытаскиваем цифры из строки вида window.saveQuickEdit('7')
-                    const match = mainSaveBtn.getAttribute('onclick').match(/saveQuickEdit\(['"]?(\d+)['"]?\)/);
-                    if (match) {
-                        itemId = match[1];
+            // Обработка кнопки "Внести приход" (Защита от потери ID на мобилках)
+                if (event.target && event.target.closest('#btn-submit-receive')) {
+                    event.preventDefault();
+                    
+                    let itemId = null;
+                    // Ищем все кнопки сохранения (включая скрытые)
+                    const saveBtns = document.querySelectorAll('[data-i18n="qe_save"]');
+                    
+                    for (let btn of saveBtns) {
+                        const onclickText = btn.getAttribute('onclick');
+                        if (onclickText) {
+                            // Вытаскиваем ID товара прямо из текста функции
+                            const match = onclickText.match(/saveQuickEdit\(\s*['"]?([^'"\)]+)['"]?\s*\)/);
+                            if (match && match[1]) {
+                                itemId = match[1];
+                                break;
+                            }
+                        }
                     }
-                }
 
-                if (typeof window.saveQuickEdit === 'function') {
-                    if (itemId) {
-                        window.saveQuickEdit(itemId); // Запускаем сохранение с найденным ID
-                    } else {
-                        alert('Ошибка: Не удалось найти ID товара для оформления прихода!');
+                    if (typeof window.saveQuickEdit === 'function') {
+                        if (itemId) {
+                            window.saveQuickEdit(itemId);
+                        } else {
+                            alert('Ошибка: Не удалось найти ID товара для оформления прихода!');
+                        }
                     }
                 }
-            }
         });
 
         function updateFileNameCompactUI(input) {
