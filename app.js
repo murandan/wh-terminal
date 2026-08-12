@@ -1156,14 +1156,13 @@ function getLatestValue(id) {
 }
 
 window.saveQuickEdit = function(id) {
-    // 0. Находим товар в базе данных по его ID
     const item = db.find(i => String(i.id) === String(id));
     if (!item) {
         console.error("Ошибка: Товар не найден!");
         return;
     }
     
-    // 1. Умная проверка режима (Приемка или Редактирование) для адаптива
+    // 1. Умная проверка режима (Приемка или Редактирование)
     const receiveBlocks = document.querySelectorAll('#qe-receive-block');
     let isReceiveMode = false;
     receiveBlocks.forEach(b => { if (b.offsetParent !== null) isReceiveMode = true; });
@@ -1174,8 +1173,6 @@ window.saveQuickEdit = function(id) {
         // ==========================================
         // ВЕТКА А: ОФОРМЛЕНИЕ НОВОЙ ПАРТИИ (ПРИХОД)
         // ==========================================
-        
-        // ИСПОЛЬЗУЕМ getLatestValue ДЛЯ ТОЧНОГО ЧТЕНИЯ НА МОБИЛЬНЫХ УСТРОЙСТВАХ
         const rawQty = getLatestValue('qe-receive-qty');
         const rawPrice = getLatestValue('qe-receive-price');
         const rawSupplier = getLatestValue('qe-supplier-input');
@@ -1183,7 +1180,9 @@ window.saveQuickEdit = function(id) {
         const qty = parseInt(String(rawQty).replace(/\D/g, ''), 10) || 0;
         const price = parseInt(String(rawPrice).replace(/\D/g, ''), 10) || 0;
         
-        let supplier = translations[currentLang].modal_unknown_supplier;
+        // Берем значение из словаря или "Неизвестный поставщик"
+        let supplier = (typeof translations !== 'undefined' && translations[currentLang] && translations[currentLang].modal_unknown_supplier) ? translations[currentLang].modal_unknown_supplier : "Неизвестный поставщик";
+        
         if (rawSupplier && rawSupplier.trim() !== '') {
             supplier = rawSupplier.trim(); 
         }
@@ -1216,26 +1215,20 @@ window.saveQuickEdit = function(id) {
             ]
         };
 
-        // Локальный остаток теперь посчитается идеально точно
         item.stock = (parseFloat(item.stock) || 0) + qty; 
 
     } else {
         // =========================================================
         // ВЕТКА Б: ОБЫЧНОЕ РЕДАКТИРОВАНИЕ КАРТОЧКИ 
-        // (Ваш оригинальный код без изменений)
         // =========================================================
-
-        // 2. Читаем актуальные данные, игнорируя скрытые и старые окна
         const rawName = getLatestValue('qe-name');
         const rawPrice = getLatestValue('qe-price');
         const rawCategory = getLatestValue('qe-category');
         const rawBarcode = getLatestValue('qe-barcode');
         const rawMinStock = getLatestValue('qe-minstock');
 
-        // 3. Очистка и подготовка данных
         const newName = rawName.trim();
         
-        // Если скрипт поймал пустое имя (а товар не был безымянным), блокируем отправку для защиты таблицы
         if (newName === "" && item.name !== "" && item.name !== "Без названия") {
             alert("Сработала защита: скрипт попытался сохранить пустое имя. Попробуйте еще раз.");
             return; 
@@ -1244,23 +1237,16 @@ window.saveQuickEdit = function(id) {
         const newPrice = parseFloat(String(rawPrice).replace(/\s/g, '').replace(',', '.')) || 0;
         const newMinStock = parseFloat(String(rawMinStock).replace(/\s/g, '').replace(',', '.')) || 0;
 
-        // === НАЧАЛО ПУНКТА 3 ===
         let newCategory = rawCategory;
-        
-        // Если выбрали создание новой категории, читаем данные из скрытого поля через твой перехватчик
         if (newCategory === 'new') {
             newCategory = getLatestValue('qe-new-category').trim();
-            
-            // Защита от пустой строки
             if (!newCategory || newCategory.trim() === '') {
-                newCategory = "Без категории"; // Сразу ставим правильное значение здесь
+                newCategory = "Без категории";
             }
         } else if (newCategory === '0' || newCategory === 'Не выбрано') {
             newCategory = "Без категории"; 
         }
-        // === КОНЕЦ ПУНКТА 3 ===
 
-        // 4. Формируем правильный пакет данных для бэкенда (редактирование)
         payload = {
             action: "update_single_item",
             api_key: CLIENT_API_KEY,
@@ -1274,7 +1260,6 @@ window.saveQuickEdit = function(id) {
             }
         };
 
-        // 5. Мгновенно обновляем интерфейс приложения
         item.name = newName;
         item.item_name = newName;
         item.price = newPrice;
@@ -1284,21 +1269,16 @@ window.saveQuickEdit = function(id) {
     }
 
     // =========================================================
-    // ОБЩАЯ ЧАСТЬ ДЛЯ ОБЕИХ ВЕТОК (Ваш оригинальный код)
+    // ОБЩАЯ ЧАСТЬ ДЛЯ ОБЕИХ ВЕТОК
     // =========================================================
-
     console.log("Улетает на сервер:", payload);
 
-    // ЖЕСТКАЯ ОЧИСТКА: удаляем вообще все окна редактирования из кода, чтобы не плодить дубликаты
     document.querySelectorAll('#quickEditModal').forEach(m => m.remove());
     if (typeof render === 'function') render();
     document.querySelectorAll('#quickEditModal').forEach(m => m.remove());
-    // НОВАЯ СТРОКА ДЛЯ ОЧИСТКИ ХВОСТОВ:
     document.querySelectorAll('[data-tippy-root], .tippy-box, .dropdown-menu').forEach(t => t.remove());
 
-    // 6. Отправляем в Google Таблицу ИЛИ в офлайн-очередь
     if (navigator.onLine) {
-        // ИНТЕРНЕТ ЕСТЬ: Стандартная отправка
         fetch(GATEWAY_URL, {
             method: 'POST',
             body: JSON.stringify(payload),
@@ -1316,16 +1296,13 @@ window.saveQuickEdit = function(id) {
             alert('Ошибка связи с сервером: ' + err.message);
         });
     } else {
-        // ИНТЕРНЕТА НЕТ: Маршрутизация по типу операции
         if (payload.action === "income") {
-            // Ветка приемки: безопасно складываем в локальную копилку
             if (typeof saveIncomeToQueue === 'function') {
                 saveIncomeToQueue(payload);
             } else {
                 alert("Ошибка: Функция офлайн-очереди не найдена!");
             }
         } else {
-            // Ветка редактирования: жестко блокируем и предупреждаем
             alert("❌ ВНИМАНИЕ: Нет интернета! Изменение карточки товара отменено. Дождитесь сети и повторите.");
         }
     }
@@ -5192,5 +5169,5 @@ async function syncIncomesQueue() {
 
 // 5. ТРИГГЕРЫ: Запуск синхронизации автоматически
 window.addEventListener('online', syncIncomesQueue);
-document.addEventListener('DOMContentLoaded', syncIncomesQueue);
+setTimeout(syncIncomesQueue, 15000);
 /* ================================================================= */
