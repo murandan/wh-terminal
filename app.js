@@ -1829,6 +1829,8 @@ async function handleAutoLogin(val) {
             // Делаем персональный кэш, чтобы продавцы не видели суммы друг друга при перезагрузке
             const cacheKey = 'totals_cache_' + (savedUid || 'anon');
 
+            displayAppVersion();
+
             try {
                 const cachedDb = localStorage.getItem('db_cache');
                 const cachedTotals = localStorage.getItem(cacheKey);
