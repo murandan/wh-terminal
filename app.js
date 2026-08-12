@@ -2169,25 +2169,24 @@ function handleItemClick(id, event) {
         }
 
         function updateQueueCounter() {
-            // 1. Достаем обе очереди из локальной памяти
             let txQueue = JSON.parse(localStorage.getItem('txQueue') || '[]');
             let incomesQueue = JSON.parse(localStorage.getItem('incomes_offline_queue') || '[]');
             
-            // 2. Считаем общее количество зависших операций
             let totalPending = txQueue.length + incomesQueue.length;
             
             const badge = document.getElementById('queue-counter');
             const settingsBtn = document.getElementById('btn-settings');
             
+            // ПРЕДОХРАНИТЕЛЬ: Если кнопок на экране еще нет (например, на экране ПИН-кода), просто выходим
+            if (!badge || !settingsBtn) return;
+            
             if (totalPending > 0) {
-                // Включаем индикатор, если есть хотя бы одна задача в любой из очередей
                 badge.innerText = totalPending; 
                 badge.style.display = 'inline-block';
                 settingsBtn.style.background = 'var(--bg-danger-dim)'; 
                 settingsBtn.style.borderColor = 'var(--accent-red)'; 
                 settingsBtn.style.color = 'var(--accent-red)';
             } else {
-                // Прячем индикатор, когда всё чисто
                 badge.style.display = 'none';
                 settingsBtn.style.background = 'var(--bg-panel)'; 
                 settingsBtn.style.borderColor = 'var(--border-light)'; 
