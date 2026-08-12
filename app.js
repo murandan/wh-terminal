@@ -332,6 +332,102 @@
                 file_select_excel: "Excel файлын таңдау үшін басыңыз"
             }
         };
+
+        // =======================================================
+        // 🚚 ПАКЕТНАЯ ОТПРАВКА И ОФЛАЙН-ОЧЕРЕДЬ (QUEUE MANAGER)
+        // =======================================================
+
+        // 1. Функция добавления любой задачи в кузов (очередь)
+        window.addToOfflineQueue = function(task) {
+            let queue = JSON.parse(localStorage.getItem('offlineQueue') || '[]');
+            queue.push(task);
+            localStorage.setItem('offlineQueue', JSON.stringify(queue));
+            
+            window.updateQueueBadge(); // Обновляем красную шестеренку на экране
+            
+            // Если интернет есть — пытаемся сразу отправить пакет
+            if (navigator.onLine) {
+                window.syncOfflineQueue();
+            }
+        };
+
+        // 2. Функция визуального счетчика (красная шестеренка)
+        window.updateQueueBadge = function() {
+            let queue = JSON.parse(localStorage.getItem('offlineQueue') || '[]');
+            const badge = document.getElementById('queue-counter');
+            const settingsBtn = document.getElementById('btn-settings');
+            
+            if (badge && settingsBtn) {
+                if (queue.length > 0) {
+                    badge.innerText = queue.length; 
+                    badge.style.display = 'inline-block';
+                    settingsBtn.style.background = 'var(--bg-danger-dim)'; 
+                    settingsBtn.style.borderColor = 'var(--accent-red)'; 
+                    settingsBtn.style.color = 'var(--accent-red)';
+                } else {
+                    badge.style.display = 'none';
+                    settingsBtn.style.background = 'var(--bg-panel)'; 
+                    settingsBtn.style.borderColor = 'var(--border-light)'; 
+                    settingsBtn.style.color = 'var(--text-main)';
+                }
+            }
+        };
+
+        // 3. Главная функция отправки "грузовика" на сервер
+        window.isSyncing = false; // Защита от двойной отправки (throttle)
+
+        window.syncOfflineQueue = function() {
+            if (window.isSyncing || !navigator.onLine) return;
+            
+            let queue = JSON.parse(localStorage.getItem('offlineQueue') || '[]');
+            if (queue.length === 0) return; // Кузов пуст, ехать не нужно
+
+            window.isSyncing = true;
+            
+            const payload = {
+                action: "batch_sync",
+                api_key: CLIENT_API_KEY,
+                tasks: queue
+            };
+
+            console.log("🚚 Грузовик поехал. В кузове задач:", queue.length);
+
+            fetch(GATEWAY_URL, {
+                method: 'POST',
+                body: JSON.stringify(payload),
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+            })
+            .then(res => res.json())
+            .then(response => {
+                if (response && response.success) {
+                    console.log("✅ Грузовик успешно разгружен:", response);
+                    // Очищаем локальную очередь только после подтверждения от сервера!
+                    localStorage.setItem('offlineQueue', '[]');
+                    window.updateQueueBadge();
+                } else {
+                    console.error("❌ Сервер вернул ошибку при разгрузке:", response.error);
+                }
+            })
+            .catch(err => {
+                // Если интернет пропал прямо во время отправки, данные не удалятся, 
+                // а просто останутся ждать следующей попытки
+                console.error("⚠️ Связь оборвалась в пути:", err.message);
+            })
+            .finally(() => {
+                window.isSyncing = false;
+            });
+        };
+
+        // 4. Слушатель: Автоматическая отправка при появлении интернета
+        window.addEventListener('online', () => {
+            console.log("🌐 Интернет появился! Запускаем пакетную синхронизацию...");
+            setTimeout(window.syncOfflineQueue, 2000); // Ждем 2 секунды, чтобы сеть стабилизировалась
+        });
+
+        // Запускаем проверку при загрузке страницы
+        document.addEventListener("DOMContentLoaded", () => {
+            window.updateQueueBadge();
+        });
         
         // Загружаем сохраненную тему
         let currentTheme = localStorage.getItem('pos_theme') || 'dark';
