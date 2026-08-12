@@ -1379,22 +1379,12 @@ window.saveQuickEdit = function(id) {
     document.querySelectorAll('#quickEditModal').forEach(m => m.remove());
     document.querySelectorAll('[data-tippy-root], .tippy-box, .dropdown-menu').forEach(t => t.remove());
 
-    fetch(GATEWAY_URL, {
-        method: 'POST',
-        body: JSON.stringify(payload),
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-    })
-    .then(res => res.json())
-    .then(response => {
-        if (response && response.error) {
-            alert('Ошибка сервера: ' + response.error);
-        } else {
-            console.log('Успешно записано в таблицу!');
-        }
-    })
-    .catch(err => {
-        alert('Ошибка связи с сервером: ' + err.message);
-    });
+    // Отправляем задачу диспетчеру очереди
+    if (typeof window.addToOfflineQueue === 'function') {
+        window.addToOfflineQueue(payload);
+    } else {
+        console.error("Диспетчер не найден!");
+    }
     
     const numpad = document.getElementById('custom-numpad');
     if (numpad) numpad.style.display = 'none';
