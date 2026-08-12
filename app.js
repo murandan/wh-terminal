@@ -1163,8 +1163,10 @@ window.saveQuickEdit = function(id) {
         return;
     }
     
-    const qtyInput = document.getElementById('qe-receive-qty');
-    const isReceiveMode = qtyInput && qtyInput.offsetParent !== null;
+    // 1. Умная проверка режима (Приемка или Редактирование) для адаптива
+    const receiveBlocks = document.querySelectorAll('#qe-receive-block');
+    let isReceiveMode = false;
+    receiveBlocks.forEach(b => { if (b.offsetParent !== null) isReceiveMode = true; });
 
     let payload = {};
 
@@ -1172,17 +1174,18 @@ window.saveQuickEdit = function(id) {
         // ==========================================
         // ВЕТКА А: ОФОРМЛЕНИЕ НОВОЙ ПАРТИИ (ПРИХОД)
         // ==========================================
-        const priceInput = document.getElementById('qe-receive-price');
         
-        const qty = qtyInput ? parseInt(qtyInput.value.replace(/\D/g, ''), 10) || 0 : 0;
-        const price = priceInput ? parseInt(priceInput.value.replace(/\D/g, ''), 10) || 0 : 0;
+        // ИСПОЛЬЗУЕМ getLatestValue ДЛЯ ТОЧНОГО ЧТЕНИЯ НА МОБИЛЬНЫХ УСТРОЙСТВАХ
+        const rawQty = getLatestValue('qe-receive-qty');
+        const rawPrice = getLatestValue('qe-receive-price');
+        const rawSupplier = getLatestValue('qe-supplier-input');
         
-        // Берем значение по умолчанию из активного словаря
+        const qty = parseInt(String(rawQty).replace(/\D/g, ''), 10) || 0;
+        const price = parseInt(String(rawPrice).replace(/\D/g, ''), 10) || 0;
+        
         let supplier = translations[currentLang].modal_unknown_supplier;
-        const customSupplier = document.getElementById('qe-supplier-input');
-
-        if (customSupplier && customSupplier.value.trim() !== '') {
-            supplier = customSupplier.value.trim(); 
+        if (rawSupplier && rawSupplier.trim() !== '') {
+            supplier = rawSupplier.trim(); 
         }
 
         if (qty <= 0) {
@@ -1196,7 +1199,7 @@ window.saveQuickEdit = function(id) {
             action: "income",
             api_key: CLIENT_API_KEY, 
             currency: "KZT", 
-            vat: 0, // ДОБАВЛЕНО: принудительно обнуляем НДС для этой операции
+            vat: 0, 
             fingerprint: requestFingerprint,
             data: [
                 {
@@ -1205,7 +1208,7 @@ window.saveQuickEdit = function(id) {
                     item_id: String(item.id),
                     item_name: item.name,
                     qty: qty,
-                    cost: price, // ИСПРАВЛЕНО: было price_curr
+                    cost: price, 
                     category: item.category || "Без категории",
                     cbm: 0,
                     weight: 0
@@ -1213,8 +1216,7 @@ window.saveQuickEdit = function(id) {
             ]
         };
 
-        // ИСПРАВЛЕНО: Мгновенно обновляем интерфейс для пользователя
-        // (Предполагается, что остаток хранится в item.stock, если у тебя item.qty - поменяй слово)
+        // Локальный остаток теперь посчитается идеально точно
         item.stock = (parseFloat(item.stock) || 0) + qty; 
 
     } else {
@@ -5130,12 +5132,16 @@ function clearIncomesQueue() {
 }
 
 // 4. ФОНОВАЯ СИНХРОНИЗАЦИЯ: Выгрузка при появлении сети
+let isSyncingIncomes = false; // Замок от двойного запуска на iOS
+
 async function syncIncomesQueue() {
-    if (!navigator.onLine) return;
+    // Если интернета нет или синхронизация уже идет — ничего не делаем
+    if (!navigator.onLine || isSyncingIncomes) return;
     
     let queue = getIncomesQueue();
     if (queue.length === 0) return;
 
+    isSyncingIncomes = true; // Закрываем замок
     console.log(`🔄 Восстановлена связь. Начинаем отправку офлайн-приходов (${queue.length} шт.)...`);
     let remainingQueue = [];
 
@@ -5149,7 +5155,15 @@ async function syncIncomesQueue() {
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' }
             });
             
-            let result = await res.json();
+            // Читаем текст, чтобы спастись от HTML-ошибок сервера
+            let text = await res.text();
+            let result;
+            try {
+                result = JSON.parse(text);
+            } catch (e) {
+                console.warn("⚠️ Сервер вернул не JSON. Удаляем битый запрос, чтобы он не заблокировал очередь.");
+                continue; // Не пушим в remainingQueue, просто забываем про него
+            }
             
             if (result && result.error) {
                 console.error("❌ Сервер отклонил офлайн-приход:", result.error);
@@ -5157,11 +5171,12 @@ async function syncIncomesQueue() {
                 console.log(`✅ Офлайн-приход успешно отправлен!`);
             }
         } catch (err) {
-            console.warn("⚠️ Интернет снова пропал во время отправки:", err);
+            console.warn("⚠️ Интернет снова пропал (или Safari оборвал связь) во время отправки:", err);
             remainingQueue.push(payload); 
         }
     }
 
+    // Обновляем память
     if (remainingQueue.length > 0) {
         localStorage.setItem(INCOMES_QUEUE_KEY, JSON.stringify(remainingQueue));
     } else {
@@ -5169,8 +5184,10 @@ async function syncIncomesQueue() {
         alert("✅ Все отложенные офлайн-приходы успешно выгружены на сервер!");
     }
     
-    // КРИТИЧНОЕ ДОБАВЛЕНИЕ: Заставляем шестеренку пересчитать остатки после синхронизации
+    // Мгновенно тушим шестеренку
     if (typeof updateQueueCounter === 'function') updateQueueCounter();
+    
+    isSyncingIncomes = false; // Открываем замок для будущих операций
 }
 
 // 5. ТРИГГЕРЫ: Запуск синхронизации автоматически
