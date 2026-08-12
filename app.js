@@ -4489,81 +4489,84 @@ window.closeFullscreenSupplier = function() {
 };
 
 window.filterFullscreenSuppliers = function() {
-    const listContainer = document.getElementById('fullscreen-supplier-list');
-    const searchInput = document.getElementById('fullscreen-supplier-search');
-    const addNewBtn = document.getElementById('fullscreen-add-new-btn');
+    // 1. Ищем ВСЕ копии элементов на странице
+    const listContainers = document.querySelectorAll('#fullscreen-supplier-list');
+    const searchInputs = document.querySelectorAll('#fullscreen-supplier-search');
+    const addNewBtns = document.querySelectorAll('#fullscreen-add-new-btn');
     
-    if (!listContainer || !searchInput) return;
+    if (listContainers.length === 0 || searchInputs.length === 0) return;
 
-    const filterText = searchInput.value.trim();
-    const lowerFilter = filterText.toLowerCase();
-    
-    const suppliers = (window.suppliers || []).map(String);
-    
-    const filtered = suppliers.filter(s => s.toLowerCase().includes(lowerFilter));
-    filtered.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-    
-    // МЫ УБРАЛИ ПРОВЕРКУ НА ТОЧНОЕ СОВПАДЕНИЕ!
-    // Теперь кнопка появляется всегда, если поле поиска не пустое
-    if (filterText.length > 0) {
-        if (addNewBtn) {
-            addNewBtn.style.display = 'block';
-            const addText = (typeof translations !== 'undefined' && translations[currentLang]) 
-                            ? translations[currentLang].modal_add_supplier 
-                            : "Добавить";
-            
-            // Кнопка дублирует текст из поиска
-            addNewBtn.innerHTML = `${addText} "<b>${filterText}</b>"`;
-            
-            // Передаем true - нажатие на эту кнопку закроет окно
-            addNewBtn.onclick = function() {
-                window.selectFullscreenSupplier(filterText, true);
-            };
-        }
-    } else {
-        if (addNewBtn) {
-            addNewBtn.style.display = 'none';
+    // 2. Умно достаем текст поиска (ищем то поле, которое сейчас видимо на экране)
+    let filterText = '';
+    for (let input of searchInputs) {
+        if (input.offsetParent !== null) { // Если элемент не скрыт
+            filterText = input.value.trim();
+            break;
         }
     }
     
-    // Клик по списку передает false - окно не закроется, а текст прыгнет в поиск
-    listContainer.innerHTML = filtered.map(s => {
+    const lowerFilter = filterText.toLowerCase();
+    const suppliers = (window.suppliers || []).map(String);
+    const filtered = suppliers.filter(s => s.toLowerCase().includes(lowerFilter));
+    filtered.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    
+    // 3. Формируем HTML списка
+    const htmlStr = filtered.map(s => {
         const safeStr = s.replace(/'/g, "\\'").replace(/"/g, '&quot;');
         return `<div class="supp-list-item" onclick="window.selectFullscreenSupplier('${safeStr}', false)" style="padding: 12px 0; font-size: 15px; cursor: pointer;">${s}</div>`;
     }).join('');
+
+    // 4. Заполняем ВСЕ контейнеры на странице (и для ПК, и для телефона)
+    listContainers.forEach(container => {
+        container.innerHTML = htmlStr;
+    });
+
+    // 5. Настраиваем ВСЕ кнопки добавления
+    addNewBtns.forEach(btn => {
+        if (filterText.length > 0) {
+            btn.style.display = 'block';
+            const addText = (typeof translations !== 'undefined' && translations[currentLang]) 
+                            ? translations[currentLang].modal_add_supplier 
+                            : "Добавить";
+            btn.innerHTML = `${addText} "<b>${filterText}</b>"`;
+            btn.onclick = function() {
+                window.selectFullscreenSupplier(filterText, true);
+            };
+        } else {
+            btn.style.display = 'none';
+        }
+    });
 };
 
 window.selectFullscreenSupplier = function(val, isAddingNew) {
     val = val ? val.trim() : '';
     if (!val) return;
 
-    // 1. Всегда отправляем значение в главное окно кассы
-    const targetInput = document.getElementById('qe-supplier-input');
-    if (targetInput) {
+    // 1. Вставляем выбранного поставщика во ВСЕ инпуты (скрытые и видимые)
+    const targetInputs = document.querySelectorAll('#qe-supplier-input');
+    targetInputs.forEach(targetInput => {
         targetInput.value = val;
         targetInput.dispatchEvent(new Event('input'));
         targetInput.dispatchEvent(new Event('change'));
-    }
+    });
 
-    const searchInput = document.getElementById('fullscreen-supplier-search');
+    const searchInputs = document.querySelectorAll('#fullscreen-supplier-search');
 
     if (isAddingNew === true) {
-        // НАЖАТИЕ НА КНОПКУ ПОДТВЕРЖДЕНИЯ: 
-        // Очищаем поиск и закрываем окно
-        if (searchInput) searchInput.value = '';
+        // НАЖАТИЕ НА КНОПКУ ПОДТВЕРЖДЕНИЯ
+        searchInputs.forEach(input => input.value = ''); // Очищаем всё
         
         if (typeof window.closeFullscreenSupplier === 'function') {
             window.closeFullscreenSupplier();
         } else {
-            const modal = document.getElementById('supplier-fullscreen-modal');
-            if (modal) modal.style.display = 'none';
+            // Закрываем все модалки
+            document.querySelectorAll('#supplier-fullscreen-modal').forEach(modal => {
+                modal.style.display = 'none';
+            });
         }
     } else {
-        // КЛИК ПО СПИСКУ: 
-        // Подставляем текст в строку поиска
-        if (searchInput) searchInput.value = val;
-        
-        // Перерисовываем интерфейс (и так как текст есть, кнопка подтверждения сразу появится!)
+        // КЛИК ПО СПИСКУ
+        searchInputs.forEach(input => input.value = val);
         window.filterFullscreenSuppliers();
     }
 };
