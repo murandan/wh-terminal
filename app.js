@@ -1162,7 +1162,7 @@ window.saveQuickEdit = function(id) {
         return;
     }
     
-    // 1. Умная проверка режима (Приемка или Редактирование)
+    // Адаптивная проверка режима
     const receiveBlocks = document.querySelectorAll('#qe-receive-block');
     let isReceiveMode = false;
     receiveBlocks.forEach(b => { if (b.offsetParent !== null) isReceiveMode = true; });
@@ -1170,9 +1170,7 @@ window.saveQuickEdit = function(id) {
     let payload = {};
 
     if (isReceiveMode) {
-        // ==========================================
-        // ВЕТКА А: ОФОРМЛЕНИЕ НОВОЙ ПАРТИИ (ПРИХОД)
-        // ==========================================
+        // ВЕТКА А: ПРИХОД (Используем getLatestValue для защиты от скрытых полей на iOS)
         const rawQty = getLatestValue('qe-receive-qty');
         const rawPrice = getLatestValue('qe-receive-price');
         const rawSupplier = getLatestValue('qe-supplier-input');
@@ -1180,7 +1178,6 @@ window.saveQuickEdit = function(id) {
         const qty = parseInt(String(rawQty).replace(/\D/g, ''), 10) || 0;
         const price = parseInt(String(rawPrice).replace(/\D/g, ''), 10) || 0;
         
-        // Берем значение из словаря или "Неизвестный поставщик"
         let supplier = (typeof translations !== 'undefined' && translations[currentLang] && translations[currentLang].modal_unknown_supplier) ? translations[currentLang].modal_unknown_supplier : "Неизвестный поставщик";
         
         if (rawSupplier && rawSupplier.trim() !== '') {
@@ -1200,27 +1197,23 @@ window.saveQuickEdit = function(id) {
             currency: "KZT", 
             vat: 0, 
             fingerprint: requestFingerprint,
-            data: [
-                {
-                    doc_no: "AUTO-" + Date.now(), 
-                    supplier: supplier,
-                    item_id: String(item.id),
-                    item_name: item.name,
-                    qty: qty,
-                    cost: price, 
-                    category: item.category || "Без категории",
-                    cbm: 0,
-                    weight: 0
-                }
-            ]
+            data: [{
+                doc_no: "AUTO-" + Date.now(), 
+                supplier: supplier,
+                item_id: String(item.id),
+                item_name: item.name,
+                qty: qty,
+                cost: price, 
+                category: item.category || "Без категории",
+                cbm: 0,
+                weight: 0
+            }]
         };
 
         item.stock = (parseFloat(item.stock) || 0) + qty; 
 
     } else {
-        // =========================================================
-        // ВЕТКА Б: ОБЫЧНОЕ РЕДАКТИРОВАНИЕ КАРТОЧКИ 
-        // =========================================================
+        // ВЕТКА Б: РЕДАКТИРОВАНИЕ
         const rawName = getLatestValue('qe-name');
         const rawPrice = getLatestValue('qe-price');
         const rawCategory = getLatestValue('qe-category');
@@ -1241,7 +1234,7 @@ window.saveQuickEdit = function(id) {
         if (newCategory === 'new') {
             newCategory = getLatestValue('qe-new-category').trim();
             if (!newCategory || newCategory.trim() === '') {
-                newCategory = "Без категории";
+                newCategory = "Без категории"; 
             }
         } else if (newCategory === '0' || newCategory === 'Не выбрано') {
             newCategory = "Без категории"; 
@@ -1260,17 +1253,10 @@ window.saveQuickEdit = function(id) {
             }
         };
 
-        item.name = newName;
-        item.item_name = newName;
-        item.price = newPrice;
-        item.category = newCategory;
-        item.min_stock = newMinStock;
-        item.barcode = rawBarcode.trim();
+        item.name = newName; item.item_name = newName; item.price = newPrice; item.category = newCategory; item.min_stock = newMinStock; item.barcode = rawBarcode.trim();
     }
 
-    // =========================================================
-    // ОБЩАЯ ЧАСТЬ ДЛЯ ОБЕИХ ВЕТОК
-    // =========================================================
+    // ОТПРАВКА НА СЕРВЕР (Прямая, без офлайн-очереди)
     console.log("Улетает на сервер:", payload);
 
     document.querySelectorAll('#quickEditModal').forEach(m => m.remove());
@@ -1278,35 +1264,23 @@ window.saveQuickEdit = function(id) {
     document.querySelectorAll('#quickEditModal').forEach(m => m.remove());
     document.querySelectorAll('[data-tippy-root], .tippy-box, .dropdown-menu').forEach(t => t.remove());
 
-    if (navigator.onLine) {
-        fetch(GATEWAY_URL, {
-            method: 'POST',
-            body: JSON.stringify(payload),
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-        })
-        .then(res => res.json())
-        .then(response => {
-            if (response && response.error) {
-                alert('Ошибка сервера: ' + response.error);
-            } else {
-                console.log('Успешно записано на сервер!');
-            }
-        })
-        .catch(err => {
-            alert('Ошибка связи с сервером: ' + err.message);
-        });
-    } else {
-        if (payload.action === "income") {
-            if (typeof saveIncomeToQueue === 'function') {
-                saveIncomeToQueue(payload);
-            } else {
-                alert("Ошибка: Функция офлайн-очереди не найдена!");
-            }
+    fetch(GATEWAY_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+    })
+    .then(res => res.json())
+    .then(response => {
+        if (response && response.error) {
+            alert('Ошибка сервера: ' + response.error);
         } else {
-            alert("❌ ВНИМАНИЕ: Нет интернета! Изменение карточки товара отменено. Дождитесь сети и повторите.");
+            console.log('Успешно записано в таблицу!');
         }
-    }
-
+    })
+    .catch(err => {
+        alert('Ошибка связи с сервером: ' + err.message);
+    });
+    
     const numpad = document.getElementById('custom-numpad');
     if (numpad) numpad.style.display = 'none';
 };
@@ -2169,28 +2143,15 @@ function handleItemClick(id, event) {
         }
 
         function updateQueueCounter() {
-            let txQueue = JSON.parse(localStorage.getItem('txQueue') || '[]');
-            let incomesQueue = JSON.parse(localStorage.getItem('incomes_offline_queue') || '[]');
-            
-            let totalPending = txQueue.length + incomesQueue.length;
-            
+            let queue = JSON.parse(localStorage.getItem('txQueue') || '[]');
             const badge = document.getElementById('queue-counter');
             const settingsBtn = document.getElementById('btn-settings');
-            
-            // ПРЕДОХРАНИТЕЛЬ: Если кнопок на экране еще нет (например, на экране ПИН-кода), просто выходим
-            if (!badge || !settingsBtn) return;
-            
-            if (totalPending > 0) {
-                badge.innerText = totalPending; 
-                badge.style.display = 'inline-block';
-                settingsBtn.style.background = 'var(--bg-danger-dim)'; 
-                settingsBtn.style.borderColor = 'var(--accent-red)'; 
-                settingsBtn.style.color = 'var(--accent-red)';
+            if (queue.length > 0) {
+                badge.innerText = queue.length; badge.style.display = 'inline-block';
+                settingsBtn.style.background = 'var(--bg-danger-dim)'; settingsBtn.style.borderColor = 'var(--accent-red)'; settingsBtn.style.color = 'var(--accent-red)';
             } else {
                 badge.style.display = 'none';
-                settingsBtn.style.background = 'var(--bg-panel)'; 
-                settingsBtn.style.borderColor = 'var(--border-light)'; 
-                settingsBtn.style.color = 'var(--text-main)';
+                settingsBtn.style.background = 'var(--bg-panel)'; settingsBtn.style.borderColor = 'var(--border-light)'; settingsBtn.style.color = 'var(--text-main)';
             }
         }
 
@@ -2912,34 +2873,32 @@ function setReportView(view) {
                 if (header) header.classList.remove('active');
             }
             // 4. Кнопка "Внести приход" (Связываем с главной функцией сохранения)
-                if (event.target && event.target.closest('#btn-submit-receive')) {
-                    event.preventDefault();
-                    
-                    let itemId = null;
-                    
-                    // Ищем ВСЕ кнопки "Сохранить", так как из-за адаптива их может быть несколько (скрытые и видимые)
-                    const saveBtns = document.querySelectorAll('[data-i18n="qe_save"]');
-                    
-                    for (let btn of saveBtns) {
-                        const onclickText = btn.getAttribute('onclick');
-                        if (onclickText) {
-                            // Улучшенная регулярка: ищет любые символы (цифры/буквы) внутри скобок и игнорирует пустые saveQuickEdit()
-                            const match = onclickText.match(/saveQuickEdit\(\s*['"]?([^'"\)]+)['"]?\s*\)/);
-                            if (match && match[1]) {
-                                itemId = match[1];
-                                break; // Как только нашли валидный ID, останавливаем поиск!
-                            }
-                        }
-                    }
-
-                    if (typeof window.saveQuickEdit === 'function') {
-                        if (itemId) {
-                            window.saveQuickEdit(itemId); // Запускаем сохранение с найденным ID
-                        } else {
-                            alert('Ошибка: Не удалось найти ID товара для оформления прихода!');
+            // Кнопка "Внести приход" (Мобильный фикс поиска ID)
+            if (event.target && event.target.closest('#btn-submit-receive')) {
+                event.preventDefault();
+                
+                let itemId = null;
+                const saveBtns = document.querySelectorAll('[data-i18n="qe_save"]');
+                
+                for (let btn of saveBtns) {
+                    const onclickText = btn.getAttribute('onclick');
+                    if (onclickText) {
+                        const match = onclickText.match(/saveQuickEdit\(\s*['"]?([^'"\)]+)['"]?\s*\)/);
+                        if (match && match[1]) {
+                            itemId = match[1];
+                            break;
                         }
                     }
                 }
+
+                if (typeof window.saveQuickEdit === 'function') {
+                    if (itemId) {
+                        window.saveQuickEdit(itemId);
+                    } else {
+                        alert('Ошибка: Не удалось найти ID товара для оформления прихода!');
+                    }
+                }
+            }
         });
 
         function updateFileNameCompactUI(input) {
@@ -5071,102 +5030,3 @@ if (!window.qeNumpadPatchedForNt) {
         window.qeNumpadPatchedForNt = true; // Защита от двойного перехвата
     }
 }
-
-/* =================================================================
-   📦 МОДУЛЬ ОФЛАЙН-ОЧЕРЕДИ (ПРИЕМКА ТОВАРА)
-   ================================================================= */
-const INCOMES_QUEUE_KEY = 'incomes_offline_queue';
-
-// 1. Получить текущую очередь
-function getIncomesQueue() {
-    try {
-        const queue = localStorage.getItem(INCOMES_QUEUE_KEY);
-        return queue ? JSON.parse(queue) : [];
-    } catch (e) {
-        console.error("Ошибка чтения очереди приходов:", e);
-        return [];
-    }
-}
-
-// 2. Добавить новый приход в очередь (когда нет сети)
-function saveIncomeToQueue(payload) {
-    const queue = getIncomesQueue();
-    payload._timestamp = new Date().getTime(); 
-    queue.push(payload);
-    localStorage.setItem(INCOMES_QUEUE_KEY, JSON.stringify(queue));
-
-    if (typeof updateQueueCounter === 'function') updateQueueCounter();
-    
-    // alert(`⚡ Нет интернета. Приход сохранен в локальную очередь (всего в ожидании: ${queue.length}).`);
-}
-
-// 3. Очистить очередь (после успешной отправки на сервер)
-function clearIncomesQueue() {
-    localStorage.removeItem(INCOMES_QUEUE_KEY);
-
-    if (typeof updateQueueCounter === 'function') updateQueueCounter();
-}
-
-// 4. ФОНОВАЯ СИНХРОНИЗАЦИЯ: Выгрузка при появлении сети
-let isSyncingIncomes = false; // Замок от двойного запуска на iOS
-
-async function syncIncomesQueue() {
-    // Если интернета нет или синхронизация уже идет — ничего не делаем
-    if (!navigator.onLine || isSyncingIncomes) return;
-    
-    let queue = getIncomesQueue();
-    if (queue.length === 0) return;
-
-    isSyncingIncomes = true; // Закрываем замок
-    console.log(`🔄 Восстановлена связь. Начинаем отправку офлайн-приходов (${queue.length} шт.)...`);
-    let remainingQueue = [];
-
-    for (let i = 0; i < queue.length; i++) {
-        let payload = queue[i];
-        
-        try {
-            let res = await fetch(GATEWAY_URL, {
-                method: 'POST',
-                body: JSON.stringify(payload),
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-            });
-            
-            // Читаем текст, чтобы спастись от HTML-ошибок сервера
-            let text = await res.text();
-            let result;
-            try {
-                result = JSON.parse(text);
-            } catch (e) {
-                console.warn("⚠️ Сервер вернул не JSON. Удаляем битый запрос, чтобы он не заблокировал очередь.");
-                continue; // Не пушим в remainingQueue, просто забываем про него
-            }
-            
-            if (result && result.error) {
-                console.error("❌ Сервер отклонил офлайн-приход:", result.error);
-            } else {
-                console.log(`✅ Офлайн-приход успешно отправлен!`);
-            }
-        } catch (err) {
-            console.warn("⚠️ Интернет снова пропал (или Safari оборвал связь) во время отправки:", err);
-            remainingQueue.push(payload); 
-        }
-    }
-
-    // Обновляем память
-    if (remainingQueue.length > 0) {
-        localStorage.setItem(INCOMES_QUEUE_KEY, JSON.stringify(remainingQueue));
-    } else {
-        clearIncomesQueue();
-        alert("✅ Все отложенные офлайн-приходы успешно выгружены на сервер!");
-    }
-    
-    // Мгновенно тушим шестеренку
-    if (typeof updateQueueCounter === 'function') updateQueueCounter();
-    
-    isSyncingIncomes = false; // Открываем замок для будущих операций
-}
-
-// 5. ТРИГГЕРЫ: Запуск синхронизации автоматически
-window.addEventListener('online', syncIncomesQueue);
-setTimeout(syncIncomesQueue, 15000);
-/* ================================================================= */
