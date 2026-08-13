@@ -433,17 +433,21 @@
             if (window.isSyncing || !navigator.onLine) return;
             
             let queue = JSON.parse(localStorage.getItem('offlineQueue') || '[]');
-            if (queue.length === 0) return; // Кузов пуст
+            if (queue.length === 0) return;
 
             window.isSyncing = true;
             
+            // ==========================================
+            // Включаем пульсацию индикатора
+            // ==========================================
+            const badge = document.getElementById('твой_id_индикатора'); // Укажи ID элемента!
+            if (badge) badge.classList.add('syncing-active');
+
             const payload = {
                 action: "batch_sync",
                 api_key: CLIENT_API_KEY,
                 tasks: queue
             };
-
-            console.log("🚚 Грузовик поехал. В кузове задач:", queue.length);
 
             try {
                 const res = await fetch(GATEWAY_URL, {
@@ -452,7 +456,7 @@
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' }
                 });
 
-                const text = await res.text(); // Читаем как текст для защиты от HTML
+                const text = await res.text();
 
                 if (text.trim().startsWith('<')) {
                     throw new Error("Сервер вернул HTML вместо JSON. Гугл перегружен.");
@@ -461,19 +465,19 @@
                 const response = JSON.parse(text);
 
                 if (response && response.success) {
-                    console.log("✅ Грузовик успешно разгружен:", response);
-                    // Очищаем кузов только при 100% подтверждении!
                     localStorage.setItem('offlineQueue', '[]');
                     window.updateQueueBadge();
-                } else {
-                    console.error("❌ Сервер вернул ошибку при разгрузке:", response.error);
                 }
 
             } catch (err) {
-                console.error("⚠️ Связь оборвалась в пути или сбой сервера:", err.message);
-                // Чек остается в памяти, ждем следующей попытки
+                console.error("Связь оборвалась в пути или таймаут:", err.message);
             } finally {
                 window.isSyncing = false;
+                
+                // ==========================================
+                // Выключаем пульсацию индикатора
+                // ==========================================
+                if (badge) badge.classList.remove('syncing-active');
             }
         };
 

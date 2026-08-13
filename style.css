@@ -531,26 +531,16 @@ button,
     touch-action: manipulation !important;
 }
 
-#sync-toast {
-    position: fixed;
-    top: 20px; /* Отступ сверху */
-    left: 50%;
-    transform: translateX(-50%) translateY(-100px); /* Спрятано выше экрана */
-    background-color: #4CAF50; /* Приятный зеленый цвет */
-    color: white;
-    padding: 12px 24px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    font-size: 14px;
-    font-weight: 500;
-    z-index: 999999; /* Поверх вообще всего */
-    transition: transform 0.4s ease-out, opacity 0.4s;
-    opacity: 0;
-    pointer-events: none; /* Чтобы клики проходили сквозь него */
+/* Ключевые кадры для эффекта пульсации */
+@keyframes pulse-sync {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.15); opacity: 0.6; }
+    100% { transform: scale(1); opacity: 1; }
 }
 
-/* Класс, который будет показывать тост */
-#sync-toast.toast-visible {
-    transform: translateX(-50%) translateY(0);
-    opacity: 1;
+/* Класс, который мы будем включать скриптом */
+.syncing-active {
+    animation: pulse-sync 1.2s infinite ease-in-out;
+    /* Если хочешь, можно раскомментировать строку ниже, чтобы индикатор желтел при отправке: */
+    /* background-color: #ff9800 !important; */
 }
