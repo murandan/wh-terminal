@@ -401,18 +401,6 @@
             .then(response => {
                 if (response && response.success) {
                     console.log("✅ Грузовик успешно разгружен:", response);
-                    
-                    // --- НОВЫЙ БЛОК: Переливаем чеки в локальный кэш ---
-                    queue.forEach(task => {
-                        // Ищем в кузове только продажи
-                        if (task.tx_type === 'sale') {
-                            if (typeof moveTxToCacheLocally === 'function') {
-                                moveTxToCacheLocally(task);
-                            }
-                        }
-                    });
-                    // ----------------------------------------------------
-
                     // Очищаем локальную очередь только после подтверждения от сервера!
                     localStorage.setItem('offlineQueue', '[]');
                     window.updateQueueBadge();
@@ -5114,3 +5102,28 @@ if (!window.qeNumpadPatchedForNt) {
         window.qeNumpadPatchedForNt = true; // Защита от двойного перехвата
     }
 }
+// ==========================================
+// БЛОК ИНИЦИАЛИЗАЦИИ ПРИ ЗАПУСКЕ (ВОССТАНОВЛЕНО)
+// ==========================================
+window.onload = () => {
+    // 1. Отображаем версию приложения в окне ПИН-кода
+    if (typeof displayAppVersion === 'function') {
+        displayAppVersion();
+    }
+
+    // 2. Проверка автологина: если сессия есть, сразу скрываем экран Google
+    if (localStorage.getItem('google_session')) {
+        const gScreen = document.getElementById('google-screen');
+        if (gScreen) gScreen.style.display = 'none';
+    }
+
+    // 3. Запуск инициализации Google Auth (основная логика)
+    if (typeof initGoogleAuth === 'function') {
+        initGoogleAuth();
+    }
+
+    // 4. Подготовка кастомной клавиатуры Quick Edit
+    if (typeof initQeNumpad === 'function') {
+        initQeNumpad();
+    }
+};
