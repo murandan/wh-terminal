@@ -2683,57 +2683,51 @@ function setReportView(view) {
         }
 
         window.addEventListener('load', () => {
-            checkBlockTimer(); 
-            applyLanguage(currentLang); 
-            updateQueueCounter();
+    checkBlockTimer(); 
+    applyLanguage(currentLang); 
+    updateQueueCounter();
 
-            // === НОВОЕ: ВЫВОДИМ ВЕРСИЮ СРАЗУ, БЕЗ ЗАДЕРЖЕК ===
-            if (typeof displayAppVersion === 'function') {
-                displayAppVersion(); 
-            }
+    // === ИСТИННЫЙ SAAS: ПРОВЕРКА КЛЮЧА И АВТОЛОГИН ===
+    if (CLIENT_API_KEY) {
+        // Если ключ (ПИН) уже есть, пропускаем Google и сразу показываем ПИН-код
+        document.getElementById('google-screen').style.display = 'none';
+        document.getElementById('pin-screen').style.display = 'flex';
+    } else {
+        // Ключа нет. Проверяем автоавторизацию Google!
+        if (localStorage.getItem('google_session')) {
+            // Сессия есть! Гугл сам залогинится (сработает onload из index.html). 
+            // Просто прячем окно, чтобы кассир не видел лишних кнопок.
+            document.getElementById('google-screen').style.display = 'none';
+        } else {
+            // Сессии нет, человек тут впервые или вышел — требуем вход
+            document.getElementById('google-screen').style.display = 'flex';
+            document.getElementById('pin-screen').style.display = 'none';
+        }
+    }
 
-            // === ИСТИННЫЙ SAAS: ПРОВЕРКА КЛЮЧА ===
-            if (CLIENT_API_KEY) {
-                // Если ключ уже есть в памяти телефона, пропускаем Google и сразу показываем ПИН-код
-                document.getElementById('google-screen').style.display = 'none';
-                document.getElementById('pin-screen').style.display = 'flex';
+    // Возвращаем твой таймер! Раз без него переменная не успевает подгрузиться
+    setTimeout(displayAppVersion, 500); 
+    
+    load();
+
+    // === НАЧАЛО: ФИКС ДЛЯ КЛАВИАТУРЫ iOS SAFARI ===
+    if (window.visualViewport) {
+        const baseHeight = window.innerHeight; 
+        window.visualViewport.addEventListener('resize', () => {
+            const currentHeight = window.visualViewport.height;
+            document.body.style.height = currentHeight + 'px';
+            if (currentHeight < baseHeight * 0.75) {
+                document.body.classList.add('keyboard-open');
+                document.getElementById('cs').style.maxHeight = '65%';
             } else {
-                // Если ключа нет, требуем вход через Google
-                document.getElementById('google-screen').style.display = 'flex';
-                document.getElementById('pin-screen').style.display = 'none';
-                
-                // === НОВОЕ: ЗАПУСКАЕМ АВТОЛОГИН GOOGLE, если ключа нет ===
-                if (typeof initGoogleAuth === 'function') {
-                    initGoogleAuth();
-                }
+                document.body.classList.remove('keyboard-open');
+                document.getElementById('cs').style.maxHeight = '40dvh';
             }
-            
-            // setTimeout(displayAppVersion, 500); // Эту старую строку с задержкой мы убрали
-            load();
-
-            // === НАЧАЛО: ФИКС ДЛЯ КЛАВИАТУРЫ iOS SAFARI (УМНЫЙ ФОКУС) ===
-            if (window.visualViewport) {
-                // Запоминаем изначальную высоту экрана телефона
-                const baseHeight = window.innerHeight; 
-                
-                window.visualViewport.addEventListener('resize', () => {
-                    const currentHeight = window.visualViewport.height;
-                    document.body.style.height = currentHeight + 'px';
-                    
-                    // Если видимая высота стала меньше 75% (значит, вылезла клавиатура)
-                    if (currentHeight < baseHeight * 0.75) {
-                        document.body.classList.add('keyboard-open'); // Прячем лишние кнопки
-                        document.getElementById('cs').style.maxHeight = '65%'; // Расширяем лимит корзины
-                    } else {
-                        // Клавиатура скрыта - возвращаем всё как было
-                        document.body.classList.remove('keyboard-open');
-                        document.getElementById('cs').style.maxHeight = '40dvh';
-                    }
-                    window.scrollTo(0, 0);
-                });
-            }
-            // === КОНЕЦ ФИКСА ===
+            window.scrollTo(0, 0);
         });
+    }
+    // === КОНЕЦ ФИКСА ===
+});
 
         let selectedItemId = null, tempBase64 = null; 
         function openItemMenu(id) {
