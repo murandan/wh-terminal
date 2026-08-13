@@ -333,6 +333,59 @@
             }
         };
 
+        // === БРОНИРОВАННЫЙ ДВИЖОК ЗАПРОСОВ (smartFetch) ===
+        window.smartFetch = async function(url, payload, cacheKey, maxRetries = 3) {
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    // 1. Сначала читаем ответ как обычный текст
+                    const text = await response.text();
+                    
+                    // 2. Защита от бага Гугла: если пришел HTML (начинается с <) — выбрасываем ошибку, чтобы пойти на следующий круг
+                    if (text.trim().startsWith('<')) {
+                        throw new Error('Сервер вернул HTML вместо JSON');
+                    }
+
+                    // 3. Если это не HTML, парсим данные
+                    const data = JSON.parse(text);
+
+                    // 4. Успех! Тихо сохраняем в резервный кэш
+                    if (data && data.success) {
+                        localStorage.setItem(cacheKey, text);
+                    }
+                    
+                    return data; 
+                    
+                } catch (error) {
+                    console.warn(`Попытка ${i + 1} из ${maxRetries} для ${payload.action} не удалась:`, error.message);
+                    
+                    // Если это не последняя попытка — ждем полсекунды и пробуем снова
+                    if (i < maxRetries - 1) {
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    }
+                }
+            }
+
+            // === ПЛАН Б: ИНТЕРНЕТ ИЛИ ГУГЛ УПАЛ, ДОСТАЕМ ИЗ КЭША ===
+            console.warn(`Достаем данные для ${payload.action} из локального кэша.`);
+            const cachedText = localStorage.getItem(cacheKey);
+            
+            if (cachedText) {
+                try {
+                    return JSON.parse(cachedText);
+                } catch (e) {
+                    console.error('Ошибка чтения кэша', e);
+                }
+            }
+            
+            return null; // Отдаем пустоту только если нет ни связи, ни кэша
+        };
+
         // =======================================================
         // 🚚 ПАКЕТНАЯ ОТПРАВКА И ОФЛАЙН-ОЧЕРЕДЬ (QUEUE MANAGER)
         // =======================================================
@@ -452,22 +505,18 @@
         // Глобальный массив для хранения списка поставщиков
         window.suppliers = [];
 
-        // Функция запроса поставщиков с сервера
-        window.loadSuppliers = function() {
+        // === ОБНОВЛЕННАЯ ФУНКЦИЯ ПОСТАВЩИКОВ ===
+        window.loadSuppliers = async function() {
             if (typeof GATEWAY_URL === 'undefined' || typeof CLIENT_API_KEY === 'undefined') return;
             
-            fetch(GATEWAY_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'getSuppliers', api_key: CLIENT_API_KEY })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data && data.success && Array.isArray(data.suppliers)) {
-                    window.suppliers = data.suppliers;
-                }
-            })
-            .catch(err => console.error('Ошибка загрузки поставщиков:', err));
+            const payload = { action: 'getSuppliers', api_key: CLIENT_API_KEY };
+            
+            // Вызываем наше ядро (передаем URL, пакет данных и имя ящика для кэша)
+            const data = await window.smartFetch(GATEWAY_URL, payload, 'suppliersCache');
+            
+            if (data && data.success && Array.isArray(data.suppliers)) {
+                window.suppliers = data.suppliers;
+            }
         };
 
         // Запускаем при инициализации
@@ -1823,6 +1872,7 @@ async function handleAutoLogin(val) {
             // Делаем персональный кэш, чтобы продавцы не видели суммы друг друга при перезагрузке
             const cacheKey = 'totals_cache_' + (savedUid || 'anon');
 
+            // 1. МГНОВЕННАЯ ЗАГРУЗКА ИЗ КЭША (Твой отличный механизм)
             try {
                 const cachedDb = localStorage.getItem('db_cache');
                 const cachedTotals = localStorage.getItem(cacheKey);
@@ -1838,18 +1888,45 @@ async function handleAutoLogin(val) {
                     document.getElementById('sum-trans').innerText = (t.transfer || 0).toLocaleString() + ' ₸';
                 }
                 if (db.length > 0) render();
-            } catch (e) {}
+            } catch (e) { console.error("Ошибка чтения кэша", e); }
 
             if (!navigator.onLine) return; 
             
             // Запрещаем сетевой запрос к серверу, пока кассир не прошел ПИН-код
             if (!currentUser) return;
 
+            // 2. БРОНИРОВАННЫЙ СЕТЕВОЙ ЗАПРОС (С 3 попытками)
+            let fetchSuccess = false;
+            let data = null;
+            const fetchUrl = `${APPS_SCRIPT_URL}?action=getInitialData&api_key=${CLIENT_API_KEY}&t=${Date.now()}&uid=${savedUid}&role=${savedRole}`;
+
+            for (let i = 0; i < 3; i++) {
+                try {
+                    const res = await fetch(fetchUrl, { redirect: 'follow' });
+                    const text = await res.text(); // Читаем как текст, чтобы не упасть на HTML
+                    
+                    if (text.trim().startsWith('<')) {
+                        throw new Error('Сервер вернул HTML вместо JSON');
+                    }
+                    
+                    data = JSON.parse(text);
+                    fetchSuccess = true;
+                    break; // Данные получены, вырываемся из цикла!
+
+                } catch (err) {
+                    console.warn(`Попытка ${i + 1} из 3 для загрузки базы не удалась:`, err.message);
+                    if (i < 2) await new Promise(resolve => setTimeout(resolve, 500)); // Ждем полсекунды перед новой попыткой
+                }
+            }
+
+            // Если после 3 раз ничего не вышло — просто сдаемся. Кэш уже на экране, работа не стоит.
+            if (!fetchSuccess || !data) {
+                console.error("Не удалось обновить базу с сервера. Продолжаем работу на локальном кэше.");
+                return; 
+            }
+
+            // 3. УСПЕХ: ОБНОВЛЯЕМ ДАННЫЕ И ПЕРЕЗАПИСЫВАЕМ КЭШ
             try {
-                // Передаем серверу данные авторизованного пользователя
-                const fetchUrl = `${APPS_SCRIPT_URL}?action=getInitialData&api_key=${CLIENT_API_KEY}&t=${Date.now()}&uid=${savedUid}&role=${savedRole}`;
-                const res = await fetch(fetchUrl, { redirect: 'follow' });
-                const data = await res.json();
                 if (data.items) db = data.items;
                 if (data.staff) {
                     staffList = data.staff;
@@ -1871,10 +1948,15 @@ async function handleAutoLogin(val) {
                 document.getElementById('sum-red').innerText  = (t.installment || t.red || 0).toLocaleString() + ' ₸';
                 document.getElementById('sum-card').innerText = (t.pos_terminal || t.pos || t.card || 0).toLocaleString() + ' ₸';
                 document.getElementById('sum-trans').innerText= (t.transfer || 0).toLocaleString() + ' ₸';
-                render();
+                
+                render(); // Перерисовываем интерфейс свежими данными
+                
+                // Тихо сохраняем свежак в кэш для следующего раза
                 localStorage.setItem('db_cache', JSON.stringify(db));
-                localStorage.setItem(cacheKey, JSON.stringify(t)); // Сохраняем в персональный кэш
-            } catch (e) { console.error("Ошибка загрузки данных"); }
+                localStorage.setItem(cacheKey, JSON.stringify(t));
+            } catch (e) { 
+                console.error("Ошибка обработки полученных данных", e); 
+            }
         }
 
         async function refreshPosData(isSilent = false) {
