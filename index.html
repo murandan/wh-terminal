@@ -127,9 +127,10 @@
                 📦 <span data-i18n="receive_btn" style="max-width: 60px; overflow: hidden; text-overflow: ellipsis;">ПРИЕМКА</span>
             </button>
             
-            <button id="btn-settings" class="header-action-btn header-btn-settings" onclick="openSettings()">
-                ⚙️ <span id="queue-counter" class="queue-badge">0</span>
-            </button>
+            <button id="btn-settings" class="header-action-btn header-btn-settings" onclick="openSettings()" style="background: var(--bg-panel); border-color: var(--border-light); color: var(--text-main);">
+    <span id="sync-icon">⚙️</span>
+    <span id="queue-counter" class="queue-badge" style="display: none;">1</span>
+</button>
         </div>
         
         <div class="list-header">
@@ -588,10 +589,6 @@
         <button class="btn-save-native" onclick="saveQuickEdit()" style="width: 100%; padding: 15px; background: var(--accent-green); color: white; border: none; border-radius: 4px; font-weight: bold; margin-bottom: 10px;">СОХРАНИТЬ</button>
         <button class="cancel-btn" style="width: 100%; padding: 15px; background: transparent; border: 1px solid var(--border-main); color: var(--text-muted); border-radius: 4px;" onclick="closeQuickEdit()">ОТМЕНА</button>
     </div>
-</div>
-
-<div id="sync-toast" class="toast-hidden">
-    ✅ <span id="sync-toast-text">Данные отправлены</span>
 </div>
 
 <!-- ПОЛНОЭКРАННЫЙ ПОИСК ПОСТАВЩИКА -->

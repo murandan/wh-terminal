@@ -440,7 +440,8 @@
             // ==========================================
             // Включаем пульсацию индикатора
             // ==========================================
-            const badge = document.getElementById('твой_id_индикатора'); // Укажи ID элемента!
+            // const badge = document.getElementById('твой_id_индикатора'); // Укажи ID элемента!
+            const badge = document.getElementById('sync-icon'); // Берем именно шестеренку!
             if (badge) badge.classList.add('syncing-active');
 
             const payload = {

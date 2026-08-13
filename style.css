@@ -531,16 +531,20 @@ button,
     touch-action: manipulation !important;
 }
 
-/* Ключевые кадры для эффекта пульсации */
-@keyframes pulse-sync {
-    0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.15); opacity: 0.6; }
-    100% { transform: scale(1); opacity: 1; }
+/* Анимация непрерывного вращения */
+@keyframes spin-sync {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
-/* Класс, который мы будем включать скриптом */
+/* Класс, который включает JavaScript */
 .syncing-active {
-    animation: pulse-sync 1.2s infinite ease-in-out;
-    /* Если хочешь, можно раскомментировать строку ниже, чтобы индикатор желтел при отправке: */
-    /* background-color: #ff9800 !important; */
+    /* Обязательная строка, чтобы иконка могла вращаться! */
+    display: inline-block !important; 
+    
+    /* 1s = скорость одного оборота, linear = равномерно без рывков */
+    animation: spin-sync 1s linear infinite !important; 
+    
+    /* Если хочешь, чтобы она еще и меняла цвет при отправке, раскомментируй строку ниже: */
+    /* color: #ff9800 !important; */
 }
