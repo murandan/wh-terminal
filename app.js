@@ -914,6 +914,12 @@ window.openQuickEditModal = function(id) {
 
 // Открывает/закрывает наш кастомный список
 window.toggleCustomDropdown = function() {
+    // === ФИКС: Прячем цифровую клавиатуру при клике на Категорию ===
+const numpad = document.getElementById('custom-numpad');
+if (numpad) {
+    numpad.style.display = 'none';
+}
+// ================================================================
     const dropdown = document.getElementById('qe-category-dropdown');
     const arrow = document.getElementById('qe-category-arrow');
     
