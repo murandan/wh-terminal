@@ -429,11 +429,11 @@
         // 3. Главная функция отправки "грузовика" на сервер
         window.isSyncing = false; // Защита от двойной отправки (throttle)
 
-        window.syncOfflineQueue = function() {
+        window.syncOfflineQueue = async function() {
             if (window.isSyncing || !navigator.onLine) return;
             
             let queue = JSON.parse(localStorage.getItem('offlineQueue') || '[]');
-            if (queue.length === 0) return; // Кузов пуст, ехать не нужно
+            if (queue.length === 0) return; // Кузов пуст
 
             window.isSyncing = true;
             
@@ -445,30 +445,36 @@
 
             console.log("🚚 Грузовик поехал. В кузове задач:", queue.length);
 
-            fetch(GATEWAY_URL, {
-                method: 'POST',
-                body: JSON.stringify(payload),
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' }
-            })
-            .then(res => res.json())
-            .then(response => {
+            try {
+                const res = await fetch(GATEWAY_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+
+                const text = await res.text(); // Читаем как текст для защиты от HTML
+
+                if (text.trim().startsWith('<')) {
+                    throw new Error("Сервер вернул HTML вместо JSON. Гугл перегружен.");
+                }
+
+                const response = JSON.parse(text);
+
                 if (response && response.success) {
                     console.log("✅ Грузовик успешно разгружен:", response);
-                    // Очищаем локальную очередь только после подтверждения от сервера!
+                    // Очищаем кузов только при 100% подтверждении!
                     localStorage.setItem('offlineQueue', '[]');
                     window.updateQueueBadge();
                 } else {
                     console.error("❌ Сервер вернул ошибку при разгрузке:", response.error);
                 }
-            })
-            .catch(err => {
-                // Если интернет пропал прямо во время отправки, данные не удалятся, 
-                // а просто останутся ждать следующей попытки
-                console.error("⚠️ Связь оборвалась в пути:", err.message);
-            })
-            .finally(() => {
+
+            } catch (err) {
+                console.error("⚠️ Связь оборвалась в пути или сбой сервера:", err.message);
+                // Чек остается в памяти, ждем следующей попытки
+            } finally {
                 window.isSyncing = false;
-            });
+            }
         };
 
         // 4. Слушатель: Автоматическая отправка при появлении интернета
@@ -5189,17 +5195,3 @@ if (!window.qeNumpadPatchedForNt) {
         window.qeNumpadPatchedForNt = true; // Защита от двойного перехвата
     }
 }
-window.showSyncToast = function(message) {
-    const toast = document.getElementById('sync-toast');
-    const toastText = document.getElementById('sync-toast-text');
-    
-    if (!toast || !toastText) return;
-
-    toastText.innerText = message; // Вставляем наш текст
-    toast.classList.add('toast-visible'); // Показываем
-
-    // Прячем через 3 секунды
-    setTimeout(() => {
-        toast.classList.remove('toast-visible');
-    }, 3000);
-};
