@@ -2686,17 +2686,29 @@ function setReportView(view) {
             checkBlockTimer(); 
             applyLanguage(currentLang); 
             updateQueueCounter();
+
+            // === НОВОЕ: ВЫВОДИМ ВЕРСИЮ СРАЗУ, БЕЗ ЗАДЕРЖЕК ===
+            if (typeof displayAppVersion === 'function') {
+                displayAppVersion(); 
+            }
+
             // === ИСТИННЫЙ SAAS: ПРОВЕРКА КЛЮЧА ===
-        if (CLIENT_API_KEY) {
-            // Если ключ уже есть в памяти телефона, пропускаем Google и сразу показываем ПИН-код
-            document.getElementById('google-screen').style.display = 'none';
-            document.getElementById('pin-screen').style.display = 'flex';
-        } else {
-            // Если ключа нет, требуем вход через Google
-            document.getElementById('google-screen').style.display = 'flex';
-            document.getElementById('pin-screen').style.display = 'none';
-        }
-            setTimeout(displayAppVersion, 500); 
+            if (CLIENT_API_KEY) {
+                // Если ключ уже есть в памяти телефона, пропускаем Google и сразу показываем ПИН-код
+                document.getElementById('google-screen').style.display = 'none';
+                document.getElementById('pin-screen').style.display = 'flex';
+            } else {
+                // Если ключа нет, требуем вход через Google
+                document.getElementById('google-screen').style.display = 'flex';
+                document.getElementById('pin-screen').style.display = 'none';
+                
+                // === НОВОЕ: ЗАПУСКАЕМ АВТОЛОГИН GOOGLE, если ключа нет ===
+                if (typeof initGoogleAuth === 'function') {
+                    initGoogleAuth();
+                }
+            }
+            
+            // setTimeout(displayAppVersion, 500); // Эту старую строку с задержкой мы убрали
             load();
 
             // === НАЧАЛО: ФИКС ДЛЯ КЛАВИАТУРЫ iOS SAFARI (УМНЫЙ ФОКУС) ===
@@ -5102,28 +5114,3 @@ if (!window.qeNumpadPatchedForNt) {
         window.qeNumpadPatchedForNt = true; // Защита от двойного перехвата
     }
 }
-// ==========================================
-// БЛОК ИНИЦИАЛИЗАЦИИ ПРИ ЗАПУСКЕ (ВОССТАНОВЛЕНО)
-// ==========================================
-window.onload = () => {
-    // 1. Отображаем версию приложения в окне ПИН-кода
-    if (typeof displayAppVersion === 'function') {
-        displayAppVersion();
-    }
-
-    // 2. Проверка автологина: если сессия есть, сразу скрываем экран Google
-    if (localStorage.getItem('google_session')) {
-        const gScreen = document.getElementById('google-screen');
-        if (gScreen) gScreen.style.display = 'none';
-    }
-
-    // 3. Запуск инициализации Google Auth (основная логика)
-    if (typeof initGoogleAuth === 'function') {
-        initGoogleAuth();
-    }
-
-    // 4. Подготовка кастомной клавиатуры Quick Edit
-    if (typeof initQeNumpad === 'function') {
-        initQeNumpad();
-    }
-};
