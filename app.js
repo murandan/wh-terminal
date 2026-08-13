@@ -5189,3 +5189,17 @@ if (!window.qeNumpadPatchedForNt) {
         window.qeNumpadPatchedForNt = true; // Защита от двойного перехвата
     }
 }
+window.showSyncToast = function(message) {
+    const toast = document.getElementById('sync-toast');
+    const toastText = document.getElementById('sync-toast-text');
+    
+    if (!toast || !toastText) return;
+
+    toastText.innerText = message; // Вставляем наш текст
+    toast.classList.add('toast-visible'); // Показываем
+
+    // Прячем через 3 секунды
+    setTimeout(() => {
+        toast.classList.remove('toast-visible');
+    }, 3000);
+};
