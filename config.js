@@ -1,6 +1,6 @@
 // Файл глобальных настроек (config.js)
 
-const APP_VERSION = "5.5.91"; // Меняйте версию только здесь
+const APP_VERSION = "5.5.45"; // Меняйте версию только здесь
 
 // 1. Ссылки на роутер и шлюз (единые для всех арендаторов)
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyOp6fzexVQwUHVNmL50hF62pz20TW9nNoTL1SKyBEVGb095SVh_h6kNdyOIaMdroyW/exec"; 
@@ -21,5 +21,6 @@ const HELP_LINKS = {
   ru: "https://dot-leaf-a35.notion.site/POS-39d1cf6d5f4f8038841fe8104985d573?source=copy_link",
   kz: "https://dot-leaf-a35.notion.site/POS-39e1cf6d5f4f80aea32ee33e3f31bd03?source=copy_link"
 };
+
 // Динамически берем ключ из памяти телефона (он сохраняется туда после логина через Google)
 let CLIENT_API_KEY = localStorage.getItem('CLIENT_API_KEY') || "";
