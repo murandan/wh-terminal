@@ -1887,7 +1887,7 @@ async function handleAutoLogin(val) {
             // Делаем персональный кэш, чтобы продавцы не видели суммы друг друга при перезагрузке
             const cacheKey = 'totals_cache_' + (savedUid || 'anon');
 
-            // 1. МГНОВЕННАЯ ЗАГРУЗКА ИЗ КЭША (Твой отличный механизм)
+            // 1. МГНОВЕННАЯ ЗАГРУЗКА ИЗ КЭША
             try {
                 const cachedDb = localStorage.getItem('db_cache');
                 const cachedTotals = localStorage.getItem(cacheKey);
@@ -1909,6 +1909,36 @@ async function handleAutoLogin(val) {
             
             // Запрещаем сетевой запрос к серверу, пока кассир не прошел ПИН-код
             if (!currentUser) return;
+
+            // === НОВЫЙ БЛОК: МИКРО-ПИНГ (Проверка изменений базы) ===
+            try {
+                const pingPayload = { action: 'ping', api_key: CLIENT_API_KEY };
+                const pingRes = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(pingPayload),
+                    redirect: 'follow'
+                });
+                const pingText = await pingRes.text();
+                
+                if (!pingText.trim().startsWith('<')) {
+                    const pingData = JSON.parse(pingText);
+                    if (pingData.success && pingData.timestamp) {
+                        const localTimestamp = localStorage.getItem('db_timestamp');
+                        
+                        // Если время совпадает — база актуальна, отменяем тяжелую загрузку!
+                        if (localTimestamp === pingData.timestamp) {
+                            console.log("✅ База актуальна (ping совпал), загрузка с сервера отменена.");
+                            return; // ВАЖНО: прерываем выполнение функции, оставляем данные из кэша
+                        }
+                        
+                        // Если не совпадает, запоминаем новую метку (пока во временную переменную)
+                        window._pendingTimestamp = pingData.timestamp; 
+                    }
+                }
+            } catch (pingErr) {
+                console.warn("⚠️ Ошибка пинга, продолжаем стандартную загрузку базы:", pingErr);
+            }
+            // ========================================================
 
             // 2. БРОНИРОВАННЫЙ СЕТЕВОЙ ЗАПРОС (С 3 попытками)
             let fetchSuccess = false;
@@ -1969,6 +1999,13 @@ async function handleAutoLogin(val) {
                 // Тихо сохраняем свежак в кэш для следующего раза
                 localStorage.setItem('db_cache', JSON.stringify(db));
                 localStorage.setItem(cacheKey, JSON.stringify(t));
+
+                // === СОХРАНЯЕМ МЕТКУ ВРЕМЕНИ ===
+                if (window._pendingTimestamp) {
+                    localStorage.setItem('db_timestamp', window._pendingTimestamp);
+                    delete window._pendingTimestamp;
+                }
+                
             } catch (e) { 
                 console.error("Ошибка обработки полученных данных", e); 
             }
