@@ -163,7 +163,9 @@
                 modal_income_title: "ПРИЕМКА ТОВАРА",
                 tab_import: "ИМПОРТ EXCEL",
                 tab_new: "НОВЫЙ ТОВАР",
-                file_select_excel: "Нажмите для выбора Excel"
+                file_select_excel: "Нажмите для выбора Excel",
+                "update_available": "🚀 Доступна новая версия системы",
+                "update_btn": "Обновить кассу"
             },
             kz: {
                 btn_sale: "САТУ", btn_return: "ҚАЙТАРУ", search_placeholder: "ІЗДЕУ...",
@@ -329,7 +331,9 @@
                 modal_income_title: "ТАУАРДЫ ҚАБЫЛДАУ",
                 tab_import: "EXCEL ИМПОРТТАУ",
                 tab_new: "ЖАҢА ТАУАР",
-                file_select_excel: "Excel файлын таңдау үшін басыңыз"
+                file_select_excel: "Excel файлын таңдау үшін басыңыз",
+                "update_available": "🚀 Жүйенің жаңа нұсқасы қолжетімді",
+                "update_btn": "Кассаны жаңарту"
             }
         };
 
@@ -5198,5 +5202,47 @@ if (!window.qeNumpadPatchedForNt) {
             }
         };
         window.qeNumpadPatchedForNt = true; // Защита от двойного перехвата
+    }
+}
+// Показываем UI-плашку с предложением обновиться (Адаптировано под темы и i18n)
+function showUpdatePrompt(newVersion) {
+    // Проверяем, нет ли уже этой плашки на экране
+    if (document.getElementById('update-prompt-banner')) return;
+
+    const banner = document.createElement('div');
+    banner.id = 'update-prompt-banner';
+    
+    // Используем CSS-переменные. Фон плашки делаем акцентным, а кнопку - под цвет панелей интерфейса
+    banner.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; 
+        background: var(--accent-blue, #38bdf8); 
+        color: #ffffff; 
+        text-align: center; padding: 10px; font-size: 14px; z-index: 9999;
+        display: flex; justify-content: center; align-items: center; gap: 15px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    `;
+    
+    // Текст обернут в data-i18n, версия вынесена отдельно
+    banner.innerHTML = `
+        <div>
+            <span data-i18n="update_available">🚀 Доступна новая версия системы</span> 
+            <b>(${newVersion})</b>
+        </div>
+        <button onclick="window.location.reload(true)" style="
+            background: var(--bg-panel); 
+            color: var(--text-main); 
+            border: 1px solid var(--border-light); 
+            padding: 6px 14px; border-radius: 6px; cursor: pointer; 
+            font-weight: bold; font-size: 13px; transition: 0.2s;">
+            <span data-i18n="update_btn">Обновить кассу</span>
+        </button>
+    `;
+    
+    document.body.prepend(banner);
+
+    // Запускаем твою функцию перевода интерфейса, чтобы плашка сразу перевелась
+    // (Убедись, что вызываешь именно ту функцию, которая у тебя отвечает за смену языка)
+    if (typeof applyTranslations === 'function') {
+        applyTranslations(); // Замени на актуальное имя твоей функции (например, updateLang, renderLang)
     }
 }
