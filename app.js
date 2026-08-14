@@ -2115,42 +2115,54 @@ function handleItemClick(id, event) {
 
         function add(id) {
             const p = db.find(x => x.id === id);
+            if (!p) return;
+
             const inC = cart.find(x => x.id === id);
             
             const roundedPrice = Math.round(Number(p.price) || 0);
             const roundedCost = Math.round(Number(p.cost) || 0);
             
+            const newQty = inC ? inC.qty + 1 : 1;
+            const currentStock = parseFloat(p.stock) || 0;
+            const minStock = parseFloat(p.min_stock) || 1;
+
+            // === ПРОВЕРКА МИНИМАЛЬНОГО ОСТАТКА И ТРЕВОГА ===
+            if ((currentStock - newQty) < minStock) {
+                const warnText = (typeof translations !== 'undefined' && translations[currentLang] && translations[currentLang].kaspi_danger) 
+                    ? translations[currentLang].kaspi_danger + " Проверьте резервы!" 
+                    : "⚠️ ВНИМАНИЕ! Остаток товара падает ниже минимума.\nОбязательно проверьте резервы на Kaspi Маркете!";
+                
+                alert(warnText);
+                if (navigator.vibrate) navigator.vibrate([200, 100, 200]); 
+            }
+
             if (inC) {
                 inC.qty++; 
             } else {
                 cart.push({
-                id: p.id, 
-                name: p.name, 
-                qty: 1, 
-                price: roundedPrice, 
-                origPrice: roundedPrice, 
-                cost: roundedCost,
-                stock: parseFloat(p.stock) || 0,
-                min_stock: parseFloat(p.min_stock) || 1
-            });
+                    id: p.id, 
+                    name: p.name, 
+                    qty: 1, 
+                    price: roundedPrice, 
+                    origPrice: roundedPrice, 
+                    cost: roundedCost,
+                    stock: currentStock,
+                    min_stock: minStock
+                });
             }
             
-            // --- 1. ВИБРООТКЛИК (для мобильных устройств) ---
             if (navigator.vibrate) {
-                navigator.vibrate(40); // Легкий, четкий толчок
+                navigator.vibrate(40);
             }
 
-            // --- 2. ВИЗУАЛЬНАЯ ВСПЫШКА ---
-            // Находим карточку, по которой кликнули, и на 150мс меняем ей фон
-            const clickedElement = event.currentTarget || event.target.closest('.c-item');
+            const clickedElement = typeof event !== 'undefined' && event ? (event.currentTarget || event.target.closest('.c-item')) : null;
             if (clickedElement && clickedElement.classList.contains('c-item')) {
                 const originalBg = clickedElement.style.background;
-                // Вспышка (используем наш зеленый акцент, но с прозрачностью, чтобы текст читался)
                 clickedElement.style.background = 'var(--bg-success-dim)'; 
-                clickedElement.style.transition = 'none'; // Убираем плавность для резкой вспышки
+                clickedElement.style.transition = 'none'; 
                 
                 setTimeout(() => {
-                    clickedElement.style.transition = 'background 0.3s'; // Возвращаем плавность затухания
+                    clickedElement.style.transition = 'background 0.3s'; 
                     clickedElement.style.background = originalBg || '';
                 }, 150);
             }
@@ -2171,24 +2183,18 @@ function handleItemClick(id, event) {
         function update() {
             document.getElementById('cart-list').innerHTML = cart.map((item, idx) => {
                 
-                // === НОВЫЙ БЛОК: ПРОВЕРКА КРИТИЧЕСКОГО ОСТАТКА ===
+                // === ПРОВЕРКА КРИТИЧЕСКОГО ОСТАТКА ДЛЯ ОТРИСОВКИ КНОПКИ ===
                 let remainingStock = item.stock - item.qty;
-                // Задаем стандартные стили строки
                 let rowBgColor = "var(--bg-panel)";
                 let rowBorder = "1px solid var(--border-main)";
                 let kaspiBtnHtml = "";
 
-                // Если остаток опускается до или ниже критического уровня (по умолчанию 1)
                 let minStockLevel = item.min_stock !== undefined ? item.min_stock : 1;
                 
-                // Если остаток упал до минимума — включаем тревогу
                 if (remainingStock <= minStockLevel) {
-                    // Агрессивный фон (светло-красный в светлой теме, бордовый в темной)
                     rowBgColor = "var(--bg-danger-dim)"; 
-                    // Толстая красная рамка (2px вместо 1px)
                     rowBorder = "2px solid var(--accent-red)"; 
                     
-                    // Кнопка тоже становится красной и более массивной
                     kaspiBtnHtml = `
                         <div style="width: 100%; margin-top: 8px;">
                             <button onclick="checkKaspiFromCart('${item.id}', this)" style="width: 100%; background: var(--bg-card); color: var(--accent-red); border: 2px dashed var(--accent-red); padding: 10px; border-radius: 4px; font-size: 12px; font-weight: 900; cursor: pointer; text-transform: uppercase; transition: 0.2s;">
@@ -2203,7 +2209,6 @@ function handleItemClick(id, event) {
                 <div class="cart-row" id="r-${item.id}" style="background: ${rowBgColor}; border: ${rowBorder}; padding: 6px 10px; display: flex; flex-direction: column; gap: 6px; border-radius: 4px; margin-bottom: 3px; color: var(--text-main);">
                     
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        
                         <div style="display: flex; align-items: center; gap: 6px; flex: 1; overflow-x: auto; white-space: nowrap; scrollbar-width: none;">
                             <span style="color: var(--text-main); font-size: 13px; font-weight: bold;">${item.name}</span>
                             <span style="color: var(--text-muted); font-size: 11px; font-family: 'Roboto', sans-serif; font-weight: normal;">#${item.id}</span>
@@ -2216,7 +2221,6 @@ function handleItemClick(id, event) {
                     </div>
                     
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        
                         <div class="qty-box">
                             <button class="q-btn" onclick="qty('${item.id}',-1)">-</button>
                             <input type="text" inputmode="numeric" class="q-val" value="${item.qty.toLocaleString('ru-RU')}" 
