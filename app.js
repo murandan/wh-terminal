@@ -5204,15 +5204,39 @@ if (!window.qeNumpadPatchedForNt) {
         window.qeNumpadPatchedForNt = true; // Защита от двойного перехвата
     }
 }
-// Показываем UI-плашку с предложением обновиться (Адаптировано под темы и i18n)
+// ========================================================
+// РАДАР ОБНОВЛЕНИЙ 
+// ========================================================
+
+// 1. "Мозг" - Радар, который ищет обновления
+async function checkForAppUpdates() {
+    try {
+        const response = await fetch(`config.js?t=${Date.now()}`);
+        if (!response.ok) return;
+
+        const text = await response.text();
+        // Ищем версию в файле
+        const match = text.match(/const\s+APP_VERSION\s*=\s*["']([^"']+)["']/);
+        
+        if (match && match[1]) {
+            const serverVersion = match[1];
+            
+            // Сравниваем с текущей
+            if (serverVersion !== APP_VERSION) {
+                showUpdatePrompt(serverVersion); // Даем команду показать плашку
+            }
+        }
+    } catch (error) {
+        console.warn("Радар обновлений: ошибка проверки файла.", error);
+    }
+}
+
+// 2. "Руки" - Отрисовка плашки
 function showUpdatePrompt(newVersion) {
-    // Проверяем, нет ли уже этой плашки на экране
     if (document.getElementById('update-prompt-banner')) return;
 
     const banner = document.createElement('div');
     banner.id = 'update-prompt-banner';
-    
-    // Используем CSS-переменные. Фон плашки делаем акцентным, а кнопку - под цвет панелей интерфейса
     banner.style.cssText = `
         position: relative; width: 100%; 
         background: var(--accent-blue, #38bdf8); 
@@ -5222,7 +5246,6 @@ function showUpdatePrompt(newVersion) {
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     `;
     
-    // Текст обернут в data-i18n, версия вынесена отдельно
     banner.innerHTML = `
         <div>
             <span data-i18n="update_available">🚀 Доступна новая версия системы</span> 
@@ -5239,12 +5262,7 @@ function showUpdatePrompt(newVersion) {
     `;
     
     document.body.prepend(banner);
-
-    // Запускаем твою функцию перевода интерфейса, чтобы плашка сразу перевелась
-    // (Убедись, что вызываешь именно ту функцию, которая у тебя отвечает за смену языка)
-    if (typeof applyTranslations === 'function') {
-        applyTranslations(); // Замени на актуальное имя твоей функции (например, updateLang, renderLang)
-    }
 }
-// setInterval(checkForAppUpdates, 15 * 60 * 1000);
+
 setInterval(checkForAppUpdates, 60000);
+// setInterval(checkForAppUpdates, 15 * 60 * 1000);
