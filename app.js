@@ -5246,3 +5246,5 @@ function showUpdatePrompt(newVersion) {
         applyTranslations(); // Замени на актуальное имя твоей функции (например, updateLang, renderLang)
     }
 }
+// setInterval(checkForAppUpdates, 15 * 60 * 1000);
+setInterval(checkForAppUpdates, 60000);
