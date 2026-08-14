@@ -5214,12 +5214,12 @@ function showUpdatePrompt(newVersion) {
     
     // Используем CSS-переменные. Фон плашки делаем акцентным, а кнопку - под цвет панелей интерфейса
     banner.style.cssText = `
-        position: fixed; top: 0; left: 0; width: 100%; 
+        position: relative; width: 100%; 
         background: var(--accent-blue, #38bdf8); 
         color: #ffffff; 
         text-align: center; padding: 10px; font-size: 14px; z-index: 9999;
         display: flex; justify-content: center; align-items: center; gap: 15px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     `;
     
     // Текст обернут в data-i18n, версия вынесена отдельно
