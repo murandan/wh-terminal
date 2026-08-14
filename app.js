@@ -5264,5 +5264,4 @@ function showUpdatePrompt(newVersion) {
     document.body.prepend(banner);
 }
 
-setInterval(checkForAppUpdates, 60000);
-// setInterval(checkForAppUpdates, 15 * 60 * 1000);
+setInterval(checkForAppUpdates, 15 * 60 * 1000);
