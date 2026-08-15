@@ -2256,10 +2256,14 @@ function handleItemClick(id, event) {
                     let match = res.message ? res.message.match(/\((\d+)/) : null;
                     let qty = match ? match[1] : '!';
 
-                    btnElem.style.background = 'var(--bg-danger-dim)';
-                    btnElem.style.color = 'var(--accent-red)';
+                    // 1. Делаем кнопку сплошной красной с белым текстом
+                    btnElem.style.background = 'var(--accent-red)';
+                    btnElem.style.color = '#ffffff';
                     btnElem.style.border = '2px solid var(--accent-red)';
-                    btnElem.innerHTML = `⚠️ ${translations[currentLang].kaspi_danger} ${qty} ${translations[currentLang].kaspi_pcs}`;
+                    
+                    // 2. Выделяем количество и "НЕ ПРОДАВАТЬ!" ярко-желтым цветом
+                    btnElem.innerHTML = `⚠️ ${translations[currentLang].kaspi_danger} <span style="color: #ffd700; font-size: 1.1em; font-weight: 900; margin-left: 4px; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">${qty} ${translations[currentLang].kaspi_pcs}</span>`;
+                    
                     if (navigator.vibrate) navigator.vibrate([100, 50, 100]); 
                 } else if (res.safe === true) {
                     btnElem.style.background = 'var(--bg-success-dim)';
