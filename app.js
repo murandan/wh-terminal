@@ -81,8 +81,8 @@
                 kaspi_err_server: "ОШИБКА СВЯЗИ С СЕРВЕРОМ",
                 kaspi_no_token: "ТОКЕН KASPI НЕ НАСТРОЕН",
                 kaspi_safe: "В РЕЗЕРВЕ ЧИСТО. МОЖНО ПРОДАВАТЬ",
-                kaspi_danger: "ВНИМАНИЕ! Проверь резервы на KASPI:",
-                kaspi_pcs: "шт. ОПАСНО!",
+                kaspi_danger: "ТОВАР В РЕЗЕРВЕ KASPI:",
+                kaspi_pcs: "шт. НЕ ПРОДАВАТЬ!",
                 kaspi_err_api: "ОШИБКА СЕРВЕРА KASPI",
                 btn_delete_photo: "УДАЛИТЬ ФОТО",
                 msg_photo_deleting: "УДАЛЕНИЕ...",
@@ -249,8 +249,8 @@
                 kaspi_err_server: "СЕРВЕРМЕН БАЙЛАНЫС ҚАТЕСІ",
                 kaspi_no_token: "KASPI ТОКЕНІ БАПТАЛМАҒАН",
                 kaspi_safe: "РЕЗЕРВ ТАЗА. САТУҒА БОЛАДЫ",
-                kaspi_danger: "KASPI-дегі резервтерді тексеріңіз!:",
-                kaspi_pcs: "дана. ҚАУІПТІ!",
+                kaspi_danger: "KASPI-ДЕГІ РЕЗЕРВ:",
+                kaspi_pcs: "дана. САТУҒА БОЛМАЙДЫ!",
                 kaspi_err_api: "KASPI СЕРВЕРІНІҢ ҚАТЕСІ",
                 btn_delete_photo: "СУРЕТТІ ЖОЮ",
                 msg_photo_deleting: "ЖОЮ...",
@@ -2122,19 +2122,8 @@ function handleItemClick(id, event) {
             const roundedPrice = Math.round(Number(p.price) || 0);
             const roundedCost = Math.round(Number(p.cost) || 0);
             
-            const newQty = inC ? inC.qty + 1 : 1;
             const currentStock = parseFloat(p.stock) || 0;
             const minStock = parseFloat(p.min_stock) || 1;
-
-            // === ПРОВЕРКА МИНИМАЛЬНОГО ОСТАТКА И ТРЕВОГА ===
-            if ((currentStock - newQty) < minStock) {
-                const warnText = (typeof translations !== 'undefined' && translations[currentLang] && translations[currentLang].kaspi_danger) 
-                    ? translations[currentLang].kaspi_danger + " Проверьте резервы!" 
-                    : "⚠️ ВНИМАНИЕ! Остаток товара падает ниже минимума.\nОбязательно проверьте резервы на Kaspi Маркете!";
-                
-                alert(warnText);
-                if (navigator.vibrate) navigator.vibrate([200, 100, 200]); 
-            }
 
             if (inC) {
                 inC.qty++; 
