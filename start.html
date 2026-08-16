@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Установка Trade Control</title>
+    <title>Установка терминала</title>
     <style>
         body { 
             background-color: #1a1a1a; 
@@ -11,9 +11,10 @@
             font-family: sans-serif; 
             text-align: center; 
             padding: 50px 20px; 
+            overflow: hidden; /* Чтобы стрелка не создавала скролл */
         }
         .btn { 
-            display: none; /* Изначально прячем кнопку от всех */
+            display: none; 
             background: #3498db; 
             color: white; 
             padding: 18px 35px; 
@@ -23,66 +24,86 @@
             margin-top: 20px; 
             font-size: 18px; 
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 10;
         }
         #ios-hint {
             display: none;
             background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 30px 20px;
+            border: 1px dashed rgba(255, 255, 255, 0.3);
+            padding: 20px;
             border-radius: 12px;
-            margin-top: 20px;
+            margin-bottom: 25px;
             font-size: 16px;
-            line-height: 1.5;
+            line-height: 1.4;
         }
         #status-text {
             color: #cccccc;
             margin-bottom: 30px;
         }
+        
+        /* CSS-магия для прыгающей стрелки */
+        #pointer-arrow {
+            display: none;
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            font-size: 60px;
+            color: #ffeb3b;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            animation: bounceDiagonal 1s infinite;
+            z-index: 100;
+        }
+        
+        @keyframes bounceDiagonal {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(-15px, -15px); } /* Прыгает по диагонали */
+        }
     </style>
 </head>
 <body>
-    <h2 id="main-title">Проверка браузера...</h2>
+    <h2 id="main-title">Проверка системы...</h2>
     <p id="status-text">Пожалуйста, подождите.</p>
     
-    <a id="start-btn" class="btn" href="#">ОТКРЫТЬ TRADE CONTROL</a>
-    
-    <!-- Блок-заглушка для iOS внутри Telegram -->
     <div id="ios-hint">
-        <p style="font-size: 50px; margin: 0 0 15px 0;">🧭</p>
-        <p style="font-size: 18px;"><b>Шаг 1 из 2</b></p>
-        <p>Чтобы продолжить установку, нажмите на <b>значок компаса</b> в правом нижнем углу экрана.</p>
+        <p style="margin-top: 0; color: #ffeb3b;">⚠️ <b>ВАЖНО ДЛЯ iPHONE:</b></p>
+        <p>Если в правом нижнем углу экрана есть <b>значок компаса</b>, нажмите на него!</p>
+        <p style="margin-bottom: 0; color: #aaaaaa; font-size: 14px;">Иначе авторизация не сработает.</p>
     </div>
+
+    <a id="start-btn" class="btn" href="#">ОТКРЫТЬ КАССУ</a>
+    
+    <!-- Анимированная стрелка (покажется только на iOS) -->
+    <div id="pointer-arrow">↘</div>
 
     <script>
         var btn = document.getElementById('start-btn');
         var iosHint = document.getElementById('ios-hint');
         var title = document.getElementById('main-title');
         var statusText = document.getElementById('status-text');
+        var pointerArrow = document.getElementById('pointer-arrow');
         
         var ua = navigator.userAgent;
         var isIOS = /iPhone|iPad|iPod/i.test(ua);
         var isAndroid = /Android/i.test(ua);
-        
-        // Магия определения: если это iOS, но в данных нет слова Safari — значит мы в Telegram/WhatsApp
-        var isIOSWebView = isIOS && !/Safari/i.test(ua); 
 
         if (isAndroid) {
-            // Сценарий 1: Это Android. Показываем кнопку для авто-запуска Chrome
             title.innerText = "Подготовка к запуску";
             statusText.innerText = "Нажмите кнопку ниже, чтобы открыть терминал.";
             btn.style.display = "inline-block";
             btn.href = "intent://web-kassa-old.github.io/app/#Intent;scheme=https;package=com.android.chrome;end";
             
-        } else if (isIOSWebView) {
-            // Сценарий 2: Это iPhone, и он застрял в Telegram. Прячем всё, показываем компас.
-            title.innerText = "Внимание!";
+        } else if (isIOS) {
+            title.innerText = "Установка на iPhone";
             statusText.style.display = "none";
             iosHint.style.display = "block";
+            pointerArrow.style.display = "block"; /* Включаем стрелку */
+            btn.style.display = "inline-block";
+            btn.href = "https://web-kassa-old.github.io/app/";
             
         } else {
-            // Сценарий 3: Это iPhone (уже внутри Safari) или компьютер. Показываем кнопку.
             title.innerText = "Всё готово!";
-            statusText.innerText = "Теперь вы находитесь в правильном браузере. Можно запускать!";
+            statusText.innerText = "Можно запускать терминал.";
             btn.style.display = "inline-block";
             btn.href = "https://web-kassa-old.github.io/app/";
         }
