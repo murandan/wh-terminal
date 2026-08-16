@@ -24,42 +24,47 @@
             font-size: 18px; 
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
-        .hint { 
-            color: #aaaaaa; 
-            font-size: 14px; 
-            margin-top: 20px; 
+        #ios-hint {
+            display: none;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            font-size: 16px;
             line-height: 1.5;
         }
     </style>
 </head>
 <body>
-    <h2>Подготовка к запуску</h2>
-    <p style="color: #cccccc;">Для правильной установки кассы и успешной авторизации, нажмите кнопку ниже:</p>
+    <h2 id="main-title">Подготовка к запуску</h2>
+    <p id="main-desc" style="color: #cccccc;">Для правильной установки кассы и успешной авторизации, нажмите кнопку ниже:</p>
     
-    <!-- Эта кнопка будет программно меняться скриптом ниже -->
     <a id="start-btn" class="btn" href="#">ЗАПУСТИТЬ КАССУ</a>
     
-    <!-- Подсказка появится только для пользователей iPhone -->
-    <p id="ios-hint" class="hint" style="display: none;">
-        ⚠️ <b>Внимание:</b> Если после нажатия на кнопку вы остались внутри мессенджера, обязательно нажмите на <b>иконку компаса (Safari)</b> в правом нижнем углу экрана!
-    </p>
+    <div id="ios-hint">
+        <p style="font-size: 40px; margin: 0 0 10px 0;">🧭</p>
+        <p>Чтобы установить кассу на iPhone, нажмите на <b>значок компаса (или глобуса)</b> в правом нижнем углу экрана.</p>
+        <p style="color: #aaaaaa; font-size: 14px; margin-top: 15px;">Приложение откроется в браузере Safari.</p>
+    </div>
 
     <script>
         var btn = document.getElementById('start-btn');
-        var hint = document.getElementById('ios-hint');
+        var desc = document.getElementById('main-desc');
+        var title = document.getElementById('main-title');
+        var iosHint = document.getElementById('ios-hint');
         
-        // Определяем операционную систему
         if (/Android/i.test(navigator.userAgent)) {
-            // Для Android "зашиваем" в кнопку жесткий вызов Google Chrome
+            // Для Android показываем кнопку и прописываем intent-переход
             btn.href = "intent://web-kassa-old.github.io/app/#Intent;scheme=https;package=com.android.chrome;end";
+        } else if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+            // Для iOS ПРЯЧЕМ кнопку и показываем блок с компасом
+            btn.style.display = "none";
+            desc.style.display = "none";
+            title.innerText = "Почти готово!";
+            iosHint.style.display = "block";
         } else {
-            // Для iOS и ПК подставляем обычную ссылку
+            // Для ПК оставляем кнопку с обычной ссылкой
             btn.href = "https://web-kassa-old.github.io/app/";
-            
-            // Если это iPhone, показываем инструкцию про компас
-            if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-                hint.style.display = "block";
-            }
         }
     </script>
 </body>
