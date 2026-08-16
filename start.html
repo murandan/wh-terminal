@@ -3,21 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Загрузка Trade Control...</title>
+    <title>Установка Trade Control</title>
+    <style>
+        body { 
+            background-color: #1a1a1a; 
+            color: white; 
+            font-family: sans-serif; 
+            text-align: center; 
+            padding: 50px 20px; 
+        }
+        .btn { 
+            display: inline-block; 
+            background: #3498db; 
+            color: white; 
+            padding: 18px 35px; 
+            text-decoration: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            margin-top: 30px; 
+            font-size: 18px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .hint { 
+            color: #aaaaaa; 
+            font-size: 14px; 
+            margin-top: 20px; 
+            line-height: 1.5;
+        }
+    </style>
 </head>
-<body style="background-color: #1a1a1a; color: white; font-family: sans-serif; text-align: center; padding-top: 50px;">
-    <h2>Подготовка к установке...</h2>
+<body>
+    <h2>Подготовка к запуску</h2>
+    <p style="color: #cccccc;">Для правильной установки кассы и успешной авторизации, нажмите кнопку ниже:</p>
     
+    <!-- Эта кнопка будет программно меняться скриптом ниже -->
+    <a id="start-btn" class="btn" href="#">ЗАПУСТИТЬ КАССУ</a>
+    
+    <!-- Подсказка появится только для пользователей iPhone -->
+    <p id="ios-hint" class="hint" style="display: none;">
+        ⚠️ <b>Внимание:</b> Если после нажатия на кнопку вы остались внутри мессенджера, обязательно нажмите на <b>иконку компаса (Safari)</b> в правом нижнем углу экрана!
+    </p>
+
     <script>
-        // Проверяем устройство пользователя
+        var btn = document.getElementById('start-btn');
+        var hint = document.getElementById('ios-hint');
+        
+        // Определяем операционную систему
         if (/Android/i.test(navigator.userAgent)) {
-            // Если это Android, принудительно открываем чистый Google Chrome через 0.5 сек
-            setTimeout(function() {
-                window.location.href = "intent://web-kassa-old.github.io/app/#Intent;scheme=https;package=com.android.chrome;end";
-            }, 500);
+            // Для Android "зашиваем" в кнопку жесткий вызов Google Chrome
+            btn.href = "intent://web-kassa-old.github.io/app/#Intent;scheme=https;package=com.android.chrome;end";
         } else {
-            // Если это iPhone, iPad или ПК — сразу кидаем на обычную прямую ссылку
-            window.location.href = "https://web-kassa-old.github.io/app/";
+            // Для iOS и ПК подставляем обычную ссылку
+            btn.href = "https://web-kassa-old.github.io/app/";
+            
+            // Если это iPhone, показываем инструкцию про компас
+            if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                hint.style.display = "block";
+            }
         }
     </script>
 </body>
