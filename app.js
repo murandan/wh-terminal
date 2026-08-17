@@ -3929,6 +3929,14 @@ function initQeNumpad() {
 
     let isAuthPending = false;
 
+    // Детектор видимости страницы
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                console.log("Приложение развернуто из фона. Сброс блокировок.");
+                isAuthPending = false;
+            }
+        });
+
 function initGoogleAuth() {
         if (isBadInAppBrowser()) {
             // ... (твой код заглушки для телеграма оставляем без изменений)
@@ -4296,17 +4304,33 @@ function showSetupError(errorMessage) {
 
     // Эта функция срабатывает при клике на синюю кнопку
     function loginWithGoogle() {
-        // НОВОЕ: 3. Умная обработка клика
+        // 1. Проверяем зависание
         if (isAuthPending) {
             console.log("Обнаружено зависание! Принудительная перезагрузка интерфейса...");
             window.location.reload();
             return;
         }
 
-        if (tokenClient) {
-            isAuthPending = true; // Ставим блокировку
-            tokenClient.requestAccessToken();
+        // 2. Если скрипт Гугла был убит андроидом в фоне
+        if (!tokenClient) {
+            console.log("Клиент Google потерян из памяти, перезагрузка...");
+            window.location.reload();
+            return;
         }
+
+        // Блокируем кнопку
+        isAuthPending = true; 
+
+        // 3. ТАЙМЕР-СПАСАТЕЛЬ: Если Гугл молчит 5 секунд - снимаем блокировку
+        setTimeout(() => {
+            if (isAuthPending) {
+                console.log("Таймаут Google API (5 сек). Снятие блокировки.");
+                isAuthPending = false;
+            }
+        }, 5000);
+
+        // Запрашиваем попап
+        tokenClient.requestAccessToken();
     }
 
     // Сброс фокуса при сканировании штрихкода внутри модального окна
