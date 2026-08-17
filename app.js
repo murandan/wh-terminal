@@ -4347,11 +4347,25 @@ document.addEventListener('visibilitychange', () => {
 function loginWithGoogle() {
     try {
         const now = Date.now();
+        const btnSpan = document.querySelector('#login-btn span');
 
-        // 1. Проверяем, успел ли скачаться скрипт Google
+        // 1. Защита для слабых устройств: если скрипт Гугла еще не успел скачаться
         if (typeof tokenClient === 'undefined' || !tokenClient) {
-            window.location.href = window.location.href.split('?')[0] + '?lang=' + currentLang + '&t=' + now;
-            return;
+            if (btnSpan) {
+                // Визуально показываем, что нужно подождать
+                btnSpan.innerText = "Ожидание Google...";
+            }
+            // Возвращаем исходный текст кнопки через 2 секунды
+            setTimeout(() => {
+                if (btnSpan && translations[currentLang] && translations[currentLang].btn_google) {
+                    btnSpan.innerText = translations[currentLang].btn_google;
+                } else if (btnSpan) {
+                    btnSpan.innerText = "ВОЙТИ ЧЕРЕЗ GOOGLE";
+                }
+            }, 2000);
+            
+            // Прерываем клик, но НЕ ПЕРЕЗАГРУЖАЕМ страницу, давая Гуглу докачаться
+            return; 
         }
 
         // 2. Блокировка от случайного двойного нажатия (спам-клик)
@@ -4359,8 +4373,6 @@ function loginWithGoogle() {
             if (now - lastLoginClickTime < 3000) {
                 return; 
             }
-            // Если процесс висит больше 3 секунд — принудительная перезагрузка
-            const btnSpan = document.querySelector('#login-btn span');
             if (btnSpan && translations[currentLang] && translations[currentLang].auth_reloading) {
                 btnSpan.innerText = translations[currentLang].auth_reloading;
             }
@@ -4368,14 +4380,13 @@ function loginWithGoogle() {
             return;
         }
 
-        // 3. ВАЖНО: Сначала мгновенно вызываем Google для сохранения жеста клика!
+        // 3. Вызываем Google первым делом для сохранения жеста клика
         tokenClient.requestAccessToken();
 
-        // 4. Только ПОСЛЕ этого меняем текст на кнопке и ставим флаг загрузки
+        // 4. Ставим флаг загрузки и меняем текст
         isAuthPending = true; 
         lastLoginClickTime = now; 
         
-        const btnSpan = document.querySelector('#login-btn span');
         if (btnSpan && translations[currentLang] && translations[currentLang].auth_opening) {
             btnSpan.innerText = translations[currentLang].auth_opening;
         }
