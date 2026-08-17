@@ -3952,8 +3952,10 @@ function initGoogleAuth() {
             error_callback: (error) => {
                 console.warn("Ошибка окна авторизации:", error);
                 if (error.type === 'popup_closed' || error.type === 'popup_failed_to_open') {
-                    // Разблокируем кнопку, чтобы кассир мог нажать еще раз
                     isAuthPending = false; 
+                    const btn = document.getElementById('login-btn');
+                    // Если Notion заблокировал окно, мы это сразу увидим на кнопке!
+                    if (btn) btn.innerText = "Войти (Окно заблокировано!)";
                 }
             },
             
@@ -4314,41 +4316,32 @@ document.addEventListener('visibilitychange', () => {
 
 function loginWithGoogle() {
     const now = Date.now();
+    const btn = document.getElementById('login-btn');
 
-    // 1. Проверяем состояние
+    // 1. Проверяем зависание (таймер удален!)
     if (isAuthPending) {
-        // Если с первого клика прошло меньше 3 секунд — это двойной клик или лаг телефона.
-        // Просто игнорируем его и ждем открытия окна.
         if (now - lastLoginClickTime < 3000) {
-            console.log("Игнорируем двойной клик...");
-            return; 
+            return; // Игнорируем спам кликами (до 3 секунд)
         }
         
-        // Если прошло БОЛЬШЕ 3 секунд, значит Гугл реально завис
-        console.log("Обнаружено зависание! Принудительная перезагрузка интерфейса...");
+        // Прошло больше 3 секунд, а ответа нет — жесткая перезагрузка
+        if (btn) btn.innerText = "Перезагружаем...";
         window.location.reload();
         return;
     }
 
-    // 2. Если скрипт Гугла был выгружен из памяти
     if (!tokenClient) {
-        console.log("Клиент Google потерян из памяти, перезагрузка...");
         window.location.reload();
         return;
     }
 
-    // Ставим блокировку и фиксируем время
+    // Блокируем кнопку и фиксируем время
     isAuthPending = true; 
     lastLoginClickTime = now; 
 
-    // 3. ТАЙМЕР-СПАСАТЕЛЬ (5 секунд)
-    setTimeout(() => {
-        if (isAuthPending) {
-            isAuthPending = false;
-        }
-    }, 5000);
+    // Даем визуальный отклик, чтобы понимать, что скрипт сработал
+    if (btn) btn.innerText = "Открываем Google..."; 
 
-    // Вызываем окно авторизации
     tokenClient.requestAccessToken();
 }
 
