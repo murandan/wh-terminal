@@ -362,20 +362,23 @@
         };
 
         // 1. Читаем адресную строку
-            const urlParams = new URLSearchParams(window.location.search);
-            const langParam = urlParams.get('lang');
+        const urlParams = new URLSearchParams(window.location.search);
+        const langParam = urlParams.get('lang');
 
-            // 2. Проверяем, пришел ли язык из Notion
-            if (langParam === 'kz' || langParam === 'ru') {
-                currentLang = langParam; 
-                localStorage.setItem('pos_lang', langParam); // Сохраняем в кэш согласно твоему Меморандуму
-                
-                // Опционально: стираем "?lang=kz" из адресной строки, чтобы ссылка стала чистой
-                window.history.replaceState({}, document.title, window.location.pathname);
-            } else {
-                // Если кассир зашел по обычной ссылке без параметра, достаем язык из памяти
-                currentLang = localStorage.getItem('pos_lang') || 'ru';
-            }
+        // ОФИЦИАЛЬНО ОБЪЯВЛЯЕМ ПЕРЕМЕННУЮ РАНЬШЕ ВСЕХ
+        let currentLang;
+
+        // 2. Проверяем, пришел ли язык из Notion
+        if (langParam === 'kz' || langParam === 'ru') {
+            currentLang = langParam; 
+            localStorage.setItem('pos_lang', langParam); // Сохраняем в кэш
+            
+            // Опционально: стираем "?lang=kz" из адресной строки
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } else {
+            // Если кассир зашел по обычной ссылке без параметра, достаем язык из памяти
+            currentLang = localStorage.getItem('pos_lang') || 'ru';
+        }
 
         // === БРОНИРОВАННЫЙ ДВИЖОК ЗАПРОСОВ (smartFetch) ===
         window.smartFetch = async function(url, payload, cacheKey, maxRetries = 3) {
@@ -577,7 +580,6 @@
         // Запускаем при инициализации
         window.loadSuppliers();
 
-        let currentLang = localStorage.getItem('pos_lang') || 'ru';
         let db = [], cart = [], mode = 'sale', pendingMethod = null;
         let staffList = [], currentUser = null;
         let currentPinInput = '';
