@@ -3927,8 +3927,6 @@ function initQeNumpad() {
 
     // Функция ждет, пока Google полностью скачается
 
-    let isAuthPending = false;
-
     // Детектор видимости страницы
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
