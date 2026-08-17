@@ -4333,10 +4333,12 @@ document.addEventListener('visibilitychange', () => {
 function loginWithGoogle() {
     try {
         const now = Date.now();
-        const btn = document.getElementById('login-btn');
+        // Ищем именно текст внутри кнопки, чтобы не затереть иконку Google
+        const btnSpan = document.querySelector('#login-btn span'); 
 
         if (typeof tokenClient === 'undefined' || !tokenClient) {
-            window.location.href = window.location.href.split('?')[0] + '?t=' + now;
+            // Сохраняем язык при принудительной перезагрузке
+            window.location.href = window.location.href.split('?')[0] + '?lang=' + currentLang + '&t=' + now;
             return;
         }
 
@@ -4344,21 +4346,21 @@ function loginWithGoogle() {
             if (now - lastLoginClickTime < 3000) {
                 return; 
             }
-            if (btn) btn.innerText = translations[currentLang].auth_reloading;
-            window.location.href = window.location.href.split('?')[0] + '?t=' + now;
+            if (btnSpan) btnSpan.innerText = translations[currentLang].auth_reloading;
+            window.location.href = window.location.href.split('?')[0] + '?lang=' + currentLang + '&t=' + now;
             return;
         }
 
         isAuthPending = true; 
         lastLoginClickTime = now; 
         
-        if (btn) btn.innerText = translations[currentLang].auth_opening; 
+        if (btnSpan) btnSpan.innerText = translations[currentLang].auth_opening; 
 
         tokenClient.requestAccessToken();
 
     } catch (err) {
         alert(translations[currentLang].auth_fail + err.message);
-        window.location.href = window.location.href.split('?')[0] + '?t=' + Date.now();
+        window.location.href = window.location.href.split('?')[0] + '?lang=' + currentLang + '&t=' + Date.now();
     }
 }
 
@@ -5375,3 +5377,25 @@ function showUpdatePrompt(newVersion) {
 }
 
 setInterval(checkForAppUpdates, 15 * 60 * 1000);
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Читаем ссылку
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlLang = urlParams.get('lang');
+
+    // Устанавливаем и запоминаем язык
+    if (urlLang === 'kz' || urlLang === 'ru') {
+        currentLang = urlLang;
+        localStorage.setItem('pos_lang', urlLang);
+    } else {
+        currentLang = localStorage.getItem('pos_lang') || 'ru';
+    }
+
+    // Мгновенно переводим все стартовые элементы
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (translations[currentLang] && translations[currentLang][key]) {
+            el.innerHTML = translations[currentLang][key];
+        }
+    });
+});
