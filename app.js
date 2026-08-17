@@ -3954,6 +3954,7 @@ function initQeNumpad() {
 function initGoogleAuth() {
     try {
         if (isBadInAppBrowser()) {
+            // Твоя заглушка для встроенных браузеров
             document.getElementById('google-screen').innerHTML = `...`;
             return;
         }
@@ -3970,10 +3971,10 @@ function initGoogleAuth() {
                     
                     const googleScreen = document.getElementById('google-screen');
                     
-                    // Элегантная отрисовка через твою систему локализации
+                    // Отрисовка с подстановкой текста из словаря и сохранением data-i18n для смены языка на лету
                     googleScreen.innerHTML = `
-                        <h2 data-i18n="auth_checking" style="color: var(--accent-yellow); margin-bottom: 15px;">${t('auth_checking')}</h2>
-                        <p data-i18n="auth_connecting" style="color: var(--text-main);">${t('auth_connecting')}</p>
+                        <h2 data-i18n="auth_checking" style="color: var(--accent-yellow); margin-bottom: 15px;">${translations[currentLang].auth_checking}</h2>
+                        <p data-i18n="auth_connecting" style="color: var(--text-main);">${translations[currentLang].auth_connecting}</p>
                     `;
 
                     let currentEmail = "";
@@ -4019,7 +4020,7 @@ function initGoogleAuth() {
                             googleScreen.style.display = 'none';
                             document.getElementById('pin-screen').style.display = 'flex'; 
                         } else if (serverResult.status === "BLOCKED") {
-                            throw new Error(t('auth_blocked'));
+                            throw new Error(translations[currentLang].auth_blocked);
                         } else {
                             throw new Error("Неизвестный статус от сервера: " + JSON.stringify(serverResult));
                         }
@@ -4030,10 +4031,10 @@ function initGoogleAuth() {
                         // Отрисовка ошибки с учетом словаря
                         googleScreen.innerHTML = `
                             <div style="color: #ff6b6b; padding: 20px; text-align: left; background: #1a1a1a; border-radius: 8px; border: 1px solid #333;">
-                                <h2 data-i18n="auth_error_title" style="margin-top: 0;">${t('auth_error_title')}</h2>
+                                <h2 data-i18n="auth_error_title" style="margin-top: 0;">${translations[currentLang].auth_error_title}</h2>
                                 <pre style="white-space: pre-wrap; font-size: 13px; background: #000; padding: 10px; border-radius: 4px; color: #ffb3b3;">${err.message}</pre>
                                 <button onclick="window.location.reload(true)" data-i18n="auth_retry" style="margin-top: 15px; padding: 10px 20px; background: #ff6b6b; color: #fff; border: none; border-radius: 4px; cursor: pointer;">
-                                    ${t('auth_retry')}
+                                    ${translations[currentLang].auth_retry}
                                 </button>
                             </div>
                         `;
@@ -4319,7 +4320,7 @@ function loginWithGoogle() {
             if (now - lastLoginClickTime < 3000) {
                 return; 
             }
-            if (btn) btn.innerText = t('auth_reloading');
+            if (btn) btn.innerText = translations[currentLang].auth_reloading;
             window.location.href = window.location.href.split('?')[0] + '?t=' + now;
             return;
         }
@@ -4327,12 +4328,12 @@ function loginWithGoogle() {
         isAuthPending = true; 
         lastLoginClickTime = now; 
         
-        if (btn) btn.innerText = t('auth_opening'); 
+        if (btn) btn.innerText = translations[currentLang].auth_opening; 
 
         tokenClient.requestAccessToken();
 
     } catch (err) {
-        alert(t('auth_fail') + err.message);
+        alert(translations[currentLang].auth_fail + err.message);
         window.location.href = window.location.href.split('?')[0] + '?t=' + Date.now();
     }
 }
