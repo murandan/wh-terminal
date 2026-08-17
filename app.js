@@ -3926,6 +3926,9 @@ function initQeNumpad() {
     }
 
     // Функция ждет, пока Google полностью скачается
+
+    let isAuthPending = false;
+
 function initGoogleAuth() {
         if (isBadInAppBrowser()) {
             // ... (твой код заглушки для телеграма оставляем без изменений)
@@ -3935,9 +3938,21 @@ function initGoogleAuth() {
 
         tokenClient = google.accounts.oauth2.initTokenClient({
             client_id: GOOGLE_CLIENT_ID, 
-            // ДОБАВИЛИ ПРАВА НА GOOGLE DRIVE
             scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/drive',
+            
+            // НОВОЕ: 2. Ловим ошибку закрытия окна (нажатие "Назад" на телефоне)
+            error_callback: (error) => {
+                console.warn("Ошибка окна авторизации:", error);
+                if (error.type === 'popup_closed' || error.type === 'popup_failed_to_open') {
+                    // Разблокируем кнопку, чтобы кассир мог нажать еще раз
+                    isAuthPending = false; 
+                }
+            },
+            
             callback: (tokenResponse) => {
+                // НОВОЕ: Сбрасываем флаг при любом ответе от Гугла
+                isAuthPending = false; 
+                
                 if (tokenResponse && tokenResponse.access_token) {
                     
                     // ЗАПОМИНАЕМ ТОКЕН В ГЛОБАЛЬНУЮ ПЕРЕМЕННУЮ
@@ -4281,7 +4296,15 @@ function showSetupError(errorMessage) {
 
     // Эта функция срабатывает при клике на синюю кнопку
     function loginWithGoogle() {
+        // НОВОЕ: 3. Умная обработка клика
+        if (isAuthPending) {
+            console.log("Обнаружено зависание! Принудительная перезагрузка интерфейса...");
+            window.location.reload();
+            return;
+        }
+
         if (tokenClient) {
+            isAuthPending = true; // Ставим блокировку
             tokenClient.requestAccessToken();
         }
     }
