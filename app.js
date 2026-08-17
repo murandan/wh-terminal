@@ -4305,6 +4305,15 @@ function showSetupError(errorMessage) {
 let isAuthPending = false;
 let lastLoginClickTime = 0; // НОВОЕ: переменная для фиксации времени клика
 
+// Детектор возврата из кэша браузера (bfcache)
+window.addEventListener('pageshow', (event) => {
+    // Если страница восстановлена из "замороженного" состояния
+    if (event.persisted) {
+        console.log("Страница восстановлена из кэша. Жесткая перезагрузка...");
+        window.location.reload(true);
+    }
+});
+
 // Детектор видимости (оставляем, он спасает при выходе из фона)
 document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
