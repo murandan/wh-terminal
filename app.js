@@ -593,32 +593,6 @@
         let invoiceSynonyms = {};
         let currentCategory = 'all';
 
-        try {
-    // 1. Читаем ссылку
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlLang = urlParams.get('lang');
-
-    // 2. Если язык пришел из URL, перезаписываем текущий
-    if (urlLang === 'kz' || urlLang === 'ru') {
-        currentLang = urlLang;
-        localStorage.setItem('pos_lang', urlLang);
-    }
-
-    // 3. Мгновенно переводим стартовые элементы, если словарь доступен
-    if (typeof translations !== 'undefined' && translations[currentLang]) {
-        document.querySelectorAll('[data-i18n]').forEach(el => {
-            const key = el.getAttribute('data-i18n');
-            if (translations[currentLang][key]) {
-                el.innerHTML = translations[currentLang][key];
-            }
-        });
-    } else {
-        console.warn("Словарь translations еще не загружен на момент старта.");
-    }
-} catch (e) {
-    console.error("Сбой инициализации языка:", e);
-}
-
         // === ВСТАВЛЯЕТЕ КОД СЮДА (Начало П1) ===
 window.itemHoldTimer = null;
 window.isItemLongPress = false;
