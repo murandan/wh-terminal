@@ -11,7 +11,7 @@
             font-family: sans-serif; 
             text-align: center; 
             padding: 50px 20px; 
-            overflow: hidden; /* Чтобы стрелка не создавала скролл */
+            overflow: hidden; 
         }
         .btn { 
             display: none; 
@@ -42,7 +42,6 @@
             margin-bottom: 30px;
         }
         
-        /* CSS-магия для прыгающей стрелки */
         #pointer-arrow {
             display: none;
             position: fixed;
@@ -57,55 +56,83 @@
         
         @keyframes bounceDiagonal {
             0%, 100% { transform: translate(0, 0); }
-            50% { transform: translate(-15px, -15px); } /* Прыгает по диагонали */
+            50% { transform: translate(-15px, -15px); } 
         }
     </style>
 </head>
 <body>
-    <h2 id="main-title">Проверка системы...</h2>
-    <p id="status-text">Пожалуйста, подождите.</p>
+    <h2 id="main-title">...</h2>
+    <p id="status-text">...</p>
     
-    <div id="ios-hint">
-        <p style="margin-top: 0; color: #ffeb3b;">⚠️ <b>ВАЖНО ДЛЯ iPHONE:</b></p>
-        <p>Если в правом нижнем углу экрана есть <b>значок компаса</b>, нажмите на него!</p>
-        <p style="margin-bottom: 0; color: #aaaaaa; font-size: 14px;">Иначе авторизация не сработает.</p>
-    </div>
+    <div id="ios-hint"></div>
 
     <a id="start-btn" class="btn" href="#">ОТКРЫТЬ КАССУ</a>
     
-    <!-- Анимированная стрелка (покажется только на iOS) -->
     <div id="pointer-arrow">↘</div>
 
     <script>
+        // 1. Читаем параметр языка из ссылки (например, ?lang=kz)
+        var urlParams = new URLSearchParams(window.location.search);
+        var currentLang = urlParams.get('lang') === 'kz' ? 'kz' : 'ru';
+
+        // 2. Локальный словарь для стартовой страницы
+        var t = {
+            ru: {
+                androidTitle: "Подготовка к запуску",
+                androidStatus: "Нажмите кнопку ниже, чтобы открыть терминал.",
+                iosTitle: "Установка на iPhone",
+                iosHintHtml: '<p style="margin-top: 0; color: #ffeb3b;">⚠️ <b>ВАЖНО ДЛЯ iPHONE:</b></p><p>Если в правом нижнем углу экрана есть <b>значок компаса</b>, нажмите на него!</p><p style="margin-bottom: 0; color: #aaaaaa; font-size: 14px;">Иначе авторизация не сработает.</p>',
+                pcTitle: "Всё готово!",
+                pcStatus: "Можно запускать терминал.",
+                btnText: "ОТКРЫТЬ КАССУ"
+            },
+            kz: {
+                androidTitle: "Іске қосуға дайындық",
+                androidStatus: "Терминалды ашу үшін төмендегі түймені басыңыз.",
+                iosTitle: "iPhone-ға орнату",
+                iosHintHtml: '<p style="margin-top: 0; color: #ffeb3b;">⚠️ <b>iPHONE ҮШІН МАҢЫЗДЫ:</b></p><p>Егер экранның төменгі оң жақ бұрышында <b>компас белгішесі</b> болса, оны басыңыз!</p><p style="margin-bottom: 0; color: #aaaaaa; font-size: 14px;">Әйтпесе кіру мүмкін болмайды.</p>',
+                pcTitle: "Бәрі дайын!",
+                pcStatus: "Терминалды іске қосуға болады.",
+                btnText: "КАССАНЫ АШУ"
+            }
+        };
+
+        // 3. Применяем переводы
         var btn = document.getElementById('start-btn');
         var iosHint = document.getElementById('ios-hint');
         var title = document.getElementById('main-title');
         var statusText = document.getElementById('status-text');
         var pointerArrow = document.getElementById('pointer-arrow');
-        
+
+        btn.innerText = t[currentLang].btnText;
+        iosHint.innerHTML = t[currentLang].iosHintHtml;
+
         var ua = navigator.userAgent;
         var isIOS = /iPhone|iPad|iPod/i.test(ua);
         var isAndroid = /Android/i.test(ua);
 
+        // 4. Логика кнопок с передачей языка дальше в приложение
+        var appUrlWithLang = "https://web-kassa-old.github.io/app/?lang=" + currentLang;
+
         if (isAndroid) {
-            title.innerText = "Подготовка к запуску";
-            statusText.innerText = "Нажмите кнопку ниже, чтобы открыть терминал.";
+            title.innerText = t[currentLang].androidTitle;
+            statusText.innerText = t[currentLang].androidStatus;
             btn.style.display = "inline-block";
-            btn.href = "intent://web-kassa-old.github.io/app/#Intent;scheme=https;package=com.android.chrome;end";
+            btn.href = "intent://web-kassa-old.github.io/app/?lang=" + currentLang + "#Intent;scheme=https;package=com.android.chrome;end";
             
         } else if (isIOS) {
-            title.innerText = "Установка на iPhone";
+            title.innerText = t[currentLang].iosTitle;
             statusText.style.display = "none";
             iosHint.style.display = "block";
-            pointerArrow.style.display = "block"; /* Включаем стрелку */
+            pointerArrow.style.display = "block";
             btn.style.display = "inline-block";
-            btn.href = "https://web-kassa-old.github.io/app/";
+            btn.href = appUrlWithLang;
             
         } else {
-            title.innerText = "Всё готово!";
-            statusText.innerText = "Можно запускать терминал.";
+            title.innerText = t[currentLang].pcTitle;
+            statusText.innerText = t[currentLang].pcStatus;
             btn.style.display = "inline-block";
-            btn.href = "https://web-kassa-old.github.io/app/";
+            btn.href = appUrlWithLang;
         }
     </script>
 </body>
