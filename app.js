@@ -4344,56 +4344,60 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
-function loginWithGoogle() {
+function loginWithGoogle(event) {
+    // 1. Блокируем стандартное поведение браузера (чтобы телефон не пытался обновить страницу сам)
+    if (event) event.preventDefault();
+    if (window.event) window.event.preventDefault();
+
     try {
         const now = Date.now();
         const btnSpan = document.querySelector('#login-btn span');
 
-        // 1. Защита для слабых устройств: если скрипт Гугла еще не успел скачаться
+        // 2. Если скрипт Гугла еще качается в фоне
         if (typeof tokenClient === 'undefined' || !tokenClient) {
-            if (btnSpan) {
-                // Визуально показываем, что нужно подождать
-                btnSpan.innerText = "Ожидание Google...";
-            }
-            // Возвращаем исходный текст кнопки через 2 секунды
+            if (btnSpan) btnSpan.innerText = "Ожидание Google...";
+            
+            // Через 2 секунды просто возвращаем текст обратно. БЕЗ ПЕРЕЗАГРУЗКИ.
             setTimeout(() => {
-                if (btnSpan && translations[currentLang] && translations[currentLang].btn_google) {
-                    btnSpan.innerText = translations[currentLang].btn_google;
+                if (btnSpan && typeof translations !== 'undefined' && translations[currentLang]) {
+                    btnSpan.innerText = translations[currentLang].btn_google || "ВОЙТИ ЧЕРЕЗ GOOGLE";
                 } else if (btnSpan) {
                     btnSpan.innerText = "ВОЙТИ ЧЕРЕЗ GOOGLE";
                 }
             }, 2000);
-            
-            // Прерываем клик, но НЕ ПЕРЕЗАГРУЖАЕМ страницу, давая Гуглу докачаться
             return; 
         }
 
-        // 2. Блокировка от случайного двойного нажатия (спам-клик)
+        // 3. Защита от двойного клика
         if (isAuthPending) {
             if (now - lastLoginClickTime < 3000) {
-                return; 
+                return; // Игнорируем частые нажатия
             }
-            if (btnSpan && translations[currentLang] && translations[currentLang].auth_reloading) {
-                btnSpan.innerText = translations[currentLang].auth_reloading;
-            }
-            window.location.href = window.location.href.split('?')[0] + '?lang=' + currentLang + '&t=' + now;
-            return;
+            // Если прошло больше 3 секунд, а окно не открылось (например, сработал блокировщик рекламы)
+            // Просто сбрасываем флаг, чтобы кассир мог нажать еще раз. БЕЗ ПЕРЕЗАГРУЗКИ.
+            isAuthPending = false; 
         }
 
-        // 3. Вызываем Google первым делом для сохранения жеста клика
+        // 4. Мгновенно вызываем Гугл, чтобы браузер не потерял "жест пользователя"
         tokenClient.requestAccessToken();
 
-        // 4. Ставим флаг загрузки и меняем текст
+        // 5. Меняем визуал кнопки
         isAuthPending = true; 
         lastLoginClickTime = now; 
         
-        if (btnSpan && translations[currentLang] && translations[currentLang].auth_opening) {
-            btnSpan.innerText = translations[currentLang].auth_opening;
+        if (btnSpan && typeof translations !== 'undefined' && translations[currentLang]) {
+            btnSpan.innerText = translations[currentLang].auth_opening || "Запуск...";
         }
 
     } catch (err) {
-        console.error("Ошибка при открытии Google:", err);
-        window.location.href = window.location.href.split('?')[0] + '?lang=' + currentLang + '&t=' + Date.now();
+        // Если телефон жестко заблокировал всплывающее окно, покажем ошибку на экране, а не будем втихую перезагружать!
+        alert("Блокировка окна: " + err.message);
+        isAuthPending = false;
+        
+        const btnSpan = document.querySelector('#login-btn span');
+        if (btnSpan && typeof translations !== 'undefined' && translations[currentLang]) {
+            btnSpan.innerText = translations[currentLang].btn_google || "ВОЙТИ ЧЕРЕЗ GOOGLE";
+        }
     }
 }
 
