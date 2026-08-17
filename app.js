@@ -4302,36 +4302,55 @@ function showSetupError(errorMessage) {
 }
 // ===================================================================
 
-    // Эта функция срабатывает при клике на синюю кнопку
-    function loginWithGoogle() {
-        // 1. Проверяем зависание
-        if (isAuthPending) {
-            console.log("Обнаружено зависание! Принудительная перезагрузка интерфейса...");
-            window.location.reload();
-            return;
-        }
+let isAuthPending = false;
+let lastLoginClickTime = 0; // НОВОЕ: переменная для фиксации времени клика
 
-        // 2. Если скрипт Гугла был убит андроидом в фоне
-        if (!tokenClient) {
-            console.log("Клиент Google потерян из памяти, перезагрузка...");
-            window.location.reload();
-            return;
-        }
-
-        // Блокируем кнопку
-        isAuthPending = true; 
-
-        // 3. ТАЙМЕР-СПАСАТЕЛЬ: Если Гугл молчит 5 секунд - снимаем блокировку
-        setTimeout(() => {
-            if (isAuthPending) {
-                console.log("Таймаут Google API (5 сек). Снятие блокировки.");
-                isAuthPending = false;
-            }
-        }, 5000);
-
-        // Запрашиваем попап
-        tokenClient.requestAccessToken();
+// Детектор видимости (оставляем, он спасает при выходе из фона)
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        isAuthPending = false;
     }
+});
+
+function loginWithGoogle() {
+    const now = Date.now();
+
+    // 1. Проверяем состояние
+    if (isAuthPending) {
+        // Если с первого клика прошло меньше 3 секунд — это двойной клик или лаг телефона.
+        // Просто игнорируем его и ждем открытия окна.
+        if (now - lastLoginClickTime < 3000) {
+            console.log("Игнорируем двойной клик...");
+            return; 
+        }
+        
+        // Если прошло БОЛЬШЕ 3 секунд, значит Гугл реально завис
+        console.log("Обнаружено зависание! Принудительная перезагрузка интерфейса...");
+        window.location.reload();
+        return;
+    }
+
+    // 2. Если скрипт Гугла был выгружен из памяти
+    if (!tokenClient) {
+        console.log("Клиент Google потерян из памяти, перезагрузка...");
+        window.location.reload();
+        return;
+    }
+
+    // Ставим блокировку и фиксируем время
+    isAuthPending = true; 
+    lastLoginClickTime = now; 
+
+    // 3. ТАЙМЕР-СПАСАТЕЛЬ (5 секунд)
+    setTimeout(() => {
+        if (isAuthPending) {
+            isAuthPending = false;
+        }
+    }, 5000);
+
+    // Вызываем окно авторизации
+    tokenClient.requestAccessToken();
+}
 
     // Сброс фокуса при сканировании штрихкода внутри модального окна
 document.addEventListener('keydown', function(e) {
