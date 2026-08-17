@@ -593,6 +593,32 @@
         let invoiceSynonyms = {};
         let currentCategory = 'all';
 
+        try {
+    // 1. Читаем ссылку
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlLang = urlParams.get('lang');
+
+    // 2. Если язык пришел из URL, перезаписываем текущий
+    if (urlLang === 'kz' || urlLang === 'ru') {
+        currentLang = urlLang;
+        localStorage.setItem('pos_lang', urlLang);
+    }
+
+    // 3. Мгновенно переводим стартовые элементы, если словарь доступен
+    if (typeof translations !== 'undefined' && translations[currentLang]) {
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (translations[currentLang][key]) {
+                el.innerHTML = translations[currentLang][key];
+            }
+        });
+    } else {
+        console.warn("Словарь translations еще не загружен на момент старта.");
+    }
+} catch (e) {
+    console.error("Сбой инициализации языка:", e);
+}
+
         // === ВСТАВЛЯЕТЕ КОД СЮДА (Начало П1) ===
 window.itemHoldTimer = null;
 window.isItemLongPress = false;
@@ -5377,35 +5403,3 @@ function showUpdatePrompt(newVersion) {
 }
 
 setInterval(checkForAppUpdates, 15 * 60 * 1000);
-
-document.addEventListener('DOMContentLoaded', () => {
-    try {
-        // Читаем ссылку
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlLang = urlParams.get('lang');
-
-        // Безопасно обновляем глобальную переменную
-        if (urlLang === 'kz' || urlLang === 'ru') {
-            window.currentLang = urlLang;
-            localStorage.setItem('pos_lang', urlLang);
-        } else if (typeof window.currentLang === 'undefined') {
-            window.currentLang = localStorage.getItem('pos_lang') || 'ru';
-        }
-
-        // Проверяем наличие словаря перед переводом
-        if (typeof translations === 'undefined') {
-            console.warn("Словарь translations еще не загружен на момент старта.");
-            return;
-        }
-
-        // Мгновенно переводим все стартовые элементы
-        document.querySelectorAll('[data-i18n]').forEach(el => {
-            const key = el.getAttribute('data-i18n');
-            if (translations[window.currentLang] && translations[window.currentLang][key]) {
-                el.innerHTML = translations[window.currentLang][key];
-            }
-        });
-    } catch (e) {
-        console.error("Сбой авто-перевода при загрузке:", e);
-    }
-});
