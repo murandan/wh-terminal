@@ -4326,20 +4326,21 @@ function loginWithGoogle() {
         const now = Date.now();
         const btn = document.getElementById('login-btn');
 
-        // 1. БЕЗОПАСНАЯ проверка: существует ли вообще Гугл-клиент
+        // 1. БЕЗОПАСНАЯ проверка Гугл-клиента
         if (typeof tokenClient === 'undefined' || !tokenClient) {
-            console.log("Клиент Google не загружен, принудительная перезагрузка...");
-            window.location.reload();
+            // Жесткая перезагрузка с обходом кэша
+            window.location.href = window.location.href.split('?')[0] + '?t=' + now;
             return;
         }
 
-        // 2. Проверка зависания
+        // 2. Проверка зависания самого окна
         if (isAuthPending) {
             if (now - lastLoginClickTime < 3000) {
                 return; // Игнорируем спам кликами
             }
-            if (btn) btn.innerText = "Перезагружаем...";
-            window.location.reload();
+            if (btn) btn.innerText = "Обновляем страницу...";
+            // Жесткая перезагрузка с обходом кэша
+            window.location.href = window.location.href.split('?')[0] + '?t=' + now;
             return;
         }
 
@@ -4352,9 +4353,8 @@ function loginWithGoogle() {
         tokenClient.requestAccessToken();
 
     } catch (err) {
-        // Если произойдет ЛЮБАЯ ошибка кода, мы её увидим, а страница перезагрузится
-        alert("Сбой кнопки входа: " + err.message);
-        window.location.reload();
+        alert("Сбой: " + err.message);
+        window.location.href = window.location.href.split('?')[0] + '?t=' + Date.now();
     }
 }
 
