@@ -380,6 +380,18 @@
             currentLang = localStorage.getItem('pos_lang') || 'ru';
         }
 
+        // Мгновенный перевод стартового окна
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof translations === 'undefined' || !translations[currentLang]) return;
+            
+            document.querySelectorAll('#google-screen [data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[currentLang][key]) {
+                    el.innerHTML = translations[currentLang][key];
+                }
+            });
+        });
+
         // === БРОНИРОВАННЫЙ ДВИЖОК ЗАПРОСОВ (smartFetch) ===
         window.smartFetch = async function(url, payload, cacheKey, maxRetries = 3) {
             for (let i = 0; i < maxRetries; i++) {
@@ -4335,10 +4347,12 @@ document.addEventListener('visibilitychange', () => {
 function loginWithGoogle() {
     try {
         const now = Date.now();
-        const btn = document.getElementById('login-btn');
+        // Ищем текст внутри кнопки, чтобы не затереть иконку Google
+        const btnSpan = document.querySelector('#login-btn span'); 
 
         if (typeof tokenClient === 'undefined' || !tokenClient) {
-            window.location.href = window.location.href.split('?')[0] + '?t=' + now;
+            // Сохраняем язык при перезагрузке
+            window.location.href = window.location.href.split('?')[0] + '?lang=' + currentLang + '&t=' + now;
             return;
         }
 
@@ -4346,21 +4360,21 @@ function loginWithGoogle() {
             if (now - lastLoginClickTime < 3000) {
                 return; 
             }
-            if (btn) btn.innerText = translations[currentLang].auth_reloading;
-            window.location.href = window.location.href.split('?')[0] + '?t=' + now;
+            if (btnSpan) btnSpan.innerText = translations[currentLang].auth_reloading;
+            window.location.href = window.location.href.split('?')[0] + '?lang=' + currentLang + '&t=' + now;
             return;
         }
 
         isAuthPending = true; 
         lastLoginClickTime = now; 
         
-        if (btn) btn.innerText = translations[currentLang].auth_opening; 
+        if (btnSpan) btnSpan.innerText = translations[currentLang].auth_opening; 
 
         tokenClient.requestAccessToken();
 
     } catch (err) {
         alert(translations[currentLang].auth_fail + err.message);
-        window.location.href = window.location.href.split('?')[0] + '?t=' + Date.now();
+        window.location.href = window.location.href.split('?')[0] + '?lang=' + currentLang + '&t=' + Date.now();
     }
 }
 
