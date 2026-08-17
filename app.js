@@ -4347,33 +4347,41 @@ document.addEventListener('visibilitychange', () => {
 function loginWithGoogle() {
     try {
         const now = Date.now();
-        // Ищем текст внутри кнопки, чтобы не затереть иконку Google
-        const btnSpan = document.querySelector('#login-btn span'); 
 
+        // 1. Проверяем, успел ли скачаться скрипт Google
         if (typeof tokenClient === 'undefined' || !tokenClient) {
-            // Сохраняем язык при перезагрузке
             window.location.href = window.location.href.split('?')[0] + '?lang=' + currentLang + '&t=' + now;
             return;
         }
 
+        // 2. Блокировка от случайного двойного нажатия (спам-клик)
         if (isAuthPending) {
             if (now - lastLoginClickTime < 3000) {
                 return; 
             }
-            if (btnSpan) btnSpan.innerText = translations[currentLang].auth_reloading;
+            // Если процесс висит больше 3 секунд — принудительная перезагрузка
+            const btnSpan = document.querySelector('#login-btn span');
+            if (btnSpan && translations[currentLang] && translations[currentLang].auth_reloading) {
+                btnSpan.innerText = translations[currentLang].auth_reloading;
+            }
             window.location.href = window.location.href.split('?')[0] + '?lang=' + currentLang + '&t=' + now;
             return;
         }
 
+        // 3. ВАЖНО: Сначала мгновенно вызываем Google для сохранения жеста клика!
+        tokenClient.requestAccessToken();
+
+        // 4. Только ПОСЛЕ этого меняем текст на кнопке и ставим флаг загрузки
         isAuthPending = true; 
         lastLoginClickTime = now; 
         
-        if (btnSpan) btnSpan.innerText = translations[currentLang].auth_opening; 
-
-        tokenClient.requestAccessToken();
+        const btnSpan = document.querySelector('#login-btn span');
+        if (btnSpan && translations[currentLang] && translations[currentLang].auth_opening) {
+            btnSpan.innerText = translations[currentLang].auth_opening;
+        }
 
     } catch (err) {
-        alert(translations[currentLang].auth_fail + err.message);
+        console.error("Ошибка при открытии Google:", err);
         window.location.href = window.location.href.split('?')[0] + '?lang=' + currentLang + '&t=' + Date.now();
     }
 }
