@@ -173,7 +173,11 @@
                 auth_retry: "Повторить попытку",
                 auth_reloading: "Перезагружаем...",
                 auth_opening: "Открываем Google...",
-                auth_fail: "Сбой: "
+                auth_fail: "Сбой: ",
+                app_subtitle: "Система автоматизации торговли",
+                auth_title: "Авторизация",
+                auth_desc: "Для получения доступа к кассовому терминалу и синхронизации с базой данных, пожалуйста, войдите под своим рабочим Google-аккаунтом.",
+                btn_google: "ВОЙТИ ЧЕРЕЗ GOOGLE"
             },
             kz: {
                 btn_sale: "САТУ", btn_return: "ҚАЙТАРУ", search_placeholder: "ІЗДЕУ...",
@@ -349,9 +353,29 @@
                 auth_retry: "Қайта байқап көру",
                 auth_reloading: "Қайта жүктелуде...",
                 auth_opening: "Google ашылуда...",
-                auth_fail: "Қате: "
+                auth_fail: "Қате: ",
+                app_subtitle: "Сауданы автоматтандыру жүйесі",
+                auth_title: "Авторизация",
+                auth_desc: "Кассалық терминалға қол жеткізу және деректер қорымен синхрондау үшін жұмыс Google-аккаунтыңызбен кіріңіз.",
+                btn_google: "GOOGLE АРҚЫЛЫ КІРУ"
             }
         };
+
+        // 1. Читаем адресную строку
+            const urlParams = new URLSearchParams(window.location.search);
+            const langParam = urlParams.get('lang');
+
+            // 2. Проверяем, пришел ли язык из Notion
+            if (langParam === 'kz' || langParam === 'ru') {
+                currentLang = langParam; 
+                localStorage.setItem('pos_lang', langParam); // Сохраняем в кэш согласно твоему Меморандуму
+                
+                // Опционально: стираем "?lang=kz" из адресной строки, чтобы ссылка стала чистой
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } else {
+                // Если кассир зашел по обычной ссылке без параметра, достаем язык из памяти
+                currentLang = localStorage.getItem('pos_lang') || 'ru';
+            }
 
         // === БРОНИРОВАННЫЙ ДВИЖОК ЗАПРОСОВ (smartFetch) ===
         window.smartFetch = async function(url, payload, cacheKey, maxRetries = 3) {
