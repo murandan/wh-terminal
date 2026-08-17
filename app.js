@@ -5379,23 +5379,33 @@ function showUpdatePrompt(newVersion) {
 setInterval(checkForAppUpdates, 15 * 60 * 1000);
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Читаем ссылку
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlLang = urlParams.get('lang');
+    try {
+        // Читаем ссылку
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlLang = urlParams.get('lang');
 
-    // Устанавливаем и запоминаем язык
-    if (urlLang === 'kz' || urlLang === 'ru') {
-        currentLang = urlLang;
-        localStorage.setItem('pos_lang', urlLang);
-    } else {
-        currentLang = localStorage.getItem('pos_lang') || 'ru';
-    }
-
-    // Мгновенно переводим все стартовые элементы
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        if (translations[currentLang] && translations[currentLang][key]) {
-            el.innerHTML = translations[currentLang][key];
+        // Безопасно обновляем глобальную переменную
+        if (urlLang === 'kz' || urlLang === 'ru') {
+            window.currentLang = urlLang;
+            localStorage.setItem('pos_lang', urlLang);
+        } else if (typeof window.currentLang === 'undefined') {
+            window.currentLang = localStorage.getItem('pos_lang') || 'ru';
         }
-    });
+
+        // Проверяем наличие словаря перед переводом
+        if (typeof translations === 'undefined') {
+            console.warn("Словарь translations еще не загружен на момент старта.");
+            return;
+        }
+
+        // Мгновенно переводим все стартовые элементы
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (translations[window.currentLang] && translations[window.currentLang][key]) {
+                el.innerHTML = translations[window.currentLang][key];
+            }
+        });
+    } catch (e) {
+        console.error("Сбой авто-перевода при загрузке:", e);
+    }
 });
