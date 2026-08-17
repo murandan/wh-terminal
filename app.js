@@ -165,7 +165,15 @@
                 tab_new: "НОВЫЙ ТОВАР",
                 file_select_excel: "Нажмите для выбора Excel",
                 "update_available": "🚀 Доступна новая версия системы",
-                "update_btn": "Обновить кассу"
+                "update_btn": "Обновить кассу",
+                auth_checking: "Проверка доступа...",
+                auth_connecting: "Соединение с сервером",
+                auth_blocked: "Доступ приостановлен. Обратитесь в поддержку.",
+                auth_error_title: "Ошибка при загрузке:",
+                auth_retry: "Повторить попытку",
+                auth_reloading: "Перезагружаем...",
+                auth_opening: "Открываем Google...",
+                auth_fail: "Сбой: "
             },
             kz: {
                 btn_sale: "САТУ", btn_return: "ҚАЙТАРУ", search_placeholder: "ІЗДЕУ...",
@@ -333,7 +341,15 @@
                 tab_new: "ЖАҢА ТАУАР",
                 file_select_excel: "Excel файлын таңдау үшін басыңыз",
                 "update_available": "🚀 Жүйенің жаңа нұсқасы қолжетімді",
-                "update_btn": "Кассаны жаңарту"
+                "update_btn": "Кассаны жаңарту",
+                auth_checking: "Қол жеткізуді тексеру...",
+                auth_connecting: "Сервермен байланыс",
+                auth_blocked: "Қол жеткізу тоқтатылды. Қолдау қызметіне хабарласыңыз.",
+                auth_error_title: "Жүктеу қатесі:",
+                auth_retry: "Қайта байқап көру",
+                auth_reloading: "Қайта жүктелуде...",
+                auth_opening: "Google ашылуда...",
+                auth_fail: "Қате: "
             }
         };
 
@@ -3936,8 +3952,8 @@ function initQeNumpad() {
         });
 
 function initGoogleAuth() {
+    try {
         if (isBadInAppBrowser()) {
-            // ... (твой код заглушки для телеграма оставляем без изменений)
             document.getElementById('google-screen').innerHTML = `...`;
             return;
         }
@@ -3946,113 +3962,78 @@ function initGoogleAuth() {
             client_id: GOOGLE_CLIENT_ID, 
             scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/drive',
             
-            // НОВОЕ: 2. Ловим ошибку закрытия окна (нажатие "Назад" на телефоне)
-            error_callback: (error) => {
-                console.warn("Ошибка окна авторизации:", error);
-                if (error.type === 'popup_closed' || error.type === 'popup_failed_to_open') {
-                    isAuthPending = false; 
-                    const btn = document.getElementById('login-btn');
-                    // Если Notion заблокировал окно, мы это сразу увидим на кнопке!
-                    if (btn) btn.innerText = "Войти (Окно заблокировано!)";
-                }
-            },
-            
             callback: (tokenResponse) => {
-                // НОВОЕ: Сбрасываем флаг при любом ответе от Гугла
                 isAuthPending = false; 
                 
                 if (tokenResponse && tokenResponse.access_token) {
-                    
-                    // ЗАПОМИНАЕМ ТОКЕН В ГЛОБАЛЬНУЮ ПЕРЕМЕННУЮ
                     clientAccessToken = tokenResponse.access_token;
                     
                     const googleScreen = document.getElementById('google-screen');
-                    googleScreen.innerHTML = '<h2 style="color: var(--accent-yellow); margin-bottom: 15px;">Проверка доступа...</h2><p style="color: var(--text-main);">Соединение с сервером</p>';
+                    
+                    // Элегантная отрисовка через твою систему локализации
+                    googleScreen.innerHTML = `
+                        <h2 data-i18n="auth_checking" style="color: var(--accent-yellow); margin-bottom: 15px;">${t('auth_checking')}</h2>
+                        <p data-i18n="auth_connecting" style="color: var(--text-main);">${t('auth_connecting')}</p>
+                    `;
 
-                    // Создаем глобальную переменную для хранения почты на время цепочки
                     let currentEmail = "";
 
-                    // 1. Проверяем токен в Google
                     fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
                         headers: { Authorization: 'Bearer ' + clientAccessToken }
                     })
                     .then(async (res) => {
                         const text = await res.text();
                         if (!res.ok) throw new Error(`Ошибка Google Auth ${res.status}: ${text}`);
-                        try {
-                            return JSON.parse(text);
-                        } catch {
-                            throw new Error(`Google вернул не JSON:\n${text}`);
-                        }
+                        try { return JSON.parse(text); } 
+                        catch { throw new Error(`Google вернул не JSON:\n${text}`); }
                     })
                     .then(userInfo => {
-                        console.log("Юзер авторизован в Google:", userInfo.email);
-                        
-                        // ЗАПОМИНАЕМ ПОЧТУ для следующих шагов
                         currentEmail = userInfo.email; 
-                        
-                        // 2. Отправляем точный POST-запрос на твой шлюз
                         return fetch(GATEWAY_URL, {
                             method: 'POST',
                             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                            body: JSON.stringify({
-                                action: 'check_status', 
-                                email: currentEmail
-                            })
+                            body: JSON.stringify({ action: 'check_status', email: currentEmail })
                         }); 
                     })
                     .then(async (res) => {
                         const text = await res.text();
-                        try {
-                            return JSON.parse(text);
-                        } catch {
-                            throw new Error("Сервер GAS вернул не JSON:\n" + text);
-                        }
+                        try { return JSON.parse(text); } 
+                        catch { throw new Error("Сервер GAS вернул не JSON:\n" + text); }
                     })
                     .then(serverResult => {
-                        console.log("Ответ от GAS:", serverResult);
-
                         if (serverResult.success === false && serverResult.error) {
                             throw new Error(serverResult.error);
                         }
 
-                        // 3. МАРШРУТИЗАЦИЯ
                         if (serverResult.status === "NEW_USER" || serverResult.status === "NEW_CLIENT") {
-                            
                             if (typeof showInstallerForm === 'function') {
-                                // ПЕРЕДАЕМ ЗАПОМНЕННУЮ ПОЧТУ
                                 showInstallerForm(currentEmail); 
                             } else {
                                 throw new Error("Функция установки showInstallerForm не найдена в коде!");
                             }
-
                         } else if (serverResult.status === "EXISTING_CLIENT") {
-                            
                             if (serverResult.api_key) {
-                                // Сохраняем в физическую память телефона
                                 localStorage.setItem('CLIENT_API_KEY', serverResult.api_key);
-                                // Мгновенно обновляем рабочую переменную кассы!
                                 CLIENT_API_KEY = serverResult.api_key; 
                             }
-                            
                             googleScreen.style.display = 'none';
                             document.getElementById('pin-screen').style.display = 'flex'; 
-
                         } else if (serverResult.status === "BLOCKED") {
-                            throw new Error("Доступ приостановлен. Обратитесь в поддержку.");
+                            throw new Error(t('auth_blocked'));
                         } else {
                             throw new Error("Неизвестный статус от сервера: " + JSON.stringify(serverResult));
                         }
                     })
-                    // 4. ЕДИНЫЙ БЛОК ВЫВОДА ОШИБОК
                     .catch(err => {
                         console.error("КРИТИЧЕСКАЯ ОШИБКА:", err);
+                        
+                        // Отрисовка ошибки с учетом словаря
                         googleScreen.innerHTML = `
                             <div style="color: #ff6b6b; padding: 20px; text-align: left; background: #1a1a1a; border-radius: 8px; border: 1px solid #333;">
-                                <h2 style="margin-top: 0;">Ошибка при загрузке:</h2>
+                                <h2 data-i18n="auth_error_title" style="margin-top: 0;">${t('auth_error_title')}</h2>
                                 <pre style="white-space: pre-wrap; font-size: 13px; background: #000; padding: 10px; border-radius: 4px; color: #ffb3b3;">${err.message}</pre>
-                                <button onclick="window.location.reload(true)" style="margin-top: 15px; padding: 10px 20px; background: #ff6b6b; color: #fff; border: none; border-radius: 4px; cursor: pointer;">
-                                    Повторить попытку
+                                <button onclick="window.location.reload(true)" data-i18n="auth_retry" style="margin-top: 15px; padding: 10px 20px; background: #ff6b6b; color: #fff; border: none; border-radius: 4px; cursor: pointer;">
+                                    ${t('auth_retry')}
                                 </button>
                             </div>
                         `;
@@ -4060,7 +4041,10 @@ function initGoogleAuth() {
                 }
             }
         });
+    } catch (e) {
+        console.error("Ошибка инициализации:", e);
     }
+}
 
 function showInstallerForm(email) {
     const googleScreen = document.getElementById('google-screen');
@@ -4326,34 +4310,29 @@ function loginWithGoogle() {
         const now = Date.now();
         const btn = document.getElementById('login-btn');
 
-        // 1. БЕЗОПАСНАЯ проверка Гугл-клиента
         if (typeof tokenClient === 'undefined' || !tokenClient) {
-            // Жесткая перезагрузка с обходом кэша
             window.location.href = window.location.href.split('?')[0] + '?t=' + now;
             return;
         }
 
-        // 2. Проверка зависания самого окна
         if (isAuthPending) {
             if (now - lastLoginClickTime < 3000) {
-                return; // Игнорируем спам кликами
+                return; 
             }
-            if (btn) btn.innerText = "Обновляем страницу...";
-            // Жесткая перезагрузка с обходом кэша
+            if (btn) btn.innerText = t('auth_reloading');
             window.location.href = window.location.href.split('?')[0] + '?t=' + now;
             return;
         }
 
-        // 3. Запуск авторизации
         isAuthPending = true; 
         lastLoginClickTime = now; 
         
-        if (btn) btn.innerText = "Открываем Google..."; 
+        if (btn) btn.innerText = t('auth_opening'); 
 
         tokenClient.requestAccessToken();
 
     } catch (err) {
-        alert("Сбой: " + err.message);
+        alert(t('auth_fail') + err.message);
         window.location.href = window.location.href.split('?')[0] + '?t=' + Date.now();
     }
 }
