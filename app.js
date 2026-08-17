@@ -4315,34 +4315,40 @@ document.addEventListener('visibilitychange', () => {
 });
 
 function loginWithGoogle() {
-    const now = Date.now();
-    const btn = document.getElementById('login-btn');
+    try {
+        const now = Date.now();
+        const btn = document.getElementById('login-btn');
 
-    // 1. Проверяем зависание (таймер удален!)
-    if (isAuthPending) {
-        if (now - lastLoginClickTime < 3000) {
-            return; // Игнорируем спам кликами (до 3 секунд)
+        // 1. БЕЗОПАСНАЯ проверка: существует ли вообще Гугл-клиент
+        if (typeof tokenClient === 'undefined' || !tokenClient) {
+            console.log("Клиент Google не загружен, принудительная перезагрузка...");
+            window.location.reload();
+            return;
         }
+
+        // 2. Проверка зависания
+        if (isAuthPending) {
+            if (now - lastLoginClickTime < 3000) {
+                return; // Игнорируем спам кликами
+            }
+            if (btn) btn.innerText = "Перезагружаем...";
+            window.location.reload();
+            return;
+        }
+
+        // 3. Запуск авторизации
+        isAuthPending = true; 
+        lastLoginClickTime = now; 
         
-        // Прошло больше 3 секунд, а ответа нет — жесткая перезагрузка
-        if (btn) btn.innerText = "Перезагружаем...";
+        if (btn) btn.innerText = "Открываем Google..."; 
+
+        tokenClient.requestAccessToken();
+
+    } catch (err) {
+        // Если произойдет ЛЮБАЯ ошибка кода, мы её увидим, а страница перезагрузится
+        alert("Сбой кнопки входа: " + err.message);
         window.location.reload();
-        return;
     }
-
-    if (!tokenClient) {
-        window.location.reload();
-        return;
-    }
-
-    // Блокируем кнопку и фиксируем время
-    isAuthPending = true; 
-    lastLoginClickTime = now; 
-
-    // Даем визуальный отклик, чтобы понимать, что скрипт сработал
-    if (btn) btn.innerText = "Открываем Google..."; 
-
-    tokenClient.requestAccessToken();
 }
 
     // Сброс фокуса при сканировании штрихкода внутри модального окна
