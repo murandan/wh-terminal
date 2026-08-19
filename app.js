@@ -177,7 +177,12 @@
                 app_subtitle: "Система автоматизации торговли",
                 auth_title: "Авторизация",
                 auth_desc: "Для получения доступа к кассовому терминалу и синхронизации с базой данных, пожалуйста, войдите под своим рабочим Google-аккаунтом.",
-                btn_google: "ВОЙТИ ЧЕРЕЗ GOOGLE"
+                btn_google: "ВОЙТИ ЧЕРЕЗ GOOGLE",
+                setup_network_error_title: "Нет связи с Google Диском",
+                setup_network_error_desc: "Системе не удалось создать файлы базы данных. Запрос был заблокирован или прерван.",
+                setup_network_error_step1: "<strong>Интернет:</strong> проверьте соединение (Wi-Fi/LTE).",
+                setup_network_error_step2: "<strong>Блокировщики:</strong> если включен AdGuard или антивирус, временно приостановите его работу.",
+                setup_network_error_step3: "<strong>Браузер:</strong> если ссылка открыта в Telegram или Whatsapp, перейдите в Safari или Chrome."
             },
             kz: {
                 btn_sale: "САТУ", btn_return: "ҚАЙТАРУ", search_placeholder: "ІЗДЕУ...",
@@ -357,7 +362,12 @@
                 app_subtitle: "Сауданы автоматтандыру жүйесі",
                 auth_title: "Авторизация",
                 auth_desc: "Кассалық терминалға қол жеткізу және деректер қорымен синхрондау үшін жұмыс Google-аккаунтыңызбен кіріңіз.",
-                btn_google: "GOOGLE АРҚЫЛЫ КІРУ"
+                btn_google: "GOOGLE АРҚЫЛЫ КІРУ",
+                setup_network_error_title: "Google Дискпен байланыс жоқ",
+                setup_network_error_desc: "Жүйе деректер қоры файлдарын жасай алмады. Сұраным бұғатталды немесе үзілді.",
+                setup_network_error_step1: "<strong>Интернет:</strong> қосылымды тексеріңіз (Wi-Fi/LTE).",
+                setup_network_error_step2: "<strong>Бұғаттаушылар:</strong> AdGuard немесе антивирус қосулы болса, оны уақытша тоқтата тұрыңыз.",
+                setup_network_error_step3: "<strong>Браузер:</strong> сілтеме Telegram немесе Whatsapp ішінде ашылса, Safari немесе Chrome-ға өтіңіз."
             }
         };
 
@@ -4132,6 +4142,19 @@ function showInstallerForm(email) {
                 style="width: 100%; padding: 15px; font-size: 16px; background-color: var(--accent-blue); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: opacity 0.2s;">
                 <span data-i18n="setup_btn_start">Развернуть базу данных</span>
             </button>
+
+            <div id="network-error-card" style="display: none; margin-top: 15px; padding: 15px; background-color: rgba(255, 170, 0, 0.08); border: 1px solid rgba(255, 170, 0, 0.3); border-radius: 8px; text-align: left; box-sizing: border-box;">
+    <div style="display: flex; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 18px; margin-right: 10px;">⚠️</span>
+        <strong style="color: #ffb74d; font-size: 14px; letter-spacing: 0.3px;" data-i18n="setup_network_error_title"></strong>
+    </div>
+    <p style="color: #e0e0e0; font-size: 13px; margin: 0 0 12px 0; line-height: 1.4;" data-i18n="setup_network_error_desc"></p>
+    <ul style="color: #aaaaaa; font-size: 12px; margin: 0; padding-left: 20px; line-height: 1.5;">
+        <li style="margin-bottom: 4px;" data-i18n="setup_network_error_step1"></li>
+        <li style="margin-bottom: 4px;" data-i18n="setup_network_error_step2"></li>
+        <li data-i18n="setup_network_error_step3"></li>
+    </ul>
+</div>
             
             <div style="text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 15px;" data-i18n="setup_footer">
                 Система автоматически создаст структуру папок на вашем Google Диске.
@@ -4309,9 +4332,31 @@ async function submitSetup(email) {
             }
 
         } catch (error) {
+        // 1. Возвращаем кнопку в рабочее состояние
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.innerHTML = currentLang === 'kk' ? 'Қайталау' : 'Повторить попытку';
+
+        // 2. Распознаем блокировку (AdGuard, антивирус, обрыв сети)
+        if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
+            
+            const errorCard = document.getElementById('network-error-card');
+            if (errorCard) {
+                // Показываем скрытый блок
+                errorCard.style.display = 'block';
+                
+                // Прогоняем функцию перевода, чтобы она заполнила атрибуты data-i18n
+                if (typeof applyLanguage === 'function') {
+                    applyLanguage();
+                }
+            }
+            
+        } else {
+            // 3. Обработка всех остальных системных ошибок
             showSetupError(error.message);
         }
     }
+}
 
 function showSetupError(errorMessage) {
     const btn = document.getElementById('btn-start-setup');
