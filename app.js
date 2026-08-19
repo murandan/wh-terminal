@@ -180,9 +180,10 @@
                 btn_google: "ВОЙТИ ЧЕРЕЗ GOOGLE",
                 setup_network_error_title: "Нет связи с Google Диском",
                 setup_network_error_desc: "Системе не удалось создать файлы базы данных. Запрос был заблокирован или прерван.",
-                setup_network_error_step1: "<strong>Интернет:</strong> проверьте соединение (Wi-Fi/LTE).",
-                setup_network_error_step2: "<strong>Блокировщики:</strong> если включен AdGuard или антивирус, временно приостановите его работу.",
-                setup_network_error_step3: "<strong>Браузер:</strong> если ссылка открыта в Telegram или Whatsapp, перейдите в Safari или Chrome."
+                setup_network_error_step1: "Интернет: проверьте соединение (Wi-Fi/LTE).",
+                setup_network_error_step2: "Блокировщики: если включен AdGuard или антивирус, временно приостановите его работу.",
+                setup_network_error_step3: "Браузер: если ссылка открыта в Telegram или WhatsApp, перейдите в Safari или Chrome.",
+                setup_btn_retry: "Повторить попытку"
             },
             kz: {
                 btn_sale: "САТУ", btn_return: "ҚАЙТАРУ", search_placeholder: "ІЗДЕУ...",
@@ -365,9 +366,10 @@
                 btn_google: "GOOGLE АРҚЫЛЫ КІРУ",
                 setup_network_error_title: "Google Дискпен байланыс жоқ",
                 setup_network_error_desc: "Жүйе деректер қоры файлдарын жасай алмады. Сұраным бұғатталды немесе үзілді.",
-                setup_network_error_step1: "<strong>Интернет:</strong> қосылымды тексеріңіз (Wi-Fi/LTE).",
-                setup_network_error_step2: "<strong>Бұғаттаушылар:</strong> AdGuard немесе антивирус қосулы болса, оны уақытша тоқтата тұрыңыз.",
-                setup_network_error_step3: "<strong>Браузер:</strong> сілтеме Telegram немесе Whatsapp ішінде ашылса, Safari немесе Chrome-ға өтіңіз."
+                setup_network_error_step1: "Интернет: қосылымды тексеріңіз (Wi-Fi/LTE).",
+                setup_network_error_step2: "Бұғаттаушылар: AdGuard немесе антивирус қосулы болса, оны уақытша тоқтата тұрыңыз.",
+                setup_network_error_step3: "Браузер: сілтеме Telegram немесе WhatsApp ішінде ашылса, Safari немесе Chrome-ға өтіңіз.",
+                setup_btn_retry: "Қайталау"
             }
         };
 
@@ -4200,6 +4202,10 @@ function toggleSetupLang() {
 }
 
 async function submitSetup(email) {
+        // === ДОБАВИТЬ ЭТИ ДВЕ СТРОКИ СЮДА ===
+        const errorCard = document.getElementById('network-error-card');
+        if (errorCard) errorCard.style.display = 'none';
+        // ===================================
         const storeName = document.getElementById('setup-store-name').value.trim() || 'Мой Магазин';
         const planType = document.getElementById('setup-plan-type').value;
         const btn = document.getElementById('btn-start-setup');
@@ -4332,27 +4338,30 @@ async function submitSetup(email) {
             }
 
         } catch (error) {
-        // 1. Возвращаем кнопку в рабочее состояние
+        // 1. Возвращаем кнопку в полностью рабочее состояние
         btn.disabled = false;
+        btn.removeAttribute('disabled');
         btn.style.opacity = '1';
-        btn.innerHTML = currentLang === 'kk' ? 'Қайталау' : 'Повторить попытку';
+        btn.style.pointerEvents = 'auto'; // На всякий случай
 
-        // 2. Распознаем блокировку (AdGuard, антивирус, обрыв сети)
+        // 2. Распознаем блокировку или обрыв сети
         if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
             
             const errorCard = document.getElementById('network-error-card');
             if (errorCard) {
-                // Показываем скрытый блок
-                errorCard.style.display = 'block';
+                errorCard.style.display = 'block'; // Показываем карточку
                 
-                // Прогоняем функцию перевода, чтобы она заполнила атрибуты data-i18n
+                // Передаем кнопку вашему переводчику
+                btn.setAttribute('data-i18n', 'setup_btn_retry');
+                
+                // Запускаем ваш механизм перевода
                 if (typeof applyLanguage === 'function') {
                     applyLanguage();
                 }
             }
             
         } else {
-            // 3. Обработка всех остальных системных ошибок
+            // 3. Остальные системные ошибки
             showSetupError(error.message);
         }
     }
