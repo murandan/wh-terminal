@@ -4338,30 +4338,32 @@ async function submitSetup(email) {
             }
 
         } catch (error) {
-        // 1. Возвращаем кнопку в полностью рабочее состояние
+        // 1. Жестко снимаем блокировку с кнопки
         btn.disabled = false;
         btn.removeAttribute('disabled');
         btn.style.opacity = '1';
-        btn.style.pointerEvents = 'auto'; // На всякий случай
+        btn.style.pointerEvents = 'auto';
 
-        // 2. Распознаем блокировку или обрыв сети
+        // 2. Принудительно вставляем нужный текст (напрямую из словаря)
+        if (typeof translations !== 'undefined' && translations[currentLang]) {
+            btn.innerHTML = translations[currentLang].setup_btn_retry || (currentLang === 'kk' ? "Қайталау" : "Повторить попытку");
+        } else {
+            btn.innerHTML = currentLang === 'kk' ? "Қайталау" : "Повторить попытку";
+        }
+        // Удаляем атрибут перевода с кнопки, чтобы движок не вернул старый текст
+        btn.removeAttribute('data-i18n'); 
+
+        // 3. Показываем карточку ошибки
         if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
-            
             const errorCard = document.getElementById('network-error-card');
             if (errorCard) {
-                errorCard.style.display = 'block'; // Показываем карточку
-                
-                // Передаем кнопку вашему переводчику
-                btn.setAttribute('data-i18n', 'setup_btn_retry');
-                
-                // Запускаем ваш механизм перевода
+                errorCard.style.display = 'block';
                 if (typeof applyLanguage === 'function') {
                     applyLanguage();
                 }
             }
-            
         } else {
-            // 3. Остальные системные ошибки
+            // 4. Остальные системные ошибки
             showSetupError(error.message);
         }
     }
