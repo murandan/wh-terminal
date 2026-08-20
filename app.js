@@ -4201,9 +4201,7 @@ function toggleSetupLang() {
     }
 }
 
-async function submitSetup(email) {
-    console.log("👉 СТАРТ: Кнопка нажата!"); 
-    
+async function submitSetup(email) {    
     // 1. Скрываем карточку сети
     const errorCard = document.getElementById('network-error-card');
     if (errorCard) errorCard.style.display = 'none';
@@ -4216,7 +4214,6 @@ async function submitSetup(email) {
     btn.style.opacity = '0.7';
 
     // 2. Проверка токена
-    console.log("🔍 Проверка токена...");
     if (!clientAccessToken) {
         console.error("❌ Ошибка: Нет clientAccessToken");
         showSetupError("Ошибка доступа к Диску. Попробуйте обновить страницу и войти заново.");
@@ -4349,8 +4346,6 @@ async function submitSetup(email) {
 
         } catch (error) {
         // 🚨 ВЫВОДИМ РЕАЛЬНУЮ ОШИБКУ В КОНСОЛЬ
-        console.error("🔥 ПОЙМАНА ОШИБКА:", error);
-
         const lang = (typeof currentLang !== 'undefined') ? currentLang : 'ru';
         const dict = (typeof translations !== 'undefined' && translations[lang]) ? translations[lang] : {};
 
