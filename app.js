@@ -4153,10 +4153,8 @@ function showInstallerForm(email) {
                 <span data-i18n="setup_btn_start">Развернуть базу данных</span>
             </button>
 
-            <div id="network-error-card" style="display: none; margin-top: 15px; padding: 15px; background-color: rgba(255, 170, 0, 0.08); border: 1px solid rgba(255, 170, 0, 0.3); border-radius: 8px; text-align: left; box-sizing: border-box;">
-
-            <!-- Карточка: Отказ в лицензии -->
-            <div id="license-error-card" style="display: none; background: var(--bg-card); border: 1px solid var(--accent-red); padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
+            <!-- 1. НОВАЯ КАРТОЧКА: Отказ в лицензии -->
+            <div id="license-error-card" style="display: none; background: var(--bg-card); border: 1px solid var(--accent-red); padding: 15px; border-radius: 8px; margin-top: 15px; text-align: left;">
                 <div style="font-size: 24px; margin-bottom: 10px;">🛑</div>
                 <h3 data-i18n="setup_license_error_title" style="color: var(--accent-red); margin-bottom: 5px;"></h3>
                 <p data-i18n="setup_license_error_desc" style="color: var(--text-main); font-size: 14px; margin-bottom: 10px;"></p>
@@ -4166,18 +4164,21 @@ function showInstallerForm(email) {
                 </ul>
             </div>
 
-    <div style="display: flex; align-items: center; margin-bottom: 8px;">
-        <span style="font-size: 18px; margin-right: 10px;">⚠️</span>
-        <strong style="color: #ffb74d; font-size: 14px; letter-spacing: 0.3px;" data-i18n="setup_network_error_title"></strong>
-    </div>
-    <p style="color: #e0e0e0; font-size: 13px; margin: 0 0 12px 0; line-height: 1.4;" data-i18n="setup_network_error_desc"></p>
-    <ul style="color: #aaaaaa; font-size: 12px; margin: 0; padding-left: 20px; line-height: 1.5;">
-        <li style="margin-bottom: 4px;" data-i18n="setup_network_error_step1"></li>
-        <li style="margin-bottom: 4px;" data-i18n="setup_network_error_step2"></li>
-        <li data-i18n="setup_network_error_step3"></li>
-    </ul>
-</div>
+            <!-- 2. СТАРАЯ КАРТОЧКА: Ошибка сети -->
+            <div id="network-error-card" style="display: none; margin-top: 15px; padding: 15px; background-color: rgba(255, 170, 0, 0.08); border: 1px solid rgba(255, 170, 0, 0.3); border-radius: 8px; text-align: left; box-sizing: border-box;">
+                <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 18px; margin-right: 10px;">⚠️</span>
+                    <strong style="color: #ffb74d; font-size: 14px; letter-spacing: 0.3px;" data-i18n="setup_network_error_title"></strong>
+                </div>
+                <p style="color: #e0e0e0; font-size: 13px; margin: 0 0 12px 0; line-height: 1.4;" data-i18n="setup_network_error_desc"></p>
+                <ul style="color: #aaaaaa; font-size: 12px; margin: 0; padding-left: 20px; line-height: 1.5;">
+                    <li style="margin-bottom: 4px;" data-i18n="setup_network_error_step1"></li>
+                    <li style="margin-bottom: 4px;" data-i18n="setup_network_error_step2"></li>
+                    <li data-i18n="setup_network_error_step3"></li>
+                </ul>
+            </div>
             
+            <!-- Подвал -->
             <div style="text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 15px;" data-i18n="setup_footer">
                 Система автоматически создаст структуру папок на вашем Google Диске.
             </div>
