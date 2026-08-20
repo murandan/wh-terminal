@@ -183,7 +183,11 @@
                 setup_network_error_step1: "Интернет: проверьте соединение (Wi-Fi/LTE).",
                 setup_network_error_step2: "Блокировщики: если включен AdGuard или антивирус, временно приостановите его работу.",
                 setup_network_error_step3: "Браузер: если ссылка открыта в Telegram или WhatsApp, перейдите в Safari или Chrome.",
-                setup_btn_retry: "Повторить попытку"
+                setup_btn_retry: "Повторить попытку",
+                setup_license_error_title: "Установка отклонена",
+                setup_license_error_desc: "Касса уже была установлена на данный Google аккаунт.",
+                setup_license_error_step1: "Для новой установки (тестового периода) используйте другой аккаунт Google.",
+                setup_license_error_step2: "Для продления текущей кассы обратитесь к администратору."
             },
             kz: {
                 btn_sale: "САТУ", btn_return: "ҚАЙТАРУ", search_placeholder: "ІЗДЕУ...",
@@ -369,7 +373,11 @@
                 setup_network_error_step1: "Интернет: қосылымды тексеріңіз (Wi-Fi/LTE).",
                 setup_network_error_step2: "Бұғаттаушылар: AdGuard немесе антивирус қосулы болса, оны уақытша тоқтата тұрыңыз.",
                 setup_network_error_step3: "Браузер: сілтеме Telegram немесе WhatsApp ішінде ашылса, Safari немесе Chrome-ға өтіңіз.",
-                setup_btn_retry: "Қайталау"
+                setup_btn_retry: "Қайталау",
+                setup_license_error_title: "Орнатудан бас тартылды",
+                setup_license_error_desc: "Бұл Google аккаунтына касса бұрын орнатылған.",
+                setup_license_error_step1: "Жаңадан орнату үшін (сынақ мерзімі) басқа Google аккаунтын пайдаланыңыз.",
+                setup_license_error_step2: "Қазіргі кассаны ұзарту үшін әкімшіге хабарласыңыз."
             }
         };
 
@@ -4146,6 +4154,18 @@ function showInstallerForm(email) {
             </button>
 
             <div id="network-error-card" style="display: none; margin-top: 15px; padding: 15px; background-color: rgba(255, 170, 0, 0.08); border: 1px solid rgba(255, 170, 0, 0.3); border-radius: 8px; text-align: left; box-sizing: border-box;">
+
+            <!-- Карточка: Отказ в лицензии -->
+            <div id="license-error-card" style="display: none; background: var(--bg-card); border: 1px solid var(--accent-red); padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left;">
+                <div style="font-size: 24px; margin-bottom: 10px;">🛑</div>
+                <h3 data-i18n="setup_license_error_title" style="color: var(--accent-red); margin-bottom: 5px;"></h3>
+                <p data-i18n="setup_license_error_desc" style="color: var(--text-main); font-size: 14px; margin-bottom: 10px;"></p>
+                <ul style="color: var(--text-muted); font-size: 12px; margin-left: 20px; line-height: 1.5;">
+                    <li data-i18n="setup_license_error_step1"></li>
+                    <li data-i18n="setup_license_error_step2"></li>
+                </ul>
+            </div>
+
     <div style="display: flex; align-items: center; margin-bottom: 8px;">
         <span style="font-size: 18px; margin-right: 10px;">⚠️</span>
         <strong style="color: #ffb74d; font-size: 14px; letter-spacing: 0.3px;" data-i18n="setup_network_error_title"></strong>
@@ -4201,22 +4221,38 @@ function toggleSetupLang() {
     }
 }
 
-async function submitSetup(email) {    
-    // 1. Скрываем карточку сети
-    const errorCard = document.getElementById('network-error-card');
-    if (errorCard) errorCard.style.display = 'none';
-
-    const storeName = document.getElementById('setup-store-name').value.trim() || 'Мой Магазин';
-    const planType = document.getElementById('setup-plan-type').value;
+async function submitSetup(email) {
     const btn = document.getElementById('btn-start-setup');
-    
+    if (!btn) return;
+
+    // 1. БЛОКИРУЕМ КНОПКУ (от двойных кликов)
     btn.disabled = true;
     btn.style.opacity = '0.7';
 
-    // 2. Проверка токена
+    // 2. === ПОЛНАЯ ОЧИСТКА ИНТЕРФЕЙСА ОТ ПРОШЛЫХ ОШИБОК ===
+    const networkCard = document.getElementById('network-error-card');
+    if (networkCard) networkCard.style.display = 'none';
+
+    const licenseCard = document.getElementById('license-error-card');
+    if (licenseCard) licenseCard.style.display = 'none';
+    
+    const errEl = document.getElementById('setupError');
+    if (errEl) {
+        errEl.innerHTML = '';
+        errEl.style.display = 'none';
+    }
+    // ========================================================
+
+    // 3. СЧИТЫВАЕМ ДАННЫЕ
+    const storeName = document.getElementById('setup-store-name').value.trim() || 'Мой Магазин';
+    const planType = document.getElementById('setup-plan-type').value;
+
+    // 4. ПРОВЕРКА ТОКЕНА
     if (!clientAccessToken) {
         console.error("❌ Ошибка: Нет clientAccessToken");
         showSetupError("Ошибка доступа к Диску. Попробуйте обновить страницу и войти заново.");
+        btn.disabled = false; // Оживляем кнопку
+        btn.style.opacity = '1';
         return;
     }
 
@@ -4226,7 +4262,7 @@ async function submitSetup(email) {
         return match ? match[1] : url.trim();
     };
 
-    // 3. Проверка ID шаблонов
+    // 5. ПРОВЕРКА ID ШАБЛОНОВ
     console.log("🔍 Проверка ID шаблонов...");
     const tradeId = extractId(typeof TEMPLATE_TRADE_URL !== 'undefined' ? TEMPLATE_TRADE_URL : '');
     const configId = extractId(typeof TEMPLATE_CONFIG_URL !== 'undefined' ? TEMPLATE_CONFIG_URL : '');
@@ -4234,10 +4270,12 @@ async function submitSetup(email) {
     if (!tradeId || !configId) {
         console.error("❌ Ошибка: Неверный формат ссылок на шаблоны", {tradeId, configId});
         showSetupError("Системная ошибка: Неверный формат ссылок на шаблоны.");
+        btn.disabled = false; // Оживляем кнопку
+        btn.style.opacity = '1';
         return;
     }
 
-    console.log("✅ Все проверки пройдены, начинаем создание папок!");
+    console.log("✅ Все проверки пройдены, начинаем проверку лицензии и создание папок!");
 
     try {
         const lang = (typeof currentLang !== 'undefined') ? currentLang : 'ru';
@@ -4259,19 +4297,18 @@ async function submitSetup(email) {
         if (!checkRes.ok) throw new Error("NetworkError: Сбой сервера при проверке базы.");
         const checkResult = await checkRes.json();
 
-        // Если клиент уже есть в базе и он активен
+        // Если статус 'error'
         if (checkResult.status === 'error') {
             if (checkResult.message === 'already_exists') {
-                const msg = lang === 'kk' 
-                    ? "Бұл аккаунтқа касса орнатылған. Жаңа орнату үшін басқа email пайдаланыңыз." 
-                    : "На данный аккаунт касса уже зарегистрирована. Для новой установки используйте другой email.";
                 
-                showSetupError(msg);
+                // 1. Показываем карточку
+                const licenseCard = document.getElementById('license-error-card');
+                if (licenseCard) licenseCard.style.display = 'block';
                 
-                // Оживляем кнопку для новой попытки
+                // 2. Оживляем кнопку для новой попытки
                 btn.disabled = false;
                 btn.style.opacity = '1';
-                btn.innerHTML = dict.setup_btn_retry || (lang === 'kk' ? 'Қайталау' : 'Повторить попытку');
+                btn.innerHTML = dict.setup_btn_retry || (lang === 'kz' || lang === 'kk' ? 'Қайталау' : 'Повторить попытку');
                 
                 return; // 🛑 ЖЕСТКО БЛОКИРУЕМ ДАЛЬНЕЙШЕЕ СОЗДАНИЕ ПАПОК
             } else {
