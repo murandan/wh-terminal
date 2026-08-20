@@ -4202,38 +4202,48 @@ function toggleSetupLang() {
 }
 
 async function submitSetup(email) {
-        // === ДОБАВИТЬ ЭТИ ДВЕ СТРОКИ СЮДА ===
-        const errorCard = document.getElementById('network-error-card');
-        if (errorCard) errorCard.style.display = 'none';
-        // ===================================
-        const storeName = document.getElementById('setup-store-name').value.trim() || 'Мой Магазин';
-        const planType = document.getElementById('setup-plan-type').value;
-        const btn = document.getElementById('btn-start-setup');
-        
-        btn.disabled = true;
-        btn.style.opacity = '0.7';
+    console.log("👉 СТАРТ: Кнопка нажата!"); 
+    
+    // 1. Скрываем карточку сети
+    const errorCard = document.getElementById('network-error-card');
+    if (errorCard) errorCard.style.display = 'none';
 
-        if (!clientAccessToken) {
-            showSetupError("Ошибка доступа к Диску. Попробуйте обновить страницу и войти заново.");
-            return;
-        }
+    const storeName = document.getElementById('setup-store-name').value.trim() || 'Мой Магазин';
+    const planType = document.getElementById('setup-plan-type').value;
+    const btn = document.getElementById('btn-start-setup');
+    
+    btn.disabled = true;
+    btn.style.opacity = '0.7';
 
-        const extractId = (url) => {
-            if (!url) return null;
-            const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
-            return match ? match[1] : url.trim();
-        };
+    // 2. Проверка токена
+    console.log("🔍 Проверка токена...");
+    if (!clientAccessToken) {
+        console.error("❌ Ошибка: Нет clientAccessToken");
+        showSetupError("Ошибка доступа к Диску. Попробуйте обновить страницу и войти заново.");
+        return;
+    }
 
-        const tradeId = extractId(typeof TEMPLATE_TRADE_URL !== 'undefined' ? TEMPLATE_TRADE_URL : '');
-        const configId = extractId(typeof TEMPLATE_CONFIG_URL !== 'undefined' ? TEMPLATE_CONFIG_URL : '');
+    const extractId = (url) => {
+        if (!url) return null;
+        const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+        return match ? match[1] : url.trim();
+    };
 
-        if (!tradeId || !configId) {
-            showSetupError("Системная ошибка: Неверный формат ссылок на шаблоны в конфигурации.");
-            return;
-        }
+    // 3. Проверка ID шаблонов
+    console.log("🔍 Проверка ID шаблонов...");
+    const tradeId = extractId(typeof TEMPLATE_TRADE_URL !== 'undefined' ? TEMPLATE_TRADE_URL : '');
+    const configId = extractId(typeof TEMPLATE_CONFIG_URL !== 'undefined' ? TEMPLATE_CONFIG_URL : '');
 
-        try {
-            btn.innerHTML = `⚙️ <span style="font-size: 14px;">${translations[currentLang].setup_process_folder}</span>`;
+    if (!tradeId || !configId) {
+        console.error("❌ Ошибка: Неверный формат ссылок на шаблоны", {tradeId, configId});
+        showSetupError("Системная ошибка: Неверный формат ссылок на шаблоны.");
+        return;
+    }
+
+    console.log("✅ Все проверки пройдены, начинаем создание папок!");
+
+    try {
+        btn.innerHTML = `⚙️ <span style="font-size: 14px;">${translations[currentLang]?.setup_process_folder || 'Создание...'}</span>`;
             
             // 1. Создаем корневую папку
             const rootRes = await fetch('https://www.googleapis.com/drive/v3/files', {
