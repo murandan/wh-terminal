@@ -4240,10 +4240,52 @@ async function submitSetup(email) {
     console.log("✅ Все проверки пройдены, начинаем создание папок!");
 
     try {
-        btn.innerHTML = `⚙️ <span style="font-size: 14px;">${translations[currentLang]?.setup_process_folder || 'Создание...'}</span>`;
+        const lang = (typeof currentLang !== 'undefined') ? currentLang : 'ru';
+        const dict = (typeof translations !== 'undefined' && translations[lang]) ? translations[lang] : {};
+
+        // === НОВЫЙ БЛОК: ПРОВЕРКА ЛИЦЕНЗИИ ПЕРЕД УСТАНОВКОЙ ===
+        btn.innerHTML = `⚙️ <span style="font-size: 14px;">${lang === 'kk' ? 'Лицензияны тексеру...' : 'Проверка лицензии...'}</span>`;
+        
+        const checkRes = await fetch(GATEWAY_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+                action: 'checkLicense',
+                email: email,
+                storeName: storeName
+            })
+        });
+
+        if (!checkRes.ok) throw new Error("NetworkError: Сбой сервера при проверке базы.");
+        const checkResult = await checkRes.json();
+
+        // Если клиент уже есть в базе и он активен
+        if (checkResult.status === 'error') {
+            if (checkResult.message === 'already_exists') {
+                const msg = lang === 'kk' 
+                    ? "Бұл аккаунтқа касса орнатылған. Жаңа орнату үшін басқа email пайдаланыңыз." 
+                    : "На данный аккаунт касса уже зарегистрирована. Для новой установки используйте другой email.";
+                
+                showSetupError(msg);
+                
+                // Оживляем кнопку для новой попытки
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.innerHTML = dict.setup_btn_retry || (lang === 'kk' ? 'Қайталау' : 'Повторить попытку');
+                
+                return; // 🛑 ЖЕСТКО БЛОКИРУЕМ ДАЛЬНЕЙШЕЕ СОЗДАНИЕ ПАПОК
+            } else {
+                throw new Error(`Ошибка базы данных: ${checkResult.message}`);
+            }
+        }
+        
+        // Если статус 'success' (новое подключение или 'resume' после сбоя) — идем дальше
+        // =======================================================
+
+        btn.innerHTML = `⚙️ <span style="font-size: 14px;">${dict.setup_process_folder || 'Создание...'}</span>`;
             
-            // 1. Создаем корневую папку
-            const rootRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+        // 1. Создаем корневую папку
+        const rootRes = await fetch('https://www.googleapis.com/drive/v3/files', {
                 method: 'POST',
                 headers: { 'Authorization': 'Bearer ' + clientAccessToken, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name: `POS_System_Data - ${storeName}`, mimeType: 'application/vnd.google-apps.folder' })
