@@ -4338,33 +4338,36 @@ async function submitSetup(email) {
             }
 
         } catch (error) {
-        // 1. Жестко снимаем блокировку с кнопки
-        btn.disabled = false;
-        btn.removeAttribute('disabled');
-        btn.style.opacity = '1';
-        btn.style.pointerEvents = 'auto';
-
-        // 2. Принудительно вставляем нужный текст (напрямую из словаря)
-        if (typeof translations !== 'undefined' && translations[currentLang]) {
-            btn.innerHTML = translations[currentLang].setup_btn_retry || (currentLang === 'kk' ? "Қайталау" : "Повторить попытку");
-        } else {
-            btn.innerHTML = currentLang === 'kk' ? "Қайталау" : "Повторить попытку";
-        }
-        // Удаляем атрибут перевода с кнопки, чтобы движок не вернул старый текст
-        btn.removeAttribute('data-i18n'); 
-
-        // 3. Показываем карточку ошибки
+        // 1. Сначала показываем карточку ошибки
         if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
             const errorCard = document.getElementById('network-error-card');
-            if (errorCard) {
-                errorCard.style.display = 'block';
-                if (typeof applyLanguage === 'function') {
-                    applyLanguage();
-                }
-            }
+            if (errorCard) errorCard.style.display = 'block';
         } else {
-            // 4. Остальные системные ошибки
-            showSetupError(error.message);
+            if (typeof showSetupError === 'function') showSetupError(error.message);
+        }
+
+        // 2. Затем переводим страницу (чтобы карточка ошибки получила нужный язык)
+        if (typeof applyLanguage === 'function') {
+            try { applyLanguage(); } catch(e) {} // Защита от сбоев перевода
+        }
+
+        // 3. В САМОМ КОНЦЕ оживляем кнопку (после всех переводов, чтобы никто её не трогал)
+        const actionBtn = document.getElementById('btn-start-setup');
+        if (actionBtn) {
+            actionBtn.disabled = false;
+            actionBtn.removeAttribute('disabled');
+            actionBtn.style.opacity = '1';
+            actionBtn.style.pointerEvents = 'auto'; // Точно возвращаем кликабельность
+            
+            // Защищаем кнопку от сканирования переводчиком в будущем
+            actionBtn.removeAttribute('data-i18n');
+            
+            // Напрямую вписываем текст без шестеренок
+            let retryText = "Повторить попытку";
+            if (typeof currentLang !== 'undefined' && currentLang === 'kk') {
+                retryText = "Қайталау";
+            }
+            actionBtn.innerHTML = retryText;
         }
     }
 }
