@@ -4284,36 +4284,18 @@ async function submitSetup(email) {
 
         btn.innerHTML = `⚙️ <span style="font-size: 14px;">${dict.setup_process_folder || 'Создание...'}</span>`;
             
-        // 1. Создаем корневую папку
-        const rootRes = await fetch('https://www.googleapis.com/drive/v3/files', {
-                method: 'POST',
-                headers: { 'Authorization': 'Bearer ' + clientAccessToken, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: `POS_System_Data - ${storeName}`, mimeType: 'application/vnd.google-apps.folder' })
-            });
-            if (!rootRes.ok) throw new Error("Сбой Google Drive API при создании главной папки.");
-            const rootFolder = await rootRes.json();
-            const rootId = rootFolder.id;
+        // 1. НАХОДИМ ИЛИ СОЗДАЕМ КОРНЕВУЮ ПАПКУ
+            const rootFolderName = `POS_System_Data - ${storeName}`;
+            const rootId = await getOrCreateDriveFolder(rootFolderName, clientAccessToken);
 
             btn.innerHTML = `⚙️ <span style="font-size: 14px;">${translations[currentLang].setup_process_struct}</span>`;
             
-            // 2. Создаем служебные подпапки СТРОГО ПО ОЧЕРЕДИ (Защита от блокировки Google)
+            // 2. НАХОДИМ ИЛИ СОЗДАЕМ ПОДПАПКИ СТРОГО ПО ОЧЕРЕДИ
             let folderIds = {};
             const subfolders = ['POS_Backups', 'POS_Images', 'POS_Invoices', 'POS_Secret_Backups'];
             
             for (const name of subfolders) {
-                const res = await fetch('https://www.googleapis.com/drive/v3/files', {
-                    method: 'POST',
-                    headers: { 'Authorization': 'Bearer ' + clientAccessToken, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: name, mimeType: 'application/vnd.google-apps.folder', parents: [rootId] })
-                });
-                
-                if (!res.ok) {
-                    const errTxt = await res.text();
-                    throw new Error(`Ошибка при создании папки ${name}: ` + errTxt);
-                }
-                
-                const f = await res.json();
-                folderIds[name] = f.id;
+                folderIds[name] = await getOrCreateDriveFolder(name, clientAccessToken, rootId);
             }
 
             btn.innerHTML = `⚙️ <span style="font-size: 14px;">${translations[currentLang].setup_process_copy}</span>`;
@@ -5529,3 +5511,50 @@ function showUpdatePrompt(newVersion) {
 }
 
 setInterval(checkForAppUpdates, 15 * 60 * 1000);
+
+/**
+ * Ищет папку по имени. Если parentId указан, ищет строго внутри родителя.
+ * Возвращает ID найденной папки или создает новую.
+ */
+async function getOrCreateDriveFolder(folderName, accessToken, parentId = null) {
+    let query = `mimeType='application/vnd.google-apps.folder' and name='${folderName}' and trashed=false`;
+    if (parentId) {
+        query += ` and '${parentId}' in parents`;
+    }
+    
+    const searchUrl = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id, name)`;
+
+    // 1. Пытаемся найти
+    const searchRes = await fetch(searchUrl, {
+        method: 'GET',
+        headers: { 'Authorization': 'Bearer ' + accessToken }
+    });
+
+    if (!searchRes.ok) throw new Error(`NetworkError: Ошибка при поиске папки ${folderName}`);
+    const searchData = await searchRes.json();
+
+    // Если папка уже есть — просто отдаем её ID
+    if (searchData.files && searchData.files.length > 0) {
+        return searchData.files[0].id; 
+    }
+
+    // 2. Если не нашли — создаем
+    const metadata = {
+        name: folderName,
+        mimeType: 'application/vnd.google-apps.folder'
+    };
+    if (parentId) metadata.parents = [parentId];
+
+    const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+        method: 'POST',
+        headers: {
+            'Authorization': 'Bearer ' + accessToken,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(metadata)
+    });
+
+    if (!createRes.ok) throw new Error(`NetworkError: Ошибка при создании папки ${folderName}`);
+    const createData = await createRes.json();
+    return createData.id;
+}
