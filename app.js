@@ -4348,36 +4348,45 @@ async function submitSetup(email) {
             }
 
         } catch (error) {
-        // 1. Сначала показываем карточку ошибки
-        if (error.message.includes('Failed to fetch') || error.name === 'TypeError') {
-            const errorCard = document.getElementById('network-error-card');
-            if (errorCard) errorCard.style.display = 'block';
-        } else {
-            if (typeof showSetupError === 'function') showSetupError(error.message);
-        }
+        // 🚨 ВЫВОДИМ РЕАЛЬНУЮ ОШИБКУ В КОНСОЛЬ
+        console.error("🔥 ПОЙМАНА ОШИБКА:", error);
 
-        // 2. Затем переводим страницу (чтобы карточка ошибки получила нужный язык)
-        if (typeof applyLanguage === 'function') {
-            try { applyLanguage(); } catch(e) {} // Защита от сбоев перевода
-        }
+        const lang = (typeof currentLang !== 'undefined') ? currentLang : 'ru';
+        const dict = (typeof translations !== 'undefined' && translations[lang]) ? translations[lang] : {};
 
-        // 3. В САМОМ КОНЦЕ оживляем кнопку (после всех переводов, чтобы никто её не трогал)
+        // 1. Оживляем кнопку
         const actionBtn = document.getElementById('btn-start-setup');
         if (actionBtn) {
             actionBtn.disabled = false;
             actionBtn.removeAttribute('disabled');
             actionBtn.style.opacity = '1';
-            actionBtn.style.pointerEvents = 'auto'; // Точно возвращаем кликабельность
-            
-            // Защищаем кнопку от сканирования переводчиком в будущем
-            actionBtn.removeAttribute('data-i18n');
-            
-            // Напрямую вписываем текст без шестеренок
-            let retryText = "Повторить попытку";
-            if (typeof currentLang !== 'undefined' && currentLang === 'kk') {
-                retryText = "Қайталау";
+            actionBtn.style.pointerEvents = 'auto';
+            actionBtn.innerHTML = dict.setup_btn_retry || (lang === 'kz' || lang === 'kk' ? 'Қайталау' : 'Повторить попытку');
+        }
+
+        // 2. УБРАЛИ 'TypeError', теперь ловим ТОЛЬКО реальные проблемы с сетью
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+            const card = document.getElementById('network-error-card');
+            if (card) {
+                card.style.display = 'block';
+                
+                const title = card.querySelector('[data-i18n="setup_network_error_title"]');
+                const desc = card.querySelector('[data-i18n="setup_network_error_desc"]');
+                const step1 = card.querySelector('[data-i18n="setup_network_error_step1"]');
+                const step2 = card.querySelector('[data-i18n="setup_network_error_step2"]');
+                const step3 = card.querySelector('[data-i18n="setup_network_error_step3"]');
+
+                if (title) title.innerHTML = dict.setup_network_error_title || '⚠️ Нет связи с Google Диском';
+                if (desc) desc.innerHTML = dict.setup_network_error_desc || 'Сбой сети';
+                if (step1) step1.innerHTML = dict.setup_network_error_step1 || 'Проверьте интернет';
+                if (step2) step2.innerHTML = dict.setup_network_error_step2 || 'Отключите антивирус';
+                if (step3) step3.innerHTML = dict.setup_network_error_step3 || 'Смените браузер';
             }
-            actionBtn.innerHTML = retryText;
+        } else {
+            // 3. Выводим все остальные (скрытые) ошибки стандартным способом
+            if (typeof showSetupError === 'function') {
+                showSetupError("Системный сбой: " + error.message);
+            }
         }
     }
 }
