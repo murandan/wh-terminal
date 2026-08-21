@@ -5609,9 +5609,18 @@ async function openDriveBase() {
     const originalIcon = btnText.innerText;
     btnText.innerText = '⏳';
 
+    // ХАК ДЛЯ МОБИЛОК: Открываем пустую вкладку сразу по клику, 
+    // ДО того как начался запрос к серверу. Это обходит блокировщики всплывающих окон.
+    const newTab = window.open('about:blank', '_blank');
+
     try {
+        // Добавляем строгие заголовки и правила редиректа для мобильных браузеров
         const response = await fetch(GATEWAY_URL, {
             method: 'POST',
+            headers: {
+                'Content-Type': 'text/plain;charset=utf-8'
+            },
+            redirect: 'follow',
             body: JSON.stringify({
                 action: 'getFolderId',
                 api_key: token
@@ -5621,15 +5630,17 @@ async function openDriveBase() {
         const data = await response.json();
         btnText.innerText = originalIcon;
 
-        // ВАЖНО: теперь мы ищем именно rootFolderId
         if (data.rootFolderId) {
-            window.open(`https://drive.google.com/drive/folders/${data.rootFolderId}`, '_blank');
+            // Вместо открытия нового окна, просто перенаправляем уже открытую вкладку на нужный адрес
+            newTab.location.href = `https://drive.google.com/drive/folders/${data.rootFolderId}`;
         } else {
+            newTab.close(); // Если ошибка - тихо закрываем пустую вкладку
             console.error("Ответ сервера:", data);
             alert("ID главной папки не найден в базе.");
         }
 
     } catch (error) {
+        newTab.close(); // Закрываем пустую вкладку при сбое сети
         console.error("Ошибка при запросе папки:", error);
         btnText.innerText = '📁';
         alert("Ошибка связи с сервером.");
