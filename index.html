@@ -269,77 +269,57 @@
     </div>
 
     <div id="settings-modal" class="modal-overlay">
-        <div class="settings-box">
-            <div class="r-title" style="margin-bottom: 20px;" data-i18n="settings_title">НАСТРОЙКИ</div>
-            
-            <div class="s-group">
-                <div class="s-title" data-i18n="settings_lang">Язык интерфейса</div>
-                <div class="lang-row">
-                    <button id="lang-ru" class="lang-btn active" onclick="applyLanguage('ru')">RU</button>
-                    <button id="lang-kz" class="lang-btn" onclick="applyLanguage('kz')">KZ</button>
-                </div>
-            </div>
-            
-            <div class="s-group">
-                <div class="s-title" data-i18n="settings_sync">Синхронизация</div>
-                <button class="s-btn" onclick="manualSync()">
-                    <span data-i18n="btn_sync">Отправить чеки</span><span id="sync-status">📡</span>
-                </button>
-            </div>
-            
-            <div class="s-group">
-            <div class="s-group">
-                <div class="s-title" data-i18n="settings_system">Система</div>
-                
-                <div class="lang-row">
-                    
-                    <button class="s-btn" onclick="forceAppUpdate()" style="flex: 1; margin: 0; padding: 12px 10px;">
-                        <span data-i18n="btn_update">Обновить кэш</span>
-                        <span id="update-status">🔄</span>
-                    </button>
-                    
-                    <!-- СЮДА ДОБАВЛЕН ID 👇 -->
-                    <button id="btn-settings-drive" class="s-btn" onclick="openDriveBase()" style="flex: 1; margin: 0; padding: 12px 10px;">
-                        <span data-i18n="btn_base">База</span>
-                        <span>📁</span>
-                    </button>
-                    
-                </div>
-            </div>
-            
-            <!-- Используем ваш родной класс lang-row -->
+    <div class="settings-box">
+        <div class="r-title" style="margin-bottom: 20px;" data-i18n="settings_title">НАСТРОЙКИ</div>
+        
+        <div class="s-group">
+            <div class="s-title" data-i18n="settings_lang">Язык интерфейса</div>
             <div class="lang-row">
-                
+                <button id="lang-ru" class="lang-btn active" onclick="applyLanguage('ru')">RU</button>
+                <button id="lang-kz" class="lang-btn" onclick="applyLanguage('kz')">KZ</button>
+            </div>
+        </div>
+        
+        <div class="s-group">
+            <div class="s-title" data-i18n="settings_sync">Синхронизация</div>
+            <button class="s-btn" onclick="manualSync()">
+                <span data-i18n="btn_sync">Отправить чеки</span><span id="sync-status">📡</span>
+            </button>
+        </div>
+        
+        <div class="s-group">
+            <div class="s-title" data-i18n="settings_system">Система</div>
+            <div class="lang-row">
                 <button class="s-btn" onclick="forceAppUpdate()" style="flex: 1; margin: 0; padding: 12px 10px;">
                     <span data-i18n="btn_update">Обновить кэш</span>
                     <span id="update-status">🔄</span>
                 </button>
                 
-                <button class="s-btn" onclick="openDriveBase()" style="flex: 1; margin: 0; padding: 12px 10px;">
+                <!-- Кнопка с ID для скрытия от кассиров -->
+                <button id="btn-settings-drive" class="s-btn" onclick="openDriveBase()" style="flex: 1; margin: 0; padding: 12px 10px;">
                     <span data-i18n="btn_base">База</span>
                     <span>📁</span>
                 </button>
-                
             </div>
         </div>
-            
-            <div class="s-group">
-                <div class="s-title" data-i18n="settings_theme">Оформление</div>
-                <button class="s-btn" onclick="toggleTheme()">
-                    <span data-i18n="theme_toggle">СМЕНА ТЕМЫ</span><span>🌓</span>
-                </button>
-            </div>
-
-            <div class="s-group" style="border: none; padding-bottom: 0;">
-                <div class="s-title" data-i18n="settings_help">Справка</div>
-                <button class="s-btn" onclick="openHelpDocument()">
-                    <span data-i18n="btn_help">Руководство пользователя</span><span>❓</span>
-                </button>
-            </div>
-
-            <button class="cancel-btn" style="width: 100%; margin-top: 10px;" onclick="closeSettings()" data-i18n="btn_close">ЗАКРЫТЬ</button>
+        
+        <div class="s-group">
+            <div class="s-title" data-i18n="settings_theme">Оформление</div>
+            <button class="s-btn" onclick="toggleTheme()">
+                <span data-i18n="theme_toggle">СМЕНА ТЕМЫ</span><span>🌓</span>
+            </button>
         </div>
+
+        <div class="s-group" style="border: none; padding-bottom: 0;">
+            <div class="s-title" data-i18n="settings_help">Справка</div>
+            <button class="s-btn" onclick="openHelpDocument()">
+                <span data-i18n="btn_help">Руководство пользователя</span><span>❓</span>
+            </button>
+        </div>
+
+        <button class="cancel-btn" style="width: 100%; margin-top: 10px;" onclick="closeSettings()" data-i18n="btn_close">ЗАКРЫТЬ</button>
     </div>
+</div>
 
     <div id="category-markup-modal" class="modal-overlay">
         <div class="markup-box">
