@@ -5622,19 +5622,7 @@ async function getOrCreateDriveFolder(folderName, accessToken, parentId = null) 
 function openDriveBase() {
     let driveStr = localStorage.getItem('DRIVE_DATA');
     
-    // Заглушка для теста локально в Go Live
-    if (!driveStr && (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost')) {
-        let fakeData = {
-            rootFolderId: 'fake_root',
-            cashDbId: 'fake_db',
-            configDbId: 'fake_config',
-            imagesFolderId: 'fake_img',
-            invoicesFolderId: 'fake_inv',
-            backupsFolderId: null, // Умышленно пусто, чтобы проверить автовосстановление
-            secretBackupsFolderId: null 
-        };
-        localStorage.setItem('DRIVE_DATA', JSON.stringify(fakeData));
-    } else if (!driveStr) {
+    if (!driveStr) {
         alert("Данные базы не найдены. Пожалуйста, перезайдите в кассу (введите ПИН-код).");
         return;
     }
@@ -5648,10 +5636,6 @@ async function handleDriveClick(btnElement, dataKey, expectedName) {
 
     // ВАРИАНТ А: Папка есть. Открываем мгновенно.
     if (targetId) {
-        if (targetId.includes('fake_')) {
-            alert(`Клик сработал! Открываем ${expectedName} (ID: ${targetId})`);
-            return;
-        }
         let url = expectedName === 'file' 
             ? `https://docs.google.com/spreadsheets/d/${targetId}/edit`
             : `https://drive.google.com/drive/folders/${targetId}`;
@@ -5665,24 +5649,36 @@ async function handleDriveClick(btnElement, dataKey, expectedName) {
     btnElement.style.pointerEvents = 'none'; // Блокируем от двойного клика
 
     try {
-        // --- БЛОК ТЕСТА ДЛЯ GO LIVE ---
-        if (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') {
-            await new Promise(r => setTimeout(r, 1500)); // Имитация ожидания сервера
-            alert(`Папка ${expectedName} успешно создана сервером в фоновом режиме!`);
-            driveData[dataKey] = 'new_fake_id_123';
-            localStorage.setItem('DRIVE_DATA', JSON.stringify(driveData));
-            btnElement.innerHTML = originalHtml;
-            btnElement.style.pointerEvents = 'auto';
-            return;
-        }
-        // --- КОНЕЦ БЛОКА ТЕСТА ---
-
-        // ЗДЕСЬ БУДЕТ РЕАЛЬНЫЙ ЗАПРОС К СЕРВЕРУ (напишем бэкенд следующим шагом)
-        // const token = localStorage.getItem('CLIENT_API_KEY');
-        // const res = await fetch(GATEWAY_URL, { ... action: 'recoverFolder', ... });
+        const token = localStorage.getItem('CLIENT_API_KEY');
+        // Будущий запрос к вашему GAS-серверу для автосоздания
+        const response = await fetch(GATEWAY_URL, { 
+            method: 'POST',
+            body: JSON.stringify({
+                api_key: token,
+                action: 'recoverFolder',
+                folder_type: dataKey
+            })
+        });
         
+        const res = await response.json();
+        
+        if (res.success && res.newId) {
+            // Сохраняем новый ID в память и сразу открываем
+            driveData[dataKey] = res.newId;
+            localStorage.setItem('DRIVE_DATA', JSON.stringify(driveData));
+            
+            let url = expectedName === 'file' 
+                ? `https://docs.google.com/spreadsheets/d/${res.newId}/edit`
+                : `https://drive.google.com/drive/folders/${res.newId}`;
+            window.open(url, '_blank');
+        } else {
+            alert("Ошибка при создании папки: " + (res.error || "Неизвестная ошибка сервера"));
+        }
     } catch (error) {
+        console.error(error);
         alert("Ошибка связи с сервером при восстановлении папки.");
+    } finally {
+        // Возвращаем кнопку в исходное состояние
         btnElement.innerHTML = originalHtml;
         btnElement.style.pointerEvents = 'auto';
     }
@@ -5691,8 +5687,3 @@ async function handleDriveClick(btnElement, dataKey, expectedName) {
 function closeDriveModal() {
     document.getElementById('drive-base-modal').style.display = 'none';
 }
-
-// ВРЕМЕННЫЙ КОД ДЛЯ ТЕСТА В GO LIVE (Удалить после проверки дизайна!)
-setTimeout(() => { 
-    if (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') openDriveBase(); 
-}, 500);
