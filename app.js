@@ -1862,6 +1862,8 @@ async function handleAutoLogin(val) {
                     localStorage.setItem('offline_pin', securedPin);
                     localStorage.setItem('offline_user', JSON.stringify(res.user));
 
+                    localStorage.setItem('DRIVE_DATA', JSON.stringify(res.driveData));
+
                     field.style.color = 'var(--accent-green)'; 
                     err.innerText = translations[currentLang].pin_granted;
                     err.style.color = 'var(--accent-green)';
