@@ -288,11 +288,25 @@
             </div>
             
             <div class="s-group">
-                <div class="s-title" data-i18n="settings_system">Система</div>
-                <button class="s-btn" onclick="forceAppUpdate()">
-                    <span data-i18n="btn_update">Обновить кэш</span><span id="update-status">🔄</span>
+            <div class="s-title" data-i18n="settings_system">Система</div>
+            
+            <!-- Контейнер для двух кнопок в один ряд -->
+            <div style="display: flex; gap: 10px; width: 100%;">
+                
+                <!-- Кнопка 1: Обновить кэш (оставляем вашу логику forceAppUpdate) -->
+                <button class="s-btn" onclick="forceAppUpdate()" style="flex: 1; margin: 0; padding: 12px 10px;">
+                    <span data-i18n="btn_update">Обновить кэш</span>
+                    <span id="update-status">🔄</span>
                 </button>
+                
+                <!-- Кнопка 2: Открыть Базу (новая) -->
+                <button class="s-btn" onclick="openDriveBase()" style="flex: 1; margin: 0; padding: 12px 10px;">
+                    <span data-i18n="btn_base">База</span>
+                    <span>📁</span>
+                </button>
+                
             </div>
+        </div>
             
             <div class="s-group">
                 <div class="s-title" data-i18n="settings_theme">Оформление</div>
