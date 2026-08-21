@@ -194,8 +194,8 @@
                 drive_config: "ТАБЛИЦА: НАСТРОЙКИ (CONFIG)",
                 drive_images: "ПАПКА: ФОТОГРАФИИ",
                 drive_invoices: "ПАПКА: НАКЛАДНЫЕ",
-                drive_backups: "ПАПКА: BACKUPS",
-                drive_secret: "ПАПКА: SECRET BACKUPS",
+                drive_backups: "ПАПКА: РЕЗЕРВНЫЕ КОПИИ",
+                drive_secret: "ПАПКА: СЕКРЕТНЫЕ КОПИИ",
                 btn_close: "ЗАКРЫТЬ"
             },
             kz: {
@@ -393,8 +393,8 @@
                 drive_config: "КЕСТЕ: БАПТАУЛАР (CONFIG)",
                 drive_images: "БУМА: ФОТОСУРЕТТЕР",
                 drive_invoices: "БУМА: ЖҮКҚҰЖАТТАР",
-                drive_backups: "БУМА: BACKUPS",
-                drive_secret: "БУМА: SECRET BACKUPS",
+                drive_backups: "БУМА: РЕЗЕРВТІК КӨШІРМЕЛЕР",
+                drive_secret: "БУМА: ҚҰПИЯ КӨШІРМЕЛЕР",
                 btn_close: "ЖАБУ"
             }
         };
@@ -5618,6 +5618,9 @@ async function getOrCreateDriveFolder(folderName, accessToken, parentId = null) 
 }
 
 function openDriveBase() {
+    // ЗАХЛОПЫВАЕМ МЕНЮ НАСТРОЕК ПЕРЕД ОТКРЫТИЕМ
+    if (typeof closeSettings === 'function') closeSettings(); 
+
     let driveStr = localStorage.getItem('DRIVE_DATA');
     
     if (!driveStr) {
