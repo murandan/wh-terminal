@@ -288,7 +288,24 @@
             </div>
             
             <div class="s-group">
-            <div class="s-title" data-i18n="settings_system">Система</div>
+            <div class="s-group">
+                <div class="s-title" data-i18n="settings_system">Система</div>
+                
+                <div class="lang-row">
+                    
+                    <button class="s-btn" onclick="forceAppUpdate()" style="flex: 1; margin: 0; padding: 12px 10px;">
+                        <span data-i18n="btn_update">Обновить кэш</span>
+                        <span id="update-status">🔄</span>
+                    </button>
+                    
+                    <!-- СЮДА ДОБАВЛЕН ID 👇 -->
+                    <button id="btn-settings-drive" class="s-btn" onclick="openDriveBase()" style="flex: 1; margin: 0; padding: 12px 10px;">
+                        <span data-i18n="btn_base">База</span>
+                        <span>📁</span>
+                    </button>
+                    
+                </div>
+            </div>
             
             <!-- Используем ваш родной класс lang-row -->
             <div class="lang-row">

@@ -2547,7 +2547,27 @@ function handleItemClick(id, event) {
     }
     }
 
-        function openSettings() { document.getElementById('settings-modal').style.display = 'flex'; }
+    function openSettings() { 
+    // 1. Открываем само окно настроек
+    document.getElementById('settings-modal').style.display = 'flex'; 
+
+    // 2. Управляем видимостью кнопки "База"
+    const driveBtn = document.getElementById('btn-settings-drive');
+    if (driveBtn) {
+        const userStr = localStorage.getItem('offline_user');
+        let isManager = false;
+        
+        if (userStr) {
+            const user = JSON.parse(userStr);
+            const userId = String(user.uid || user.id || user.role || "").toUpperCase();
+            // Ищем паттерн Mxx (например, M01, M02)
+            isManager = /M\d+/.test(userId); 
+        }
+        
+        // Если менеджер — кнопка видима (flex), если продавец — скрыта (none)
+        driveBtn.style.display = isManager ? 'flex' : 'none'; 
+    }
+}
         function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
 
         async function forceAppUpdate() {
