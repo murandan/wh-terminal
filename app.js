@@ -164,8 +164,8 @@
                 tab_import: "ИМПОРТ EXCEL",
                 tab_new: "НОВЫЙ ТОВАР",
                 file_select_excel: "Нажмите для выбора Excel",
-                "update_available": "🚀 Доступна новая версия системы",
-                "update_btn": "Обновить кассу",
+                update_available: "🚀 Доступна новая версия системы",
+                update_btn: "Обновить кассу",
                 auth_checking: "Проверка доступа...",
                 auth_connecting: "Соединение с сервером",
                 auth_blocked: "Доступ приостановлен. Обратитесь в поддержку.",
@@ -395,7 +395,9 @@
                 drive_invoices: "БУМА: ЖҮКҚҰЖАТТАР",
                 drive_backups: "БУМА: РЕЗЕРВТІК КӨШІРМЕЛЕР",
                 drive_secret: "БУМА: ҚҰПИЯ КӨШІРМЕЛЕР",
-                btn_close: "ЖАБУ"
+                btn_close: "ЖАБУ",
+                update_available: "🚀 Жүйенің жаңа нұсқасы қолжетімді",
+                update_btn: "Кассаны жаңарту"
             }
         };
 
@@ -5584,6 +5586,7 @@ function showUpdatePrompt(newVersion) {
             <span data-i18n="update_btn">Обновить кассу</span>
         </button>
     `;
+    applyLanguage(currentLang);
     
     document.body.prepend(banner);
 }
