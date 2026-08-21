@@ -5598,7 +5598,6 @@ async function getOrCreateDriveFolder(folderName, accessToken, parentId = null) 
 }
 
 async function openDriveBase() {
-    // Достаем токен авторизации клиента из локального хранилища
     const token = localStorage.getItem('CLIENT_API_KEY');
     
     if (!token) {
@@ -5606,33 +5605,28 @@ async function openDriveBase() {
         return;
     }
 
-    // Визуальный отклик: меняем иконку папки на часики во время загрузки
     const btnText = document.querySelector('[data-i18n="btn_base"]').nextElementSibling;
     const originalIcon = btnText.innerText;
     btnText.innerText = '⏳';
 
     try {
-        // Отправляем запрос на наш шлюз doPost
         const response = await fetch(GATEWAY_URL, {
             method: 'POST',
             body: JSON.stringify({
                 action: 'getFolderId',
-                token: token
+                api_key: token
             })
         });
 
         const data = await response.json();
-        
-        // Возвращаем иконку обратно
         btnText.innerText = originalIcon;
 
-        if (data.folderId) {
-            // Формируем прямую ссылку на папку и открываем в новой вкладке
-            const driveUrl = `https://drive.google.com/drive/folders/${data.folderId}`;
-            window.open(driveUrl, '_blank');
+        // ВАЖНО: теперь мы ищем именно rootFolderId
+        if (data.rootFolderId) {
+            window.open(`https://drive.google.com/drive/folders/${data.rootFolderId}`, '_blank');
         } else {
             console.error("Ответ сервера:", data);
-            alert("ID папки не найден в базе Tenants.");
+            alert("ID главной папки не найден в базе.");
         }
 
     } catch (error) {
