@@ -187,7 +187,17 @@
                 setup_license_error_title: "Установка отклонена",
                 setup_license_error_desc: "Касса уже была установлена на данный Google аккаунт.",
                 setup_license_error_step1: "Для новой установки (тестового периода) используйте другой аккаунт Google.",
-                setup_license_error_step2: "Для продления текущей кассы обратитесь к администратору."
+                setup_license_error_step2: "Для продления текущей кассы обратитесь к администратору.",
+                drive_modal_title: "БАЗА ДАННЫХ (DRIVE)",
+                drive_root: "📁 КОРНЕВАЯ ПАПКА",
+                drive_db: "📊 ТАБЛИЦА: ТОВАРЫ И ЧЕКИ",
+                drive_config: "⚙️ ТАБЛИЦА: НАСТРОЙКИ (CONFIG)",
+                drive_images: "🖼 ПАПКА: ФОТОГРАФИИ",
+                drive_invoices: "📄 ПАПКА: НАКЛАДНЫЕ",
+                drive_backups: "📦 ПАПКА: BACKUPS",
+                drive_secret: "🔒 ПАПКА: SECRET BACKUPS",
+                drive_not_created: "(НЕ СОЗДАНА)",
+                btn_close: "ЗАКРЫТЬ"
             },
             kz: {
                 btn_sale: "САТУ", btn_return: "ҚАЙТАРУ", search_placeholder: "ІЗДЕУ...",
@@ -377,7 +387,17 @@
                 setup_license_error_title: "Орнатудан бас тартылды",
                 setup_license_error_desc: "Бұл Google аккаунтына касса бұрын орнатылған.",
                 setup_license_error_step1: "Жаңадан орнату үшін (сынақ мерзімі) басқа Google аккаунтын пайдаланыңыз.",
-                setup_license_error_step2: "Қазіргі кассаны ұзарту үшін әкімшіге хабарласыңыз."
+                setup_license_error_step2: "Қазіргі кассаны ұзарту үшін әкімшіге хабарласыңыз.",
+                drive_modal_title: "ДЕРЕКТЕР ҚОРЫ (DRIVE)",
+                drive_root: "📁 НЕГІЗГІ БУМА",
+                drive_db: "📊 КЕСТЕ: ТАУАРЛАР ЖӘНЕ ЧЕКТЕР",
+                drive_config: "⚙️ КЕСТЕ: БАПТАУЛАР (CONFIG)",
+                drive_images: "🖼 БУМА: ФОТОСУРЕТТЕР",
+                drive_invoices: "📄 БУМА: ЖҮКҚҰЖАТТАР",
+                drive_backups: "📦 БУМА: BACKUPS",
+                drive_secret: "🔒 БУМА: SECRET BACKUPS",
+                drive_not_created: "(ҚҰРЫЛМАҒАН)",
+                btn_close: "ЖАБУ"
             }
         };
 
@@ -5600,20 +5620,79 @@ async function getOrCreateDriveFolder(folderName, accessToken, parentId = null) 
 }
 
 function openDriveBase() {
-    // Читаем данные из локальной памяти браузера
-    const driveStr = localStorage.getItem('DRIVE_DATA');
+    let driveStr = localStorage.getItem('DRIVE_DATA');
     
-    if (!driveStr) {
+    // Заглушка для теста локально в Go Live
+    if (!driveStr && (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost')) {
+        let fakeData = {
+            rootFolderId: 'fake_root',
+            cashDbId: 'fake_db',
+            configDbId: 'fake_config',
+            imagesFolderId: 'fake_img',
+            invoicesFolderId: 'fake_inv',
+            backupsFolderId: null, // Умышленно пусто, чтобы проверить автовосстановление
+            secretBackupsFolderId: null 
+        };
+        localStorage.setItem('DRIVE_DATA', JSON.stringify(fakeData));
+    } else if (!driveStr) {
         alert("Данные базы не найдены. Пожалуйста, перезайдите в кассу (введите ПИН-код).");
         return;
     }
+    
+    document.getElementById('drive-base-modal').style.display = 'flex';
+}
 
-    const driveData = JSON.parse(driveStr);
+async function handleDriveClick(btnElement, dataKey, expectedName) {
+    let driveData = JSON.parse(localStorage.getItem('DRIVE_DATA') || '{}');
+    let targetId = driveData[dataKey];
 
-    if (driveData.rootFolderId) {
-        // Открываем мгновенно, без задержек и блокировок!
-        window.open(`https://drive.google.com/drive/folders/${driveData.rootFolderId}`, '_blank');
-    } else {
-        alert("ID главной папки не найден. Проверьте настройки арендатора.");
+    // ВАРИАНТ А: Папка есть. Открываем мгновенно.
+    if (targetId) {
+        if (targetId.includes('fake_')) {
+            alert(`Клик сработал! Открываем ${expectedName} (ID: ${targetId})`);
+            return;
+        }
+        let url = expectedName === 'file' 
+            ? `https://docs.google.com/spreadsheets/d/${targetId}/edit`
+            : `https://drive.google.com/drive/folders/${targetId}`;
+        window.open(url, '_blank');
+        return;
+    }
+
+    // ВАРИАНТ Б: Папки нет. Запускаем "Тихое создание".
+    const originalHtml = btnElement.innerHTML;
+    btnElement.innerHTML = '⏳ <span style="font-size: 11px;">СОЗДАНИЕ...</span>';
+    btnElement.style.pointerEvents = 'none'; // Блокируем от двойного клика
+
+    try {
+        // --- БЛОК ТЕСТА ДЛЯ GO LIVE ---
+        if (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') {
+            await new Promise(r => setTimeout(r, 1500)); // Имитация ожидания сервера
+            alert(`Папка ${expectedName} успешно создана сервером в фоновом режиме!`);
+            driveData[dataKey] = 'new_fake_id_123';
+            localStorage.setItem('DRIVE_DATA', JSON.stringify(driveData));
+            btnElement.innerHTML = originalHtml;
+            btnElement.style.pointerEvents = 'auto';
+            return;
+        }
+        // --- КОНЕЦ БЛОКА ТЕСТА ---
+
+        // ЗДЕСЬ БУДЕТ РЕАЛЬНЫЙ ЗАПРОС К СЕРВЕРУ (напишем бэкенд следующим шагом)
+        // const token = localStorage.getItem('CLIENT_API_KEY');
+        // const res = await fetch(GATEWAY_URL, { ... action: 'recoverFolder', ... });
+        
+    } catch (error) {
+        alert("Ошибка связи с сервером при восстановлении папки.");
+        btnElement.innerHTML = originalHtml;
+        btnElement.style.pointerEvents = 'auto';
     }
 }
+
+function closeDriveModal() {
+    document.getElementById('drive-base-modal').style.display = 'none';
+}
+
+// ВРЕМЕННЫЙ КОД ДЛЯ ТЕСТА В GO LIVE (Удалить после проверки дизайна!)
+setTimeout(() => { 
+    if (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost') openDriveBase(); 
+}, 500);
