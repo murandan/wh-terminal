@@ -5597,52 +5597,21 @@ async function getOrCreateDriveFolder(folderName, accessToken, parentId = null) 
     return createData.id;
 }
 
-async function openDriveBase() {
-    const token = localStorage.getItem('CLIENT_API_KEY');
+function openDriveBase() {
+    // Читаем данные из локальной памяти браузера
+    const driveStr = localStorage.getItem('DRIVE_DATA');
     
-    if (!token) {
-        alert("Ошибка: нет токена авторизации.");
+    if (!driveStr) {
+        alert("Данные базы не найдены. Пожалуйста, перезайдите в кассу (введите ПИН-код).");
         return;
     }
 
-    const btnText = document.querySelector('[data-i18n="btn_base"]').nextElementSibling;
-    const originalIcon = btnText.innerText;
-    btnText.innerText = '⏳';
+    const driveData = JSON.parse(driveStr);
 
-    // ХАК ДЛЯ МОБИЛОК: Открываем пустую вкладку сразу по клику, 
-    // ДО того как начался запрос к серверу. Это обходит блокировщики всплывающих окон.
-    const newTab = window.open('about:blank', '_blank');
-
-    try {
-        // Добавляем строгие заголовки и правила редиректа для мобильных браузеров
-        const response = await fetch(GATEWAY_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'text/plain;charset=utf-8'
-            },
-            redirect: 'follow',
-            body: JSON.stringify({
-                action: 'getFolderId',
-                api_key: token
-            })
-        });
-
-        const data = await response.json();
-        btnText.innerText = originalIcon;
-
-        if (data.rootFolderId) {
-            // Вместо открытия нового окна, просто перенаправляем уже открытую вкладку на нужный адрес
-            newTab.location.href = `https://drive.google.com/drive/folders/${data.rootFolderId}`;
-        } else {
-            newTab.close(); // Если ошибка - тихо закрываем пустую вкладку
-            console.error("Ответ сервера:", data);
-            alert("ID главной папки не найден в базе.");
-        }
-
-    } catch (error) {
-        newTab.close(); // Закрываем пустую вкладку при сбое сети
-        console.error("Ошибка при запросе папки:", error);
-        btnText.innerText = '📁';
-        alert("Ошибка связи с сервером.");
+    if (driveData.rootFolderId) {
+        // Открываем мгновенно, без задержек и блокировок!
+        window.open(`https://drive.google.com/drive/folders/${driveData.rootFolderId}`, '_blank');
+    } else {
+        alert("ID главной папки не найден. Проверьте настройки арендатора.");
     }
 }
