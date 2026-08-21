@@ -623,80 +623,46 @@
     </div>
 </div>
 
-<!-- СПЕЦИАЛЬНЫЕ СТИЛИ ДЛЯ МОДАЛКИ ДИСКА -->
-    <style>
-        /* 1. Глухой фон, чтобы нижнее окно (Параметры) не просвечивало */
-        #drive-base-modal .settings-box {
-            background-color: var(--bg-main, #ffffff) !important; 
-            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-        }
-
-        /* 2. СВЕТЛАЯ ТЕМА (Мягкие оттенки) */
-        .btn-drive-table {
-            background: #eef4f9 !important; /* Нежный серо-голубой для таблиц */
-            border-color: #d6e2ec !important;
-        }
-        .btn-drive-folder {
-            background: #f5f7f9 !important; /* Мягкий светло-серый для папок */
-            border-color: #e5e9ed !important;
-        }
-
-        /* 3. ТЕМНАЯ ТЕМА (Приятные глубокие цвета, без чистого черного/белого) */
-        /* Подстраиваемся под класс темной темы, который у вас используется на body */
-        body.dark .btn-drive-table, body[data-theme="dark"] .btn-drive-table, .dark-theme .btn-drive-table,
-        body.dark-mode .btn-drive-table {
-            background: #1c2533 !important; /* Глубокий темно-синий */
-            border-color: #283548 !important;
-            color: #e0e6ed !important;
-        }
-        
-        body.dark .btn-drive-folder, body[data-theme="dark"] .btn-drive-folder, .dark-theme .btn-drive-folder,
-        body.dark-mode .btn-drive-folder {
-            background: #252628 !important; /* Мягкий графитовый (не черный) */
-            border-color: #36383b !important;
-            color: #d1d5db !important;
-        }
-    </style>
-
-    <!-- САМА МОДАЛКА -->
+<!-- МОДАЛКА БАЗЫ ДАННЫХ (DRIVE) -->
     <div id="drive-base-modal" class="modal-overlay" style="display: none; background: rgba(0, 0, 0, 0.85); z-index: 9999;" onclick="closeDriveModal()">
-        <div class="settings-box" onclick="event.stopPropagation()" style="border: 1px solid var(--border-focus); padding: 25px 20px; border-radius: 16px;">
+        <div class="settings-box" onclick="event.stopPropagation()" style="background: var(--bg-main); border: 1px solid var(--border-focus); padding: 25px 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); border-radius: 16px;">
             
-            <div class="r-title" style="font-size: 14px; margin-bottom: 25px; text-align: center; font-weight: bold; color: var(--text-main); text-transform: uppercase; letter-spacing: 1px;" data-i18n="drive_modal_title">БАЗА ДАННЫХ (DRIVE)</div>
+            <div class="r-title" style="font-size: 15px; margin-bottom: 25px; text-align: center; font-weight: bold; color: var(--text-main); text-transform: uppercase; letter-spacing: 1px;" data-i18n="drive_modal_title">БАЗА ДАННЫХ (DRIVE)</div>
 
-            <!-- БЛОК 1: ФАЙЛЫ (КЛАСС .btn-drive-table) -->
-            <button class="btn-drive-table" onclick="handleDriveClick(this, 'cashDbId', 'file')" style="color: var(--text-main); margin-bottom: 12px; width: 100%; padding: 16px 20px; border-radius: 12px; font-weight: 600; font-size: 13px; text-transform: uppercase; border: 1px solid; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; text-align: left;">
+            <!-- БЛОК 1: ФАЙЛЫ (Синий акцент #4285F4) -->
+            <button onclick="handleDriveClick(this, 'cashDbId', 'file')" style="background: var(--bg-panel); color: var(--text-main); margin-bottom: 12px; width: 100%; padding: 16px 20px; border-radius: 12px; font-weight: 600; font-size: 13px; text-transform: uppercase; border: 1px solid var(--border-light); border-left: 5px solid #4285F4; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; text-align: left; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
                 <span style="font-size: 20px; width: 35px; display: inline-block;">📊</span>
                 <span style="flex: 1;" data-i18n="drive_db">ТАБЛИЦА: ТОВАРЫ И ЧЕКИ</span>
             </button>
 
-            <button class="btn-drive-table" onclick="handleDriveClick(this, 'configDbId', 'file')" style="color: var(--text-main); margin-bottom: 25px; width: 100%; padding: 16px 20px; border-radius: 12px; font-weight: 600; font-size: 13px; text-transform: uppercase; border: 1px solid; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; text-align: left;">
+            <button onclick="handleDriveClick(this, 'configDbId', 'file')" style="background: var(--bg-panel); color: var(--text-main); margin-bottom: 25px; width: 100%; padding: 16px 20px; border-radius: 12px; font-weight: 600; font-size: 13px; text-transform: uppercase; border: 1px solid var(--border-light); border-left: 5px solid #4285F4; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; text-align: left; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
                 <span style="font-size: 20px; width: 35px; display: inline-block;">⚙️</span>
                 <span style="flex: 1;" data-i18n="drive_config">ТАБЛИЦА: НАСТРОЙКИ</span>
             </button>
 
-            <!-- БЛОК 2: ПАПКИ (КЛАСС .btn-drive-folder) -->
-            <button class="btn-drive-folder" onclick="handleDriveClick(this, 'rootFolderId', 'root')" style="color: var(--text-main); margin-bottom: 12px; width: 100%; padding: 16px 20px; border-radius: 12px; font-weight: 600; font-size: 13px; text-transform: uppercase; border: 1px solid; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; text-align: left;">
+            <!-- БЛОК 2: ПАПКИ (Серый акцент #9AA0A6) -->
+            <button onclick="handleDriveClick(this, 'rootFolderId', 'root')" style="background: var(--bg-panel); color: var(--text-main); margin-bottom: 12px; width: 100%; padding: 16px 20px; border-radius: 12px; font-weight: 600; font-size: 13px; text-transform: uppercase; border: 1px solid var(--border-light); border-left: 5px solid #9AA0A6; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; text-align: left; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
                 <span style="font-size: 20px; width: 35px; display: inline-block;">📁</span>
                 <span style="flex: 1;" data-i18n="drive_root">КОРНЕВАЯ ПАПКА</span>
             </button>
 
-            <button class="btn-drive-folder" onclick="handleDriveClick(this, 'imagesFolderId', 'POS_Images')" style="color: var(--text-main); margin-bottom: 12px; width: 100%; padding: 16px 20px; border-radius: 12px; font-weight: 600; font-size: 13px; text-transform: uppercase; border: 1px solid; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; text-align: left;">
+            <button onclick="handleDriveClick(this, 'imagesFolderId', 'POS_Images')" style="background: var(--bg-panel); color: var(--text-main); margin-bottom: 12px; width: 100%; padding: 16px 20px; border-radius: 12px; font-weight: 600; font-size: 13px; text-transform: uppercase; border: 1px solid var(--border-light); border-left: 5px solid #9AA0A6; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; text-align: left; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
                 <span style="font-size: 20px; width: 35px; display: inline-block;">🖼</span>
                 <span style="flex: 1;" data-i18n="drive_images">ПАПКА: ФОТОГРАФИИ</span>
             </button>
 
-            <button class="btn-drive-folder" onclick="handleDriveClick(this, 'invoicesFolderId', 'POS_Invoices')" style="color: var(--text-main); margin-bottom: 12px; width: 100%; padding: 16px 20px; border-radius: 12px; font-weight: 600; font-size: 13px; text-transform: uppercase; border: 1px solid; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; text-align: left;">
+            <button onclick="handleDriveClick(this, 'invoicesFolderId', 'POS_Invoices')" style="background: var(--bg-panel); color: var(--text-main); margin-bottom: 12px; width: 100%; padding: 16px 20px; border-radius: 12px; font-weight: 600; font-size: 13px; text-transform: uppercase; border: 1px solid var(--border-light); border-left: 5px solid #9AA0A6; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; text-align: left; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
                 <span style="font-size: 20px; width: 35px; display: inline-block;">📄</span>
                 <span style="flex: 1;" data-i18n="drive_invoices">ПАПКА: НАКЛАДНЫЕ</span>
             </button>
 
-            <button class="btn-drive-folder" onclick="handleDriveClick(this, 'backupsFolderId', 'POS_Backups')" style="color: var(--text-main); margin-bottom: 12px; width: 100%; padding: 16px 20px; border-radius: 12px; font-weight: 600; font-size: 13px; text-transform: uppercase; border: 1px solid; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; text-align: left;">
+            <button onclick="handleDriveClick(this, 'backupsFolderId', 'POS_Backups')" style="background: var(--bg-panel); color: var(--text-main); margin-bottom: 12px; width: 100%; padding: 16px 20px; border-radius: 12px; font-weight: 600; font-size: 13px; text-transform: uppercase; border: 1px solid var(--border-light); border-left: 5px solid #9AA0A6; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; text-align: left; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
                 <span style="font-size: 20px; width: 35px; display: inline-block;">📦</span>
                 <span style="flex: 1;" data-i18n="drive_backups">ПАПКА: РЕЗЕРВНЫЕ КОПИИ</span>
             </button>
 
-            <button class="btn-drive-folder" onclick="handleDriveClick(this, 'secretBackupsFolderId', 'POS_Secret_Backups')" style="color: var(--text-main); margin-bottom: 25px; width: 100%; padding: 16px 20px; border-radius: 12px; font-weight: 600; font-size: 13px; text-transform: uppercase; border: 1px solid; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; text-align: left;">
+            <!-- БЛОК 3: Секретная папка (Красный акцент #EA4335) -->
+            <button onclick="handleDriveClick(this, 'secretBackupsFolderId', 'POS_Secret_Backups')" style="background: var(--bg-panel); color: var(--text-main); margin-bottom: 25px; width: 100%; padding: 16px 20px; border-radius: 12px; font-weight: 600; font-size: 13px; text-transform: uppercase; border: 1px solid var(--border-light); border-left: 5px solid #EA4335; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; text-align: left; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
                 <span style="font-size: 20px; width: 35px; display: inline-block;">🔒</span>
                 <span style="flex: 1;" data-i18n="drive_secret">ПАПКА: СЕКРЕТНЫЕ КОПИИ</span>
             </button>
