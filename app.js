@@ -154,7 +154,7 @@
                 nt_price_in: "Цена закупа",
                 nt_price_out: "Розница",
                 // Системные сообщения и кнопки для сохранения
-                msg_barcode_req: "Штрихкод и Наименование обязательны для заполнения!",
+                msg_barcode_req: "Наименование обязательны для заполнения!",
                 msg_qty_req: "Количество должно быть больше нуля!",
                 btn_saving: "⏳ СОХРАНЕНИЕ...",
                 btn_save_ready: "✅ ОПРИХОДОВАТЬ НА СКЛАД",
@@ -353,7 +353,7 @@
                 nt_price_in: "Сатып алу бағасы",
                 nt_price_out: "Бөлшек баға",
                 // Системные сообщения и кнопки для сохранения
-                msg_barcode_req: "Штрихкод пен Атауы міндетті түрде толтырылуы тиіс!",
+                msg_barcode_req: "Атауы міндетті түрде толтырылуы тиіс!",
                 msg_qty_req: "Саны нөлден үлкен болуы керек!",
                 btn_saving: "⏳ САҚТАЛУДА...",
                 btn_save_ready: "✅ ҚОЙМАҒА ҚАБЫЛДАУ",
@@ -1576,7 +1576,7 @@ window.saveNewProduct = function() {
     const priceOut = parseInt(document.getElementById('nt-price-out').value.replace(/\D/g, ''), 10) || 0;
 
     // 2. Базовая валидация (ТЕПЕРЬ С ПЕРЕВОДОМ)
-    if (!barcode || !name) {
+    if (!name) {
         alert(translations[currentLang].msg_barcode_req);
         return;
     }
@@ -5495,24 +5495,32 @@ window.formatNtInput = function(el) {
     if (!el) return;
     
     // Оставляем только цифры
-    let val = el.value.replace(/\D/g, ''); 
+    let rawDigits = String(el.value).replace(/\D/g, ''); 
     
     // Программный ограничитель на 13 символов (страховка для быстрых сканеров)
-    if (val.length > 13) {
-        val = val.slice(0, 13);
-        el.value = val;
+    if (rawDigits.length > 13) {
+        rawDigits = rawDigits.slice(0, 13);
     }
     
-    // Включаем светофор
+    // Логика зависит от поля, в котором мы находимся
     if (el.id === 'nt-barcode' || el.id === 'qe-barcode') {
-        if (val.length === 8 || val.length === 13) {
-            // Принудительно ставим зеленый цвет (пробиваем !important светлой темы)
+        // === ЛОГИКА ДЛЯ ШТРИХКОДА (Светофор) ===
+        el.value = rawDigits; // Возвращаем чистые цифры без пробелов
+        
+        if (rawDigits.length === 8 || rawDigits.length === 13) {
             el.style.setProperty('border-color', 'var(--accent-green, #4CAF50)', 'important');
             el.style.setProperty('background-color', 'var(--bg-success-dim, rgba(76, 175, 80, 0.15))', 'important');
         } else {
-            // Принудительно возвращаем базовый цвет
             el.style.setProperty('border-color', 'var(--border-main, #ccc)', 'important');
             el.style.setProperty('background-color', 'var(--bg-card, #fff)', 'important');
+        }
+    } else {
+        // === ЛОГИКА ДЛЯ ДЕНЕГ И КОЛИЧЕСТВА (Тысячные пробелы) ===
+        if (rawDigits !== '') {
+            // Превращаем '1000' в '1 000'
+            el.value = Number(rawDigits).toLocaleString('ru-RU').replace(/,/g, ' ');
+        } else {
+            el.value = '';
         }
     }
 };
