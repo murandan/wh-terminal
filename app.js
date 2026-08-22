@@ -4370,8 +4370,12 @@ async function submitSetup(email) {
             
             // 2. НАХОДИМ ИЛИ СОЗДАЕМ ПОДПАПКИ СТРОГО ПО ОЧЕРЕДИ
             let folderIds = {};
+
+            // ДОБАВЬТЕ ЭТУ СТРОКУ: Кладем ID корневой папки в объект
+            folderIds['POS_Root'] = rootId; 
+
             const subfolders = ['POS_Backups', 'POS_Images', 'POS_Invoices', 'POS_Secret_Backups'];
-            
+
             for (const name of subfolders) {
                 folderIds[name] = await getOrCreateDriveFolder(name, clientAccessToken, rootId);
             }
