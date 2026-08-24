@@ -5759,41 +5759,51 @@ window.startDatabaseClear = function() {
     Swal.fire({
         title: getSwalText('swal_clear_title'),
         text: getSwalText('swal_clear_text'),
-        icon: 'warning',
+        icon: 'warning', // Оставляем предупреждающий желтый/красный знак
+        background: 'var(--bg-panel, #ffffff)', // Авто-фон (светлый/темный)
+        color: 'var(--text-main, #333333)',     // Авто-текст
         showCancelButton: true,
-        confirmButtonColor: '#EA4335',
-        cancelButtonColor: '#9AA0A6',
+        confirmButtonColor: '#d32f2f', // Строгий красный
+        cancelButtonColor: '#757575',  // Строгий серый
         confirmButtonText: getSwalText('swal_confirm_clear'),
         cancelButtonText: getSwalText('swal_cancel'),
         allowOutsideClick: false
     }).then((result) => {
         if (result.isConfirmed) {
-            // Включаем встроенный лоадер SweetAlert
             Swal.fire({
                 title: 'Очистка базы данных...',
                 text: 'Пожалуйста, подождите',
+                background: 'var(--bg-panel, #ffffff)',
+                color: 'var(--text-main, #333333)',
                 allowOutsideClick: false,
                 didOpen: () => {
                     Swal.showLoading();
                 }
             });
 
-            // Вызов серверной функции очистки
             google.script.run
                 .withSuccessHandler(function(response) {
                     Swal.fire({
                         icon: 'success',
                         title: 'Успешно',
                         text: 'База данных очищена, копия сохранена в архив.',
+                        background: 'var(--bg-panel, #ffffff)',
+                        color: 'var(--text-main, #333333)',
                         timer: 2000,
                         showConfirmButton: false
                     });
-                    if (typeof refreshPosData === 'function') refreshPosData(); // Обновление интерфейса
+                    if (typeof refreshPosData === 'function') refreshPosData();
                 })
                 .withFailureHandler(function(error) {
-                    Swal.fire('Ошибка', error.message, 'error');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Ошибка',
+                        text: error.message,
+                        background: 'var(--bg-panel, #ffffff)',
+                        color: 'var(--text-main, #333333)'
+                    });
                 })
-                .executeDatabaseClear(); // Имя функции на бэкенде
+                .executeDatabaseClear(); 
         }
     });
 };
@@ -5804,18 +5814,18 @@ window.startDatabaseRestore = function() {
     Swal.fire({
         title: getSwalText('swal_restore_title'),
         text: getSwalText('swal_restore_text'),
-        icon: 'question',
+        // icon: 'question', <-- Эту строку убрали, чтобы убрать вопросительный знак
+        background: 'var(--bg-panel, #ffffff)', // Авто-фон
+        color: 'var(--text-main, #333333)',     // Авто-текст
         showDenyButton: true,
         showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        denyButtonColor: '#FBBC04',
-        cancelButtonColor: '#9AA0A6',
+        confirmButtonColor: '#1976d2', // Строгий синий
+        denyButtonColor: '#f57c00',    // Строгий оранжевый
+        cancelButtonColor: '#757575',  // Строгий серый
         confirmButtonText: getSwalText('swal_restore_merge'),
         denyButtonText: getSwalText('swal_restore_undo'),
         cancelButtonText: getSwalText('swal_cancel'),
         allowOutsideClick: false,
-        
-        // ВНЕДРЯЕМ КАСТОМНЫЕ КЛАССЫ ДЛЯ ИДЕАЛЬНОЙ ВЕРСТКИ
         customClass: {
             actions: 'swal-actions-vertical',
             confirmButton: 'swal-btn-full',
@@ -5824,13 +5834,12 @@ window.startDatabaseRestore = function() {
         }
     }).then((result) => {
         if (result.isConfirmed) {
-            // ЛОГИКА А: Открытие интерфейса Smart Merge 
             console.log("Запуск интерфейса Smart Merge");
-            
         } else if (result.isDenied) {
-            // ЛОГИКА Б: Откат из скрытого листа _SYS_ARCHIVE
             Swal.fire({
                 title: 'Восстановление данных...',
+                background: 'var(--bg-panel, #ffffff)',
+                color: 'var(--text-main, #333333)',
                 allowOutsideClick: false,
                 didOpen: () => {
                     Swal.showLoading();
@@ -5843,13 +5852,21 @@ window.startDatabaseRestore = function() {
                         icon: 'success',
                         title: 'Восстановлено',
                         text: 'Данные успешно возвращены из архива.',
+                        background: 'var(--bg-panel, #ffffff)',
+                        color: 'var(--text-main, #333333)',
                         timer: 2000,
                         showConfirmButton: false
                     });
                     if (typeof refreshPosData === 'function') refreshPosData();
                 })
                 .withFailureHandler(function(error) {
-                    Swal.fire('Ошибка', error.message, 'error');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Ошибка',
+                        text: error.message,
+                        background: 'var(--bg-panel, #ffffff)',
+                        color: 'var(--text-main, #333333)'
+                    });
                 })
                 .executeDatabaseRestore(); 
         }
