@@ -196,7 +196,18 @@
                 drive_invoices: "ПАПКА: НАКЛАДНЫЕ",
                 drive_backups: "ПАПКА: РЕЗЕРВНЫЕ КОПИИ",
                 drive_secret: "ПАПКА: СЕКРЕТНЫЕ КОПИИ",
-                btn_close: "ЗАКРЫТЬ"
+                btn_close: "ЗАКРЫТЬ",
+                drive_danger_zone: "ОПЕРАТИВНЫЕ ДЕЙСТВИЯ",
+                drive_clear_btn: "ОЧИСТИТЬ БАЗУ ДАННЫХ",
+                drive_restore_btn: "ВОССТАНОВИТЬ ДАННЫЕ",
+                swal_clear_title: "ВНИМАНИЕ!",
+                swal_clear_text: "Вы собираетесь удалить все оперативные данные (чеки, движения). Текущие данные будут перенесены в скрытый архив. Продолжить?",
+                swal_confirm_clear: "Да, очистить",
+                swal_cancel: "Отмена",
+                swal_restore_title: "ВОССТАНОВЛЕНИЕ",
+                swal_restore_text: "Выберите метод восстановления данных:",
+                swal_restore_merge: "Из архива (Smart Merge)",
+                swal_restore_undo: "Отменить последнюю очистку"
             },
             kz: {
                 btn_sale: "САТУ", btn_return: "ҚАЙТАРУ", search_placeholder: "ІЗДЕУ...",
@@ -396,6 +407,17 @@
                 drive_backups: "БУМА: РЕЗЕРВТІК КӨШІРМЕЛЕР",
                 drive_secret: "БУМА: ҚҰПИЯ КӨШІРМЕЛЕР",
                 btn_close: "ЖАБУ",
+                drive_danger_zone: "ОПЕРАТИВТІК ӘРЕКЕТТЕР",
+                drive_clear_btn: "ДЕРЕКТЕР БАЗАСЫН ТАЗАРТУ",
+                drive_restore_btn: "ДЕРЕКТЕРДІ ҚАЛПЫНА КЕЛТІРУ",
+                swal_clear_title: "НАЗАР АУДАРЫҢЫЗ!",
+                swal_clear_text: "Сіз барлық жедел деректерді (чектер, қозғалыстар) жойғалы тұрсыз. Ағымдағы деректер жасырын мұрағатқа тасымалданады. Жалғастыру керек пе?",
+                swal_confirm_clear: "Иә, тазарту",
+                swal_cancel: "Болдырмау",
+                swal_restore_title: "ҚАЛПЫНА КЕЛТІРУ",
+                swal_restore_text: "Деректерді қалпына келтіру әдісін таңдаңыз:",
+                swal_restore_merge: "Мұрағаттан (Smart Merge)",
+                swal_restore_undo: "Соңғы тазартуды болдырмау"
             }
         };
 
@@ -5721,3 +5743,108 @@ async function handleDriveClick(btnElement, dataKey, expectedName) {
 function closeDriveModal() {
     document.getElementById('drive-base-modal').style.display = 'none';
 }
+
+// Вспомогательная функция для безопасного извлечения перевода внутри JS
+function getSwalText(key) {
+    const lang = (typeof currentLang !== 'undefined') ? currentLang : 'ru';
+    if (typeof translations !== 'undefined' && translations[lang] && translations[lang][key]) {
+        return translations[lang][key];
+    }
+    return key; // Возврат ключа, если перевод не найден
+}
+
+window.startDatabaseClear = function() {
+    if (typeof closeDriveModal === 'function') closeDriveModal();
+    
+    Swal.fire({
+        title: getSwalText('swal_clear_title'),
+        text: getSwalText('swal_clear_text'),
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#EA4335',
+        cancelButtonColor: '#9AA0A6',
+        confirmButtonText: getSwalText('swal_confirm_clear'),
+        cancelButtonText: getSwalText('swal_cancel'),
+        allowOutsideClick: false
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Включаем встроенный лоадер SweetAlert
+            Swal.fire({
+                title: 'Очистка базы данных...',
+                text: 'Пожалуйста, подождите',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Вызов серверной функции очистки
+            google.script.run
+                .withSuccessHandler(function(response) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Успешно',
+                        text: 'База данных очищена, копия сохранена в архив.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    if (typeof refreshPosData === 'function') refreshPosData(); // Обновление интерфейса
+                })
+                .withFailureHandler(function(error) {
+                    Swal.fire('Ошибка', error.message, 'error');
+                })
+                .executeDatabaseClear(); // Имя функции на бэкенде
+        }
+    });
+};
+
+window.startDatabaseRestore = function() {
+    if (typeof closeDriveModal === 'function') closeDriveModal();
+    
+    Swal.fire({
+        title: getSwalText('swal_restore_title'),
+        text: getSwalText('swal_restore_text'),
+        icon: 'question',
+        showDenyButton: true,
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        denyButtonColor: '#FBBC04',
+        cancelButtonColor: '#9AA0A6',
+        confirmButtonText: getSwalText('swal_restore_merge'),
+        denyButtonText: getSwalText('swal_restore_undo'),
+        cancelButtonText: getSwalText('swal_cancel'),
+        allowOutsideClick: false
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // ЛОГИКА А: Открытие интерфейса Smart Merge (выбор файлов из POS_Backups)
+            console.log("Запуск интерфейса Smart Merge");
+            // Здесь будет вызов функции отрисовки выбора даты
+            
+        } else if (result.isDenied) {
+            // ЛОГИКА Б: Откат из скрытого листа _SYS_ARCHIVE
+            Swal.fire({
+                title: 'Восстановление данных...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            google.script.run
+                .withSuccessHandler(function(response) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Восстановлено',
+                        text: 'Данные успешно возвращены из архива.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    if (typeof refreshPosData === 'function') refreshPosData();
+                })
+                .withFailureHandler(function(error) {
+                    Swal.fire('Ошибка', error.message, 'error');
+                })
+                .executeDatabaseRestore(); // Имя функции на бэкенде
+        }
+    });
+};
