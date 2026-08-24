@@ -5759,12 +5759,12 @@ window.startDatabaseClear = function() {
     Swal.fire({
         title: getSwalText('swal_clear_title'),
         text: getSwalText('swal_clear_text'),
-        icon: 'warning', // Оставляем предупреждающий желтый/красный знак
-        background: 'var(--bg-panel, #ffffff)', // Авто-фон (светлый/темный)
-        color: 'var(--text-main, #333333)',     // Авто-текст
+        icon: 'warning',
+        background: 'var(--bg-panel, #ffffff)',
+        color: 'var(--text-main, #333333)',
         showCancelButton: true,
-        confirmButtonColor: '#d32f2f', // Строгий красный
-        cancelButtonColor: '#757575',  // Строгий серый
+        confirmButtonColor: '#d32f2f',
+        cancelButtonColor: '#757575',
         confirmButtonText: getSwalText('swal_confirm_clear'),
         cancelButtonText: getSwalText('swal_cancel'),
         allowOutsideClick: false
@@ -5781,8 +5781,13 @@ window.startDatabaseClear = function() {
                 }
             });
 
-            google.script.run
-                .withSuccessHandler(function(response) {
+            const payload = {
+                action: "database_clear",
+                api_key: typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : ""
+            };
+
+            window.smartFetch(GATEWAY_URL, payload, 'cache_db_clear').then(response => {
+                if (response && response.success) {
                     Swal.fire({
                         icon: 'success',
                         title: 'Успешно',
@@ -5793,17 +5798,16 @@ window.startDatabaseClear = function() {
                         showConfirmButton: false
                     });
                     if (typeof refreshPosData === 'function') refreshPosData();
-                })
-                .withFailureHandler(function(error) {
+                } else {
                     Swal.fire({
                         icon: 'error',
                         title: 'Ошибка',
-                        text: error.message,
+                        text: (response && response.message) ? response.message : 'Не удалось очистить базу',
                         background: 'var(--bg-panel, #ffffff)',
                         color: 'var(--text-main, #333333)'
                     });
-                })
-                .executeDatabaseClear(); 
+                }
+            });
         }
     });
 };
@@ -5814,14 +5818,13 @@ window.startDatabaseRestore = function() {
     Swal.fire({
         title: getSwalText('swal_restore_title'),
         text: getSwalText('swal_restore_text'),
-        // icon: 'question', <-- Эту строку убрали, чтобы убрать вопросительный знак
-        background: 'var(--bg-panel, #ffffff)', // Авто-фон
-        color: 'var(--text-main, #333333)',     // Авто-текст
+        background: 'var(--bg-panel, #ffffff)',
+        color: 'var(--text-main, #333333)',
         showDenyButton: true,
         showCancelButton: true,
-        confirmButtonColor: '#1976d2', // Строгий синий
-        denyButtonColor: '#f57c00',    // Строгий оранжевый
-        cancelButtonColor: '#757575',  // Строгий серый
+        confirmButtonColor: '#1976d2',
+        denyButtonColor: '#f57c00',
+        cancelButtonColor: '#757575',
         confirmButtonText: getSwalText('swal_restore_merge'),
         denyButtonText: getSwalText('swal_restore_undo'),
         cancelButtonText: getSwalText('swal_cancel'),
@@ -5846,8 +5849,13 @@ window.startDatabaseRestore = function() {
                 }
             });
 
-            google.script.run
-                .withSuccessHandler(function(response) {
+            const payload = {
+                action: "database_restore",
+                api_key: typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : ""
+            };
+
+            window.smartFetch(GATEWAY_URL, payload, 'cache_db_restore').then(response => {
+                if (response && response.success) {
                     Swal.fire({
                         icon: 'success',
                         title: 'Восстановлено',
@@ -5858,17 +5866,16 @@ window.startDatabaseRestore = function() {
                         showConfirmButton: false
                     });
                     if (typeof refreshPosData === 'function') refreshPosData();
-                })
-                .withFailureHandler(function(error) {
+                } else {
                     Swal.fire({
                         icon: 'error',
                         title: 'Ошибка',
-                        text: error.message,
+                        text: (response && response.message) ? response.message : 'Не удалось восстановить базу',
                         background: 'var(--bg-panel, #ffffff)',
                         color: 'var(--text-main, #333333)'
                     });
-                })
-                .executeDatabaseRestore(); 
+                }
+            });
         }
     });
 };
