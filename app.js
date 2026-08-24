@@ -5813,12 +5813,19 @@ window.startDatabaseRestore = function() {
         confirmButtonText: getSwalText('swal_restore_merge'),
         denyButtonText: getSwalText('swal_restore_undo'),
         cancelButtonText: getSwalText('swal_cancel'),
-        allowOutsideClick: false
+        allowOutsideClick: false,
+        
+        // ВНЕДРЯЕМ КАСТОМНЫЕ КЛАССЫ ДЛЯ ИДЕАЛЬНОЙ ВЕРСТКИ
+        customClass: {
+            actions: 'swal-actions-vertical',
+            confirmButton: 'swal-btn-full',
+            denyButton: 'swal-btn-full',
+            cancelButton: 'swal-btn-full'
+        }
     }).then((result) => {
         if (result.isConfirmed) {
-            // ЛОГИКА А: Открытие интерфейса Smart Merge (выбор файлов из POS_Backups)
+            // ЛОГИКА А: Открытие интерфейса Smart Merge 
             console.log("Запуск интерфейса Smart Merge");
-            // Здесь будет вызов функции отрисовки выбора даты
             
         } else if (result.isDenied) {
             // ЛОГИКА Б: Откат из скрытого листа _SYS_ARCHIVE
@@ -5844,7 +5851,7 @@ window.startDatabaseRestore = function() {
                 .withFailureHandler(function(error) {
                     Swal.fire('Ошибка', error.message, 'error');
                 })
-                .executeDatabaseRestore(); // Имя функции на бэкенде
+                .executeDatabaseRestore(); 
         }
     });
 };

@@ -548,3 +548,20 @@ button,
     /* Если хочешь, чтобы она еще и меняла цвет при отправке, раскомментируй строку ниже: */
     /* color: #ff9800 !important; */
 }
+/* Выравнивание кнопок SweetAlert в колонку для POS Noir */
+.swal-actions-vertical {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 12px !important; /* Расстояние между кнопками */
+    margin-top: 20px !important;
+}
+
+.swal-btn-full {
+    width: 100% !important;
+    margin: 0 !important; /* Убираем стандартные боковые отступы Swal */
+    padding: 14px 20px !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+}
