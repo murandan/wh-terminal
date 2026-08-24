@@ -5753,106 +5753,129 @@ function getSwalText(key) {
     return key; // Возврат ключа, если перевод не найден
 }
 
-/**
- * Очистка базы с сохранением в скрытый системный архив.
- */
-function executeDatabaseClear() {
-  try {
-    // ИСПОЛЬЗУЕМ ИЗОЛИРОВАННУЮ БАЗУ ТЕКУЩЕГО КЛИЕНТА
-    if (typeof _APP_CONTEXT === 'undefined' || !_APP_CONTEXT.cashDbId) {
-      throw new Error("Контекст базы данных не найден");
-    }
-    var ss = SpreadsheetApp.openById(_APP_CONTEXT.cashDbId); 
+window.startDatabaseClear = function() {
+    if (typeof closeDriveModal === 'function') closeDriveModal();
     
-    var txSheet = ss.getSheetByName("Transactions");
-    var itemsSheet = ss.getSheetByName("Items");
-    
-    if (!txSheet || !itemsSheet) {
-      throw new Error("Критическая ошибка: Рабочие листы не найдены в базе клиента.");
-    }
-    
-    var archiveSheet = ss.getSheetByName("_SYS_ARCHIVE");
-    if (!archiveSheet) {
-      archiveSheet = ss.insertSheet("_SYS_ARCHIVE");
-      archiveSheet.hideSheet(); 
-    }
-    
-    archiveSheet.clear();
-    
-    // 1. Спасаем товары (Колонки A - K, 11 колонок)
-    var itemsData = itemsSheet.getDataRange().getValues();
-    if (itemsData.length > 0) {
-      archiveSheet.getRange(1, 1, itemsData.length, itemsData[0].length).setValues(itemsData);
-    }
-    
-    // 2. Спасаем чеки (Начинаем с колонки M / 13)
-    var txData = txSheet.getDataRange().getValues();
-    if (txData.length > 0) {
-      archiveSheet.getRange(1, 13, txData.length, txData[0].length).setValues(txData);
-    }
-    
-    // 3. Жесткая очистка оперативных данных (оставляем по 2 строки заголовков)
-    if (itemsSheet.getLastRow() > 2) {
-      itemsSheet.getRange(3, 1, itemsSheet.getLastRow() - 2, itemsSheet.getLastColumn()).clearContent();
-    }
-    
-    if (txSheet.getLastRow() > 2) {
-      txSheet.getRange(3, 1, txSheet.getLastRow() - 2, txSheet.getLastColumn()).clearContent();
-    }
-    
-    return true; 
-    
-  } catch (e) {
-    throw new Error(e.message);
-  }
-}
+    Swal.fire({
+        title: getSwalText('swal_clear_title'),
+        text: getSwalText('swal_clear_text'),
+        icon: 'warning',
+        background: 'var(--bg-panel, #ffffff)',
+        color: 'var(--text-main, #333333)',
+        showCancelButton: true,
+        confirmButtonColor: '#d32f2f',
+        cancelButtonColor: '#757575',
+        confirmButtonText: getSwalText('swal_confirm_clear'),
+        cancelButtonText: getSwalText('swal_cancel'),
+        allowOutsideClick: false
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Очистка базы данных...',
+                text: 'Пожалуйста, подождите',
+                background: 'var(--bg-panel, #ffffff)',
+                color: 'var(--text-main, #333333)',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
 
-/**
- * Мгновенный откат из скрытого архива (отмена очистки).
- */
-function executeDatabaseRestore() {
-  try {
-    // ИСПОЛЬЗУЕМ ИЗОЛИРОВАННУЮ БАЗУ ТЕКУЩЕГО КЛИЕНТА
-    if (typeof _APP_CONTEXT === 'undefined' || !_APP_CONTEXT.cashDbId) {
-      throw new Error("Контекст базы данных не найден");
-    }
-    var ss = SpreadsheetApp.openById(_APP_CONTEXT.cashDbId);
+            const payload = {
+                action: "database_clear",
+                api_key: typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : ""
+            };
+            
+            window.smartFetch(GATEWAY_URL, payload, 'cache_db_clear').then(response => {
+                if (response && response.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Успешно',
+                        text: 'База данных очищена, копия сохранена в архив.',
+                        background: 'var(--bg-panel, #ffffff)',
+                        color: 'var(--text-main, #333333)',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    if (typeof refreshPosData === 'function') refreshPosData();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Ошибка',
+                        text: (response && response.message) ? response.message : 'Не удалось очистить базу',
+                        background: 'var(--bg-panel, #ffffff)',
+                        color: 'var(--text-main, #333333)'
+                    });
+                }
+            });
+        }
+    });
+};
+
+window.startDatabaseRestore = function() {
+    if (typeof closeDriveModal === 'function') closeDriveModal();
     
-    var txSheet = ss.getSheetByName("Transactions");
-    var itemsSheet = ss.getSheetByName("Items");
-    var archiveSheet = ss.getSheetByName("_SYS_ARCHIVE");
-    
-    if (!archiveSheet) {
-      throw new Error("Архив не найден. Возможно, очистка еще не проводилась.");
-    }
-    
-    // 1. Восстанавливаем Товары (Читаем 11 колонок, от A до K)
-    var itemsRange = archiveSheet.getRange(1, 1, archiveSheet.getLastRow(), 11); 
-    var itemsRawData = itemsRange.getValues();
-    var itemsData = itemsRawData.filter(function(row) { return row[0] !== ""; });
-    
-    // 2. Восстанавливаем Транзакции (Читаем с 13-й колонки, запас 25 колонок)
-    var txRange = archiveSheet.getRange(1, 13, archiveSheet.getLastRow(), 25); 
-    var txRawData = txRange.getValues();
-    var txData = txRawData.filter(function(row) { return row[0] !== ""; });
-    
-    // 3. Возвращаем данные на рабочие листы
-    if (itemsData.length > 0) {
-      itemsSheet.clearContents();
-      itemsSheet.getRange(1, 1, itemsData.length, itemsData[0].length).setValues(itemsData);
-    }
-    
-    if (txData.length > 0) {
-      txSheet.clearContents();
-      txSheet.getRange(1, 1, txData.length, txData[0].length).setValues(txData);
-    }
-    
-    // 4. Уничтожаем архив после успешного отката
-    archiveSheet.clear();
-    
-    return true;
-    
-  } catch (e) {
-    throw new Error(e.message);
-  }
-}
+    Swal.fire({
+        title: getSwalText('swal_restore_title'),
+        text: getSwalText('swal_restore_text'),
+        background: 'var(--bg-panel, #ffffff)',
+        color: 'var(--text-main, #333333)',
+        showDenyButton: true,
+        showCancelButton: true,
+        confirmButtonColor: '#1976d2',
+        denyButtonColor: '#f57c00',
+        cancelButtonColor: '#757575',
+        confirmButtonText: getSwalText('swal_restore_merge'),
+        denyButtonText: getSwalText('swal_restore_undo'),
+        cancelButtonText: getSwalText('swal_cancel'),
+        allowOutsideClick: false,
+        customClass: {
+            actions: 'swal-actions-vertical',
+            confirmButton: 'swal-btn-full',
+            denyButton: 'swal-btn-full',
+            cancelButton: 'swal-btn-full'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            console.log("Запуск интерфейса Smart Merge");
+        } else if (result.isDenied) {
+            Swal.fire({
+                title: 'Восстановление данных...',
+                background: 'var(--bg-panel, #ffffff)',
+                color: 'var(--text-main, #333333)',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            const payload = {
+                action: "database_restore",
+                api_key: typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : ""
+            };
+
+            window.smartFetch(GATEWAY_URL, payload, 'cache_db_restore').then(response => {
+                if (response && response.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Восстановлено',
+                        text: 'Данные успешно возвращены из архива.',
+                        background: 'var(--bg-panel, #ffffff)',
+                        color: 'var(--text-main, #333333)',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    if (typeof refreshPosData === 'function') refreshPosData();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Ошибка',
+                        text: (response && response.message) ? response.message : 'Не удалось восстановить базу',
+                        background: 'var(--bg-panel, #ffffff)',
+                        color: 'var(--text-main, #333333)'
+                    });
+                }
+            });
+        }
+    });
+};
