@@ -623,7 +623,12 @@
 <!-- МОДАЛКА БАЗЫ ДАННЫХ (DRIVE) -->
     <div id="drive-base-modal" class="modal-overlay" style="display: none; background: rgba(0, 0, 0, 0.75); z-index: 9999;" onclick="closeDriveModal()">
         
-        <div class="settings-box" onclick="event.stopPropagation()" style="background: var(--bg-panel, #ffffff); border: 1px solid var(--border-focus); padding: 25px 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); border-radius: 16px; max-height: 90vh; overflow-y: auto;">
+        <div class="settings-box" onclick="event.stopPropagation()" style="position: relative; background: var(--bg-panel, #ffffff); border: 1px solid var(--border-focus); padding: 25px 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); border-radius: 16px; max-height: 90vh; overflow-y: auto;">
+    
+            <!-- НОВЫЙ КРАСНЫЙ КРЕСТИК ЗАКРЫТИЯ -->
+            <button onclick="closeDriveModal()" style="position: absolute; top: 15px; right: 15px; background: transparent; border: none; font-size: 28px; color: #EA4335; cursor: pointer; padding: 0; line-height: 1; z-index: 10;">&times;</button>
+
+            <div class="r-title" style="font-size: 15px; margin-bottom: 25px; text-align: center; font-weight: bold; color: var(--text-main); text-transform: uppercase; letter-spacing: 1px;" data-i18n="drive_modal_title">БАЗА ДАННЫХ (DRIVE)</div>
             
             <div class="r-title" style="font-size: 15px; margin-bottom: 25px; text-align: center; font-weight: bold; color: var(--text-main); text-transform: uppercase; letter-spacing: 1px;" data-i18n="drive_modal_title">БАЗА ДАННЫХ (DRIVE)</div>
 
@@ -680,9 +685,6 @@
                 </button>
             </div>
 
-            <button class="cancel-btn" style="width: 100%; background: var(--bg-danger-dim, #ffebee); color: var(--accent-red, #d32f2f); border-color: var(--accent-red, #d32f2f); padding: 16px; border-radius: 12px; font-weight: bold; font-size: 14px; text-transform: uppercase; border: 1px solid; cursor: pointer; text-align: center;" onclick="closeDriveModal()">
-                <span data-i18n="btn_close">ЗАКРЫТЬ</span>
-            </button>
         </div>
     </div>   
 
