@@ -5844,30 +5844,7 @@ window.startDatabaseClear = function() {
 window.startDatabaseRestore = function() {
     if (typeof closeDriveModal === 'function') closeDriveModal();
     
-    Swal.fire({
-        title: translations[currentLang]['swal_restore_title'],
-        text: translations[currentLang]['swal_restore_text'],
-        background: 'var(--bg-panel, #ffffff)',
-        color: 'var(--text-main, #333333)',
-        showDenyButton: true, 
-        showCancelButton: true,
-        confirmButtonText: translations[currentLang]['swal_restore_all_btn'],
-        denyButtonText: translations[currentLang]['swal_restore_catalog_btn'], 
-        cancelButtonText: translations[currentLang]['swal_cancel'],
-        
-        confirmButtonColor: '#4285F4', // Синий (Восстановить всё)
-        denyButtonColor: '#757575',    // Серый (Только каталог)
-        cancelButtonColor: '#EA4335',  // Красный (Отмена)
-        
-        customClass: {
-            actions: 'swal-actions-vertical'
-        }
-    }).then((result) => {
-        if (result.isConfirmed) {
-            // Если выбрали "Восстановить всё" - запускаем процесс сразу
-            executeRestoreRequest('all');
-        } else if (result.isDenied) {
-            // Если выбрали "Только каталог" - показываем дополнительное предупреждение
+    // Если выбрали "Только каталог" - показываем дополнительное предупреждение
             Swal.fire({
                 icon: 'warning',
                 title: translations[currentLang]['swal_catalog_warn_title'] || 'Внимание!',
@@ -5875,17 +5852,23 @@ window.startDatabaseRestore = function() {
                 showCancelButton: true,
                 confirmButtonText: translations[currentLang]['swal_catalog_warn_confirm'] || 'Да, уверен',
                 cancelButtonText: translations[currentLang]['swal_cancel'],
-                confirmButtonColor: '#EA4335', // Красный цвет для опасного действия
-                cancelButtonColor: '#757575',
+                
+                // ИСПРАВЛЕНИЕ: Кнопка отмены теперь красная, а подтверждение - синее
+                confirmButtonColor: '#4285F4', 
+                cancelButtonColor: '#EA4335',
+                
                 background: 'var(--bg-panel, #ffffff)',
-                color: 'var(--text-main, #333333)'
+                color: 'var(--text-main, #333333)',
+                
+                // ИСПРАВЛЕНИЕ: Этот класс делает кнопки одинаковыми по ширине и ставит их друг под другом
+                customClass: {
+                    actions: 'swal-actions-vertical'
+                }
             }).then((warnResult) => {
                 if (warnResult.isConfirmed) {
                     executeRestoreRequest('catalog');
                 }
             });
-        }
-    });
 
     // Внутренняя функция для отправки запроса на сервер
     function executeRestoreRequest(restoreType) {
