@@ -208,7 +208,7 @@
                 swal_clear_text: "Выберите тип очистки. Текущие данные будут временно сохранены в архив.",
                 swal_clear_ops_btn: "ТОЛЬКО ОПЕРАЦИИ (Чеки)",
                 swal_clear_all_btn: "ПОЛНАЯ ОЧИСТКА (Чеки, Накладные, Товары)",
-                swal_catalog_warn_title: "Внимание!",
+                swal_catalog_warn_title: "ВНИМАНИЕ!",
                 swal_catalog_warn_text: "Старые чеки будут навсегда удалены из быстрого буфера. Вы уверены?",
                 swal_catalog_warn_confirm: "Да, восстановить только каталог<br>(Накладные и Товары)",
 
@@ -430,9 +430,9 @@
                 swal_clear_text: "Тазалау түрін таңдаңыз. Ағымдағы деректер уақытша мұрағатта сақталады.",
                 swal_clear_ops_btn: "ТЕК ОПЕРАЦИЯЛАР (Чектер)",
                 swal_clear_all_btn: "ТОЛЫҚ ТАЗАЛАУ (Чектер, Жүкқұжаттар, Тауарлар)",
-                swal_catalog_warn_title: "Назар аударыңыз!",
+                swal_catalog_warn_title: "НАЗАР АУДАРЫҢЫЗ!",
                 swal_catalog_warn_text: "Ескі чектер жылдам буферден біржолата жойылады. Сенімдісіз бе?",
-                swal_catalog_warn_confirm: "Иә, каталогты ғана қалпына келтіру<br>(Жүкқұжаттар, Тауарлар)",
+                swal_catalog_warn_confirm: "ИӘ, КАТАЛОГТЫ ҒАНА ҚАЛПЫНА КЕЛТІРУ<br>(Жүкқұжаттар, Тауарлар)",
 
                 // Қалпына келтіру терезесі
                 swal_restore_title: "ДЕРЕКТЕРДІ ҚАЛПЫНА КЕЛТІРУ",
@@ -5630,7 +5630,7 @@ function showUpdatePrompt(newVersion) {
     
     banner.innerHTML = `
         <div>
-            <span data-i18n="update_available">🚀 Доступна новая версия системы</span> 
+            <span>🚀 ${translations[currentLang]['update_available'] || 'Доступна новая версия системы'}</span> 
             <b>(${newVersion})</b>
         </div>
         <button onclick="window.location.reload(true)" style="
@@ -5639,7 +5639,7 @@ function showUpdatePrompt(newVersion) {
             border: 1px solid var(--border-light); 
             padding: 6px 14px; border-radius: 6px; cursor: pointer; 
             font-weight: bold; font-size: 13px; transition: 0.2s;">
-            <span data-i18n="update_btn">Обновить кассу</span>
+            <span>${translations[currentLang]['update_btn'] || 'Обновить кассу'}</span>
         </button>
     `;
     applyLanguage(currentLang);
