@@ -210,7 +210,7 @@
                 swal_clear_all_btn: "ПОЛНАЯ ОЧИСТКА (Чеки, Накладные, Товары)",
                 swal_catalog_warn_title: "Внимание!",
                 swal_catalog_warn_text: "Старые чеки будут навсегда удалены из быстрого буфера. Вы уверены?",
-                swal_catalog_warn_confirm: "Да, восстановить только каталог (Накладные и Товары)",
+                swal_catalog_warn_confirm: "Да, восстановить только каталог<br>(Накладные и Товары)",
 
                 // Окно восстановления
                 swal_restore_title: "ВОССТАНОВЛЕНИЕ ДАННЫХ",
@@ -432,7 +432,7 @@
                 swal_clear_all_btn: "ТОЛЫҚ ТАЗАЛАУ (Чектер, Жүкқұжаттар, Тауарлар)",
                 swal_catalog_warn_title: "Назар аударыңыз!",
                 swal_catalog_warn_text: "Ескі чектер жылдам буферден біржолата жойылады. Сенімдісіз бе?",
-                swal_catalog_warn_confirm: "Иә, каталогты ғана қалпына келтіру (Жүкқұжаттар, Тауарлар)",
+                swal_catalog_warn_confirm: "Иә, каталогты ғана қалпына келтіру<br>(Жүкқұжаттар, Тауарлар)",
 
                 // Қалпына келтіру терезесі
                 swal_restore_title: "ДЕРЕКТЕРДІ ҚАЛПЫНА КЕЛТІРУ",
@@ -5844,25 +5844,24 @@ window.startDatabaseClear = function() {
 window.startDatabaseRestore = function() {
     if (typeof closeDriveModal === 'function') closeDriveModal();
     
-    // === ОКНО 1: ВЫБОР МЕТОДА ===
+    // === ОКНО 1: ВЫБОР МЕТОДА (БЕЗ ИКОНКИ) ===
     Swal.fire({
-        icon: 'question', 
-        title: translations[currentLang]['swal_restore_title'] || 'ВОССТАНОВЛЕНИЕ',
-        text: translations[currentLang]['swal_restore_text'] || 'Выберите метод восстановления данных:',
+        title: translations[currentLang]['swal_restore_title'] || 'ВОССТАНОВЛЕНИЕ ДАННЫХ',
+        text: translations[currentLang]['swal_restore_text'] || 'Выберите, какие данные нужно вернуть из временного архива.',
         background: 'var(--bg-panel, #ffffff)',
         color: 'var(--text-main, #333333)',
         
         showDenyButton: true, 
         showCancelButton: true,
         
-        confirmButtonText: translations[currentLang]['swal_restore_all_btn'] || 'Восстановить всё',
-        denyButtonText: translations[currentLang]['swal_restore_catalog_btn'] || 'Только каталог', 
+        // Вставляем тег <br> для принудительного переноса
+        confirmButtonText: translations[currentLang]['swal_restore_all_btn'] || 'ВОССТАНОВИТЬ ВСЁ<br>(Чеки, Накладные, Товары)',
+        denyButtonText: translations[currentLang]['swal_restore_catalog_btn'] || 'ТОЛЬКО КАТАЛОГ<br>(Товары и Накладные)', 
         cancelButtonText: translations[currentLang]['swal_cancel'] || 'Отмена',
         
-        // НОВАЯ ЦВЕТОВАЯ ГАММА
-        confirmButtonColor: '#4285F4', // Синий (Действие 1)
-        denyButtonColor: '#4285F4',    // Синий (Действие 2)
-        cancelButtonColor: '#EA4335',  // Красный (Отмена)
+        confirmButtonColor: '#4285F4', // Синий
+        denyButtonColor: '#4285F4',    // Синий
+        cancelButtonColor: '#EA4335',  // Красный
         
         customClass: {
             actions: 'swal-actions-vertical',
@@ -5874,21 +5873,23 @@ window.startDatabaseRestore = function() {
             executeRestoreRequest('all');
         } else if (result.isDenied) {
             
-            // === ОКНО 2: ПРЕДУПРЕЖДЕНИЕ ===
+            // === ОКНО 2: ПРЕДУПРЕЖДЕНИЕ (БЕЗ ИКОНКИ) ===
             Swal.fire({
-                icon: 'warning', 
                 title: translations[currentLang]['swal_catalog_warn_title'] || 'Внимание!',
                 text: translations[currentLang]['swal_catalog_warn_text'] || 'Старые чеки будут навсегда удалены из быстрого буфера. Вы уверены?',
                 
+                // ДВОЙНАЯ ЗАЩИТА ОТ КНОПКИ NO
                 showDenyButton: false, 
+                denyButtonText: '',
+                
                 showCancelButton: true,
                 
-                confirmButtonText: translations[currentLang]['swal_catalog_warn_confirm'] || 'Да, восстановить только каталог (Накладные, Товары)', 
+                // Тег <br> для переноса
+                confirmButtonText: translations[currentLang]['swal_catalog_warn_confirm'] || 'Да, восстановить только каталог<br>(Накладные и Товары)', 
                 cancelButtonText: translations[currentLang]['swal_cancel'] || 'Отмена',
                 
-                // ТА ЖЕ ЦВЕТОВАЯ ГАММА
-                confirmButtonColor: '#4285F4', // Синий (Действие)
-                cancelButtonColor: '#EA4335',  // Красный (Отмена)
+                confirmButtonColor: '#4285F4', // Синий
+                cancelButtonColor: '#EA4335',  // Красный
                 
                 background: 'var(--bg-panel, #ffffff)',
                 color: 'var(--text-main, #333333)',
