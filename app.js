@@ -212,7 +212,7 @@
                 // Окно восстановления
                 swal_restore_title: "ВОССТАНОВЛЕНИЕ ДАННЫХ",
                 swal_restore_text: "Выберите, какие данные нужно вернуть из временного архива.",
-                swal_restore_ops_btn: "ТОЛЬКО ОПЕРАЦИИ (Чеки)",
+                swal_restore_catalog_btn: "ТОЛЬКО КАТАЛОГ (Товары и Накладные)",
                 swal_restore_all_btn: "ВОССТАНОВИТЬ ВСЁ (Чеки, Накладные, Товары)",
 
                 // Универсальные кнопки
@@ -431,7 +431,7 @@
                 // Қалпына келтіру терезесі
                 swal_restore_title: "ДЕРЕКТЕРДІ ҚАЛПЫНА КЕЛТІРУ",
                 swal_restore_text: "Уақытша мұрағаттан қандай деректерді қайтару керектігін таңдаңыз.",
-                swal_restore_ops_btn: "ТЕК ОПЕРАЦИЯЛАР (Чектер)",
+                swal_restore_catalog_btn: "ТЕК КАТАЛОГ (Тауарлар мен Жүкқұжаттар)",
                 swal_restore_all_btn: "БАРЛЫҒЫН ҚАЛПЫНА КЕЛТІРУ (Чектер, Жүкқұжаттар, Тауарлар)",
 
                 // Әмбебап батырмалар
@@ -5843,15 +5843,15 @@ window.startDatabaseRestore = function() {
         text: translations[currentLang]['swal_restore_text'],
         background: 'var(--bg-panel, #ffffff)',
         color: 'var(--text-main, #333333)',
-        showDenyButton: true,
+        showDenyButton: true, // Вернули среднюю кнопку
         showCancelButton: true,
         confirmButtonText: translations[currentLang]['swal_restore_all_btn'],
-        denyButtonText: translations[currentLang]['swal_restore_ops_btn'],
+        denyButtonText: translations[currentLang]['swal_restore_catalog_btn'], // Новый текст
         cancelButtonText: translations[currentLang]['swal_cancel'],
         
-        // НОВЫЕ ЦВЕТА
-        confirmButtonColor: '#4285F4', // Синий (Главное действие)
-        denyButtonColor: '#757575',    // Серый (Вторичное действие)
+        // Цвета кнопок
+        confirmButtonColor: '#4285F4', // Синий (Восстановить всё)
+        denyButtonColor: '#757575',    // Серый (Только каталог)
         cancelButtonColor: '#EA4335',  // Красный (Отмена)
         
         customClass: {
@@ -5859,7 +5859,9 @@ window.startDatabaseRestore = function() {
         }
     }).then((result) => {
         if (result.isConfirmed || result.isDenied) {
-            const restoreType = result.isConfirmed ? 'all' : 'ops';
+            
+            // Если подтвердили главное - 'all', если вторичное - 'catalog'
+            const restoreType = result.isConfirmed ? 'all' : 'catalog';
             
             Swal.fire({
                 title: '...',
@@ -5871,10 +5873,11 @@ window.startDatabaseRestore = function() {
 
             const payload = {
                 action: "database_restore",
-                type: restoreType,
+                type: restoreType, 
                 api_key: typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : ""
             };
             
+            // Отправляем запрос через единый шлюз маршрутизации
             window.smartFetch(GATEWAY_URL, payload, 'cache_db_restore').then(response => {
                 if (response && response.success) {
                     Swal.fire({
