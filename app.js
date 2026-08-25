@@ -208,6 +208,9 @@
                 swal_clear_text: "Выберите тип очистки. Текущие данные будут временно сохранены в архив.",
                 swal_clear_ops_btn: "ТОЛЬКО ОПЕРАЦИИ (Чеки)",
                 swal_clear_all_btn: "ПОЛНАЯ ОЧИСТКА (Чеки, Накладные, Товары)",
+                swal_catalog_warn_title: "Внимание!",
+                swal_catalog_warn_text: "Старые чеки будут навсегда удалены из быстрого буфера. Вы уверены?",
+                swal_catalog_warn_confirm: "Да, восстановить только каталог (Накла",
 
                 // Окно восстановления
                 swal_restore_title: "ВОССТАНОВЛЕНИЕ ДАННЫХ",
@@ -427,6 +430,9 @@
                 swal_clear_text: "Тазалау түрін таңдаңыз. Ағымдағы деректер уақытша мұрағатта сақталады.",
                 swal_clear_ops_btn: "ТЕК ОПЕРАЦИЯЛАР (Чектер)",
                 swal_clear_all_btn: "ТОЛЫҚ ТАЗАЛАУ (Чектер, Жүкқұжаттар, Тауарлар)",
+                swal_catalog_warn_title: "Назар аударыңыз!",
+                swal_catalog_warn_text: "Ескі чектер жылдам буферден біржолата жойылады. Сенімдісіз бе?",
+                swal_catalog_warn_confirm: "Иә, каталогты ғана қалпына келтіру (Жүкқұжаттар, Тауарлар)",
 
                 // Қалпына келтіру терезесі
                 swal_restore_title: "ДЕРЕКТЕРДІ ҚАЛПЫНА КЕЛТІРУ",
@@ -5843,13 +5849,12 @@ window.startDatabaseRestore = function() {
         text: translations[currentLang]['swal_restore_text'],
         background: 'var(--bg-panel, #ffffff)',
         color: 'var(--text-main, #333333)',
-        showDenyButton: true, // Вернули среднюю кнопку
+        showDenyButton: true, 
         showCancelButton: true,
         confirmButtonText: translations[currentLang]['swal_restore_all_btn'],
-        denyButtonText: translations[currentLang]['swal_restore_catalog_btn'], // Новый текст
+        denyButtonText: translations[currentLang]['swal_restore_catalog_btn'], 
         cancelButtonText: translations[currentLang]['swal_cancel'],
         
-        // Цвета кнопок
         confirmButtonColor: '#4285F4', // Синий (Восстановить всё)
         denyButtonColor: '#757575',    // Серый (Только каталог)
         cancelButtonColor: '#EA4335',  // Красный (Отмена)
@@ -5858,40 +5863,59 @@ window.startDatabaseRestore = function() {
             actions: 'swal-actions-vertical'
         }
     }).then((result) => {
-        if (result.isConfirmed || result.isDenied) {
-            
-            // Если подтвердили главное - 'all', если вторичное - 'catalog'
-            const restoreType = result.isConfirmed ? 'all' : 'catalog';
-            
+        if (result.isConfirmed) {
+            // Если выбрали "Восстановить всё" - запускаем процесс сразу
+            executeRestoreRequest('all');
+        } else if (result.isDenied) {
+            // Если выбрали "Только каталог" - показываем дополнительное предупреждение
             Swal.fire({
-                title: '...',
-                allowOutsideClick: false,
+                icon: 'warning',
+                title: translations[currentLang]['swal_catalog_warn_title'] || 'Внимание!',
+                text: translations[currentLang]['swal_catalog_warn_text'] || 'Старые чеки будут удалены из буфера. Вы уверены?',
+                showCancelButton: true,
+                confirmButtonText: translations[currentLang]['swal_catalog_warn_confirm'] || 'Да, уверен',
+                cancelButtonText: translations[currentLang]['swal_cancel'],
+                confirmButtonColor: '#EA4335', // Красный цвет для опасного действия
+                cancelButtonColor: '#757575',
                 background: 'var(--bg-panel, #ffffff)',
-                color: 'var(--text-main, #333333)',
-                didOpen: () => { Swal.showLoading(); }
-            });
-
-            const payload = {
-                action: "database_restore",
-                type: restoreType, 
-                api_key: typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : ""
-            };
-            
-            // Отправляем запрос через единый шлюз маршрутизации
-            window.smartFetch(GATEWAY_URL, payload, 'cache_db_restore').then(response => {
-                if (response && response.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'OK',
-                        background: 'var(--bg-panel, #ffffff)',
-                        color: 'var(--text-main, #333333)',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                } else {
-                    Swal.fire('Error', response?.message || 'Error', 'error');
+                color: 'var(--text-main, #333333)'
+            }).then((warnResult) => {
+                if (warnResult.isConfirmed) {
+                    executeRestoreRequest('catalog');
                 }
             });
         }
     });
+
+    // Внутренняя функция для отправки запроса на сервер
+    function executeRestoreRequest(restoreType) {
+        Swal.fire({
+            title: '...',
+            allowOutsideClick: false,
+            background: 'var(--bg-panel, #ffffff)',
+            color: 'var(--text-main, #333333)',
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        const payload = {
+            action: "database_restore",
+            type: restoreType, 
+            api_key: typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : ""
+        };
+        
+        window.smartFetch(GATEWAY_URL, payload, 'cache_db_restore').then(response => {
+            if (response && response.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'OK',
+                    background: 'var(--bg-panel, #ffffff)',
+                    color: 'var(--text-main, #333333)',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                Swal.fire('Error', response?.message || 'Error', 'error');
+            }
+        });
+    }
 };
