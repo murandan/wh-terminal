@@ -566,7 +566,7 @@ button,
     border-radius: 8px !important;
 }
 
-/* Выравнивание кнопок в окнах SweetAlert */
+/* Выравнивание кнопок в окнах SweetAlert (строго одинаковая ширина) */
 .swal-actions-vertical {
     display: flex !important;
     flex-direction: column !important;
@@ -574,9 +574,13 @@ button,
     width: 100% !important;
 }
 
-.swal-actions-vertical button {
-    width: 85% !important;
-    max-width: 350px !important;
-    margin: 6px 0 !important;
+/* Принудительно задаем единый размер для всех трех кнопок */
+.swal-actions-vertical .swal2-confirm,
+.swal-actions-vertical .swal2-deny,
+.swal-actions-vertical .swal2-cancel {
+    width: 80% !important; /* Оставляем 20% свободного места по краям */
+    max-width: 320px !important; /* Защита от слишком сильного растяжения на ПК */
+    margin: 6px 0 !important; /* Отступы между кнопками */
     border-radius: 8px !important;
+    box-sizing: border-box !important;
 }
