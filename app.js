@@ -188,6 +188,7 @@
                 setup_license_error_desc: "Касса уже была установлена на данный Google аккаунт.",
                 setup_license_error_step1: "Для новой установки (тестового периода) используйте другой аккаунт Google.",
                 setup_license_error_step2: "Для продления текущей кассы обратитесь к администратору.",
+                // --- БАЗА ДАННЫХ (DRIVE МОДАЛКА) ---
                 drive_modal_title: "БАЗА ДАННЫХ (DRIVE)",
                 drive_root: "КОРНЕВАЯ ПАПКА",
                 drive_db: "ТАБЛИЦА: ТОВАРЫ И ЧЕКИ",
@@ -200,14 +201,22 @@
                 drive_danger_zone: "ОПЕРАТИВНЫЕ ДЕЙСТВИЯ",
                 drive_clear_btn: "ОЧИСТИТЬ БАЗУ ДАННЫХ",
                 drive_restore_btn: "ВОССТАНОВИТЬ ДАННЫЕ",
-                swal_clear_title: "ВНИМАНИЕ!",
-                swal_clear_text: "Вы собираетесь удалить все оперативные данные (чеки, движения). Текущие данные будут перенесены в скрытый архив. Продолжить?",
-                swal_confirm_clear: "Да, очистить",
-                swal_cancel: "Отмена",
-                swal_restore_title: "ВОССТАНОВЛЕНИЕ",
-                swal_restore_text: "Выберите метод восстановления данных:",
-                swal_restore_merge: "Из архива (Smart Merge)",
-                swal_restore_undo: "Отменить последнюю очистку"
+
+                // --- ОКНА ПОДТВЕРЖДЕНИЯ (SWEETALERT) ---
+                // Окно очистки
+                swal_clear_title: "ОЧИСТКА БАЗЫ",
+                swal_clear_text: "Выберите тип очистки. Текущие данные будут временно сохранены в архив.",
+                swal_clear_ops_btn: "ТОЛЬКО ОПЕРАЦИИ (Чеки)",
+                swal_clear_all_btn: "ПОЛНАЯ ОЧИСТКА (Чеки, Накладные, Товары)",
+
+                // Окно восстановления
+                swal_restore_title: "ВОССТАНОВЛЕНИЕ ДАННЫХ",
+                swal_restore_text: "Выберите, какие данные нужно вернуть из временного архива.",
+                swal_restore_ops_btn: "ТОЛЬКО ОПЕРАЦИИ (Чеки)",
+                swal_restore_all_btn: "ВОССТАНОВИТЬ ВСЁ (Чеки, Накладные, Товары)",
+
+                // Универсальные кнопки
+                swal_cancel: "Отмена"
             },
             kz: {
                 btn_sale: "САТУ", btn_return: "ҚАЙТАРУ", search_placeholder: "ІЗДЕУ...",
@@ -398,26 +407,35 @@
                 setup_license_error_desc: "Бұл Google аккаунтына касса бұрын орнатылған.",
                 setup_license_error_step1: "Жаңадан орнату үшін (сынақ мерзімі) басқа Google аккаунтын пайдаланыңыз.",
                 setup_license_error_step2: "Қазіргі кассаны ұзарту үшін әкімшіге хабарласыңыз.",
-                drive_modal_title: "ДЕРЕКТЕР ҚОРЫ (DRIVE)",
-                drive_root: "НЕГІЗГІ БУМА",
-                drive_db: "КЕСТЕ: ТАУАРЛАР ЖӘНЕ ЧЕКТЕР",
-                drive_config: "КЕСТЕ: БАПТАУЛАР (CONFIG)",
+                // --- ДЕРЕКҚОР (DRIVE МОДАЛКАСЫ) ---
+                drive_modal_title: "ДЕРЕКҚОР (DRIVE)",
+                drive_root: "ТҮБІРЛІК БУМА",
+                drive_db: "КЕСТЕ: ТАУАРЛАР МЕН ЧЕКТЕР",
+                drive_config: "КЕСТЕ: ПАРАМЕТРЛЕР (CONFIG)",
                 drive_images: "БУМА: ФОТОСУРЕТТЕР",
                 drive_invoices: "БУМА: ЖҮКҚҰЖАТТАР",
                 drive_backups: "БУМА: РЕЗЕРВТІК КӨШІРМЕЛЕР",
                 drive_secret: "БУМА: ҚҰПИЯ КӨШІРМЕЛЕР",
                 btn_close: "ЖАБУ",
-                drive_danger_zone: "ОПЕРАТИВТІК ӘРЕКЕТТЕР",
-                drive_clear_btn: "ДЕРЕКТЕР БАЗАСЫН ТАЗАРТУ",
+                drive_danger_zone: "ЖЕДЕЛ ӘРЕКЕТТЕР",
+                drive_clear_btn: "ДЕРЕКҚОРДЫ ТАЗАЛАУ",
                 drive_restore_btn: "ДЕРЕКТЕРДІ ҚАЛПЫНА КЕЛТІРУ",
-                swal_clear_title: "НАЗАР АУДАРЫҢЫЗ!",
-                swal_clear_text: "Сіз барлық жедел деректерді (чектер, қозғалыстар) жойғалы тұрсыз. Ағымдағы деректер жасырын мұрағатқа тасымалданады. Жалғастыру керек пе?",
-                swal_confirm_clear: "Иә, тазарту",
-                swal_cancel: "Болдырмау",
-                swal_restore_title: "ҚАЛПЫНА КЕЛТІРУ",
-                swal_restore_text: "Деректерді қалпына келтіру әдісін таңдаңыз:",
-                swal_restore_merge: "Мұрағаттан (Smart Merge)",
-                swal_restore_undo: "Соңғы тазартуды болдырмау"
+
+                // --- РАСТАУ ТЕРЕЗЕЛЕРІ (SWEETALERT) ---
+                // Тазалау терезесі
+                swal_clear_title: "ДЕРЕКҚОРДЫ ТАЗАЛАУ",
+                swal_clear_text: "Тазалау түрін таңдаңыз. Ағымдағы деректер уақытша мұрағатта сақталады.",
+                swal_clear_ops_btn: "ТЕК ОПЕРАЦИЯЛАР (Чектер)",
+                swal_clear_all_btn: "ТОЛЫҚ ТАЗАЛАУ (Чектер, Жүкқұжаттар, Тауарлар)",
+
+                // Қалпына келтіру терезесі
+                swal_restore_title: "ДЕРЕКТЕРДІ ҚАЛПЫНА КЕЛТІРУ",
+                swal_restore_text: "Уақытша мұрағаттан қандай деректерді қайтару керектігін таңдаңыз.",
+                swal_restore_ops_btn: "ТЕК ОПЕРАЦИЯЛАР (Чектер)",
+                swal_restore_all_btn: "БАРЛЫҒЫН ҚАЛПЫНА КЕЛТІРУ (Чектер, Жүкқұжаттар, Тауарлар)",
+
+                // Әмбебап батырмалар
+                swal_cancel: "Бас тарту"
             }
         };
 
@@ -5753,36 +5771,53 @@ function getSwalText(key) {
     return key; // Возврат ключа, если перевод не найден
 }
 
+// Вспомогательная функция для получения перевода (если у вас уже есть своя, можете использовать её)
+function getDbText(key) {
+    // Предполагаем, что язык хранится в localStorage, по умолчанию 'ru'
+    const lang = localStorage.getItem('lang') || 'ru'; 
+    return translations[lang][key] || key;
+}
+
+// ==========================================
+// 1. КНОПКА ОЧИСТКИ БАЗЫ
+// ==========================================
 window.startDatabaseClear = function() {
+    // Закрываем модалку диска
     if (typeof closeDriveModal === 'function') closeDriveModal();
     
     Swal.fire({
-        title: getSwalText('swal_clear_title'),
-        text: getSwalText('swal_clear_text'),
+        title: getDbText('swal_clear_title'),
+        text: getDbText('swal_clear_text'),
         icon: 'warning',
         background: 'var(--bg-panel, #ffffff)',
         color: 'var(--text-main, #333333)',
+        showDenyButton: true, 
         showCancelButton: true,
-        confirmButtonColor: '#d32f2f',
-        cancelButtonColor: '#757575',
-        confirmButtonText: getSwalText('swal_confirm_clear'),
-        cancelButtonText: getSwalText('swal_cancel'),
-        allowOutsideClick: false
+        confirmButtonText: getDbText('swal_clear_all_btn'),
+        denyButtonText: getDbText('swal_clear_ops_btn'),
+        cancelButtonText: getDbText('swal_cancel'),
+        confirmButtonColor: '#d32f2f', // Красный для полного сброса
+        denyButtonColor: '#f57c00',    // Оранжевый для операций
+        customClass: {
+            actions: 'swal-actions-vertical' // Опционально: если есть CSS для кнопок в столбик
+        }
     }).then((result) => {
-        if (result.isConfirmed) {
+        if (result.isConfirmed || result.isDenied) {
+            
+            // Определяем тип: 'all' (полная) или 'ops' (только чеки)
+            const clearType = result.isConfirmed ? 'all' : 'ops';
+            
             Swal.fire({
-                title: 'Очистка базы данных...',
-                text: 'Пожалуйста, подождите',
+                title: 'Очистка данных...',
+                allowOutsideClick: false,
                 background: 'var(--bg-panel, #ffffff)',
                 color: 'var(--text-main, #333333)',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
+                didOpen: () => { Swal.showLoading(); }
             });
 
             const payload = {
                 action: "database_clear",
+                type: clearType, 
                 api_key: typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : ""
             };
             
@@ -5791,89 +5826,74 @@ window.startDatabaseClear = function() {
                     Swal.fire({
                         icon: 'success',
                         title: 'Успешно',
-                        text: 'База данных очищена, копия сохранена в архив.',
                         background: 'var(--bg-panel, #ffffff)',
                         color: 'var(--text-main, #333333)',
                         timer: 2000,
                         showConfirmButton: false
                     });
-                    if (typeof refreshPosData === 'function') refreshPosData();
                 } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Ошибка',
-                        text: (response && response.message) ? response.message : 'Не удалось очистить базу',
-                        background: 'var(--bg-panel, #ffffff)',
-                        color: 'var(--text-main, #333333)'
-                    });
+                    Swal.fire('Ошибка', response?.message || 'Сбой при очистке', 'error');
                 }
             });
         }
     });
 };
 
+// ==========================================
+// 2. КНОПКА ВОССТАНОВЛЕНИЯ БАЗЫ
+// ==========================================
 window.startDatabaseRestore = function() {
+    // Закрываем модалку диска
     if (typeof closeDriveModal === 'function') closeDriveModal();
     
     Swal.fire({
-        title: getSwalText('swal_restore_title'),
-        text: getSwalText('swal_restore_text'),
+        title: getDbText('swal_restore_title'),
+        text: getDbText('swal_restore_text'),
+        icon: 'question',
         background: 'var(--bg-panel, #ffffff)',
         color: 'var(--text-main, #333333)',
         showDenyButton: true,
         showCancelButton: true,
-        confirmButtonColor: '#1976d2',
-        denyButtonColor: '#f57c00',
-        cancelButtonColor: '#757575',
-        confirmButtonText: getSwalText('swal_restore_merge'),
-        denyButtonText: getSwalText('swal_restore_undo'),
-        cancelButtonText: getSwalText('swal_cancel'),
-        allowOutsideClick: false,
+        confirmButtonText: getDbText('swal_restore_all_btn'),
+        denyButtonText: getDbText('swal_restore_ops_btn'),
+        cancelButtonText: getDbText('swal_cancel'),
+        confirmButtonColor: '#1976d2', // Синий для полного восстановления
+        denyButtonColor: '#0288d1',    // Светло-синий для операций
         customClass: {
-            actions: 'swal-actions-vertical',
-            confirmButton: 'swal-btn-full',
-            denyButton: 'swal-btn-full',
-            cancelButton: 'swal-btn-full'
+            actions: 'swal-actions-vertical'
         }
     }).then((result) => {
-        if (result.isConfirmed) {
-            console.log("Запуск интерфейса Smart Merge");
-        } else if (result.isDenied) {
+        if (result.isConfirmed || result.isDenied) {
+            
+            // Определяем тип: 'all' (восстановить всё) или 'ops' (только чеки)
+            const restoreType = result.isConfirmed ? 'all' : 'ops';
+            
             Swal.fire({
                 title: 'Восстановление данных...',
+                allowOutsideClick: false,
                 background: 'var(--bg-panel, #ffffff)',
                 color: 'var(--text-main, #333333)',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
+                didOpen: () => { Swal.showLoading(); }
             });
 
             const payload = {
                 action: "database_restore",
+                type: restoreType,
                 api_key: typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : ""
             };
-
+            
             window.smartFetch(GATEWAY_URL, payload, 'cache_db_restore').then(response => {
                 if (response && response.success) {
                     Swal.fire({
                         icon: 'success',
-                        title: 'Восстановлено',
-                        text: 'Данные успешно возвращены из архива.',
+                        title: 'Успешно',
                         background: 'var(--bg-panel, #ffffff)',
                         color: 'var(--text-main, #333333)',
                         timer: 2000,
                         showConfirmButton: false
                     });
-                    if (typeof refreshPosData === 'function') refreshPosData();
                 } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Ошибка',
-                        text: (response && response.message) ? response.message : 'Не удалось восстановить базу',
-                        background: 'var(--bg-panel, #ffffff)',
-                        color: 'var(--text-main, #333333)'
-                    });
+                    Swal.fire('Ошибка', response?.message || 'Сбой при восстановлении', 'error');
                 }
             });
         }
