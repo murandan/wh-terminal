@@ -565,3 +565,18 @@ button,
     font-weight: 600 !important;
     border-radius: 8px !important;
 }
+
+/* Выравнивание кнопок в окнах SweetAlert */
+.swal-actions-vertical {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 100% !important;
+}
+
+.swal-actions-vertical button {
+    width: 85% !important;
+    max-width: 350px !important;
+    margin: 6px 0 !important;
+    border-radius: 8px !important;
+}
