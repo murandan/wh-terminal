@@ -219,7 +219,7 @@
                 swal_restore_all_btn: "ВОССТАНОВИТЬ ВСЁ (Чеки, Накладные, Товары)",
 
                 // Универсальные кнопки
-                swal_cancel: "Отмена"
+                swal_cancel: "ОТМЕНА"
             },
             kz: {
                 btn_sale: "САТУ", btn_return: "ҚАЙТАРУ", search_placeholder: "ІЗДЕУ...",
@@ -438,10 +438,10 @@
                 swal_restore_title: "ДЕРЕКТЕРДІ ҚАЛПЫНА КЕЛТІРУ",
                 swal_restore_text: "Уақытша мұрағаттан қандай деректерді қайтару керектігін таңдаңыз.",
                 swal_restore_catalog_btn: "ТЕК КАТАЛОГ (Тауарлар мен Жүкқұжаттар)",
-                swal_restore_all_btn: "БАРЛЫҒЫН ҚАЛПЫНА КЕЛТІРУ (Чектер, Жүкқұжаттар, Тауарлар)",
+                swal_restore_all_btn: "БАРЛЫҒЫН ҚАЛПЫНА КЕЛТІРУ<br>(Чектер, Жүкқұжаттар, Тауарлар)",
 
                 // Әмбебап батырмалар
-                swal_cancel: "Бас тарту"
+                swal_cancel: "БАС ТАРТУ"
             }
         };
 
@@ -5844,7 +5844,10 @@ window.startDatabaseClear = function() {
 window.startDatabaseRestore = function() {
     if (typeof closeDriveModal === 'function') closeDriveModal();
     
-    // === ОКНО 1: ВЫБОР МЕТОДА (БЕЗ ИКОНКИ) ===
+    // Настоящий, глубокий красный цвет (без ухода в оранжевый)
+    const trueRed = '#D32F2F'; 
+    
+    // === ОКНО 1: ВЫБОР МЕТОДА ===
     Swal.fire({
         title: translations[currentLang]['swal_restore_title'] || 'ВОССТАНОВЛЕНИЕ ДАННЫХ',
         text: translations[currentLang]['swal_restore_text'] || 'Выберите, какие данные нужно вернуть из временного архива.',
@@ -5854,14 +5857,13 @@ window.startDatabaseRestore = function() {
         showDenyButton: true, 
         showCancelButton: true,
         
-        // Вставляем тег <br> для принудительного переноса
         confirmButtonText: translations[currentLang]['swal_restore_all_btn'] || 'ВОССТАНОВИТЬ ВСЁ<br>(Чеки, Накладные, Товары)',
         denyButtonText: translations[currentLang]['swal_restore_catalog_btn'] || 'ТОЛЬКО КАТАЛОГ<br>(Товары и Накладные)', 
         cancelButtonText: translations[currentLang]['swal_cancel'] || 'Отмена',
         
         confirmButtonColor: '#4285F4', // Синий
         denyButtonColor: '#4285F4',    // Синий
-        cancelButtonColor: '#EA4335',  // Красный
+        cancelButtonColor: trueRed,    // Истинный красный
         
         customClass: {
             actions: 'swal-actions-vertical',
@@ -5873,29 +5875,32 @@ window.startDatabaseRestore = function() {
             executeRestoreRequest('all');
         } else if (result.isDenied) {
             
-            // === ОКНО 2: ПРЕДУПРЕЖДЕНИЕ (БЕЗ ИКОНКИ) ===
+            // === ОКНО 2: ПРЕДУПРЕЖДЕНИЕ ===
             Swal.fire({
                 title: translations[currentLang]['swal_catalog_warn_title'] || 'Внимание!',
                 text: translations[currentLang]['swal_catalog_warn_text'] || 'Старые чеки будут навсегда удалены из быстрого буфера. Вы уверены?',
                 
-                // ДВОЙНАЯ ЗАЩИТА ОТ КНОПКИ NO
                 showDenyButton: false, 
-                denyButtonText: '',
-                
                 showCancelButton: true,
                 
-                // Тег <br> для переноса
                 confirmButtonText: translations[currentLang]['swal_catalog_warn_confirm'] || 'Да, восстановить только каталог<br>(Накладные и Товары)', 
                 cancelButtonText: translations[currentLang]['swal_cancel'] || 'Отмена',
                 
                 confirmButtonColor: '#4285F4', // Синий
-                cancelButtonColor: '#EA4335',  // Красный
+                cancelButtonColor: trueRed,    // Истинный красный
                 
                 background: 'var(--bg-panel, #ffffff)',
                 color: 'var(--text-main, #333333)',
                 customClass: {
                     actions: 'swal-actions-vertical',
                     confirmButton: 'swal-btn-multiline' 
+                },
+                didOpen: () => {
+                    // Аппаратное уничтожение средней кнопки, если CSS пытается её показать
+                    const denyBtn = Swal.getDenyButton();
+                    if (denyBtn) {
+                        denyBtn.style.setProperty('display', 'none', 'important');
+                    }
                 }
             }).then((warnResult) => {
                 if (warnResult.isConfirmed) {
