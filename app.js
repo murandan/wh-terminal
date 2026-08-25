@@ -5844,35 +5844,67 @@ window.startDatabaseClear = function() {
 window.startDatabaseRestore = function() {
     if (typeof closeDriveModal === 'function') closeDriveModal();
     
-    // ВТОРОЕ ОКНО (ПРЕДУПРЕЖДЕНИЕ): Пользователь выбрал только каталог
+    // === ОКНО 1: ВЫБОР МЕТОДА ===
+    Swal.fire({
+        icon: 'question', 
+        title: translations[currentLang]['swal_restore_title'] || 'ВОССТАНОВЛЕНИЕ',
+        text: translations[currentLang]['swal_restore_text'] || 'Выберите метод восстановления данных:',
+        background: 'var(--bg-panel, #ffffff)',
+        color: 'var(--text-main, #333333)',
+        
+        showDenyButton: true, 
+        showCancelButton: true,
+        
+        confirmButtonText: translations[currentLang]['swal_restore_all_btn'] || 'Восстановить всё',
+        denyButtonText: translations[currentLang]['swal_restore_catalog_btn'] || 'Только каталог', 
+        cancelButtonText: translations[currentLang]['swal_cancel'] || 'Отмена',
+        
+        // НОВАЯ ЦВЕТОВАЯ ГАММА
+        confirmButtonColor: '#4285F4', // Синий (Действие 1)
+        denyButtonColor: '#4285F4',    // Синий (Действие 2)
+        cancelButtonColor: '#EA4335',  // Красный (Отмена)
+        
+        customClass: {
+            actions: 'swal-actions-vertical',
+            confirmButton: 'swal-btn-multiline',
+            denyButton: 'swal-btn-multiline'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            executeRestoreRequest('all');
+        } else if (result.isDenied) {
+            
+            // === ОКНО 2: ПРЕДУПРЕЖДЕНИЕ ===
             Swal.fire({
-                icon: 'warning',
-                title: translations[currentLang]['swal_catalog_warn_title'],
-                text: translations[currentLang]['swal_catalog_warn_text'],
+                icon: 'warning', 
+                title: translations[currentLang]['swal_catalog_warn_title'] || 'Внимание!',
+                text: translations[currentLang]['swal_catalog_warn_text'] || 'Старые чеки будут навсегда удалены из быстрого буфера. Вы уверены?',
                 
-                showDenyButton: false, // Жестко отключаем третью кнопку "No"
+                showDenyButton: false, 
                 showCancelButton: true,
                 
-                // ВЕРНУЛИ СЛОВАРЬ: Текст берется из ваших настроек перевода
-                confirmButtonText: translations[currentLang]['swal_catalog_warn_confirm'], 
-                cancelButtonText: translations[currentLang]['swal_cancel'],
+                confirmButtonText: translations[currentLang]['swal_catalog_warn_confirm'] || 'Да, восстановить только каталог (Накладные, Товары)', 
+                cancelButtonText: translations[currentLang]['swal_cancel'] || 'Отмена',
                 
-                confirmButtonColor: '#4285F4', // Синий
-                cancelButtonColor: '#EA4335',  // Красный
+                // ТА ЖЕ ЦВЕТОВАЯ ГАММА
+                confirmButtonColor: '#4285F4', // Синий (Действие)
+                cancelButtonColor: '#EA4335',  // Красный (Отмена)
                 
                 background: 'var(--bg-panel, #ffffff)',
                 color: 'var(--text-main, #333333)',
                 customClass: {
                     actions: 'swal-actions-vertical',
-                    confirmButton: 'swal-btn-multiline' // Новый класс для переноса текста
+                    confirmButton: 'swal-btn-multiline' 
                 }
             }).then((warnResult) => {
                 if (warnResult.isConfirmed) {
                     executeRestoreRequest('catalog');
                 }
             });
+        }
+    });
 
-    // Внутренняя функция для отправки запроса на сервер
+    // === ВНУТРЕННЯЯ ФУНКЦИЯ ЗАПРОСА ===
     function executeRestoreRequest(restoreType) {
         Swal.fire({
             title: '...',
