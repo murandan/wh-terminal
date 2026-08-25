@@ -5844,25 +5844,27 @@ window.startDatabaseClear = function() {
 window.startDatabaseRestore = function() {
     if (typeof closeDriveModal === 'function') closeDriveModal();
     
-    // Если выбрали "Только каталог" - показываем дополнительное предупреждение
+    // ВТОРОЕ ОКНО (ПРЕДУПРЕЖДЕНИЕ): Пользователь выбрал только каталог
             Swal.fire({
                 icon: 'warning',
-                title: translations[currentLang]['swal_catalog_warn_title'] || 'Внимание!',
-                text: translations[currentLang]['swal_catalog_warn_text'] || 'Старые чеки будут удалены из буфера. Вы уверены?',
+                title: translations[currentLang]['swal_catalog_warn_title'],
+                text: translations[currentLang]['swal_catalog_warn_text'],
+                
+                showDenyButton: false, // Жестко отключаем третью кнопку "No"
                 showCancelButton: true,
-                confirmButtonText: translations[currentLang]['swal_catalog_warn_confirm'] || 'Да, уверен',
+                
+                // ВЕРНУЛИ СЛОВАРЬ: Текст берется из ваших настроек перевода
+                confirmButtonText: translations[currentLang]['swal_catalog_warn_confirm'], 
                 cancelButtonText: translations[currentLang]['swal_cancel'],
                 
-                // ИСПРАВЛЕНИЕ: Кнопка отмены теперь красная, а подтверждение - синее
-                confirmButtonColor: '#4285F4', 
-                cancelButtonColor: '#EA4335',
+                confirmButtonColor: '#4285F4', // Синий
+                cancelButtonColor: '#EA4335',  // Красный
                 
                 background: 'var(--bg-panel, #ffffff)',
                 color: 'var(--text-main, #333333)',
-                
-                // ИСПРАВЛЕНИЕ: Этот класс делает кнопки одинаковыми по ширине и ставит их друг под другом
                 customClass: {
-                    actions: 'swal-actions-vertical'
+                    actions: 'swal-actions-vertical',
+                    confirmButton: 'swal-btn-multiline' // Новый класс для переноса текста
                 }
             }).then((warnResult) => {
                 if (warnResult.isConfirmed) {
