@@ -5788,10 +5788,10 @@ window.startDatabaseClear = function() {
         denyButtonText: translations[currentLang]['swal_clear_ops_btn'],
         cancelButtonText: translations[currentLang]['swal_cancel'],
         
-        // НОВЫЕ ЦВЕТА (В стиле POS Noir)
-        confirmButtonColor: '#EA4335', // Красный (Полная очистка)
-        denyButtonColor: '#9AA0A6',    // Серый (Только операции)
-        cancelButtonColor: '#5f6368',  // Темно-серый (Отмена)
+        // НОВЫЕ ЦВЕТА 
+        confirmButtonColor: '#4285F4', // Синий (Главное действие)
+        denyButtonColor: '#757575',    // Серый (Вторичное действие)
+        cancelButtonColor: '#EA4335',  // Красный (Отмена)
         
         customClass: {
             actions: 'swal-actions-vertical' 
@@ -5801,7 +5801,7 @@ window.startDatabaseClear = function() {
             const clearType = result.isConfirmed ? 'all' : 'ops';
             
             Swal.fire({
-                title: '...', // Системные окна загрузки можно не переводить
+                title: '...', 
                 allowOutsideClick: false,
                 background: 'var(--bg-panel, #ffffff)',
                 color: 'var(--text-main, #333333)',
@@ -5849,10 +5849,10 @@ window.startDatabaseRestore = function() {
         denyButtonText: translations[currentLang]['swal_restore_ops_btn'],
         cancelButtonText: translations[currentLang]['swal_cancel'],
         
-        // НОВЫЕ ЦВЕТА (В стиле POS Noir)
-        confirmButtonColor: '#4285F4', // Синий (Восстановить всё)
-        denyButtonColor: '#9AA0A6',    // Серый (Только операции)
-        cancelButtonColor: '#5f6368',  // Темно-серый (Отмена)
+        // НОВЫЕ ЦВЕТА
+        confirmButtonColor: '#4285F4', // Синий (Главное действие)
+        denyButtonColor: '#757575',    // Серый (Вторичное действие)
+        cancelButtonColor: '#EA4335',  // Красный (Отмена)
         
         customClass: {
             actions: 'swal-actions-vertical'
