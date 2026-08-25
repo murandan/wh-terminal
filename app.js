@@ -5771,44 +5771,37 @@ function getSwalText(key) {
     return key; // Возврат ключа, если перевод не найден
 }
 
-// Вспомогательная функция для получения перевода (если у вас уже есть своя, можете использовать её)
-function getDbText(key) {
-    // Предполагаем, что язык хранится в localStorage, по умолчанию 'ru'
-    const lang = localStorage.getItem('lang') || 'ru'; 
-    return translations[lang][key] || key;
-}
-
 // ==========================================
 // 1. КНОПКА ОЧИСТКИ БАЗЫ
 // ==========================================
 window.startDatabaseClear = function() {
-    // Закрываем модалку диска
     if (typeof closeDriveModal === 'function') closeDriveModal();
     
     Swal.fire({
-        title: getDbText('swal_clear_title'),
-        text: getDbText('swal_clear_text'),
-        icon: 'warning',
+        title: translations[currentLang]['swal_clear_title'],
+        text: translations[currentLang]['swal_clear_text'],
         background: 'var(--bg-panel, #ffffff)',
         color: 'var(--text-main, #333333)',
         showDenyButton: true, 
         showCancelButton: true,
-        confirmButtonText: getDbText('swal_clear_all_btn'),
-        denyButtonText: getDbText('swal_clear_ops_btn'),
-        cancelButtonText: getDbText('swal_cancel'),
-        confirmButtonColor: '#d32f2f', // Красный для полного сброса
-        denyButtonColor: '#f57c00',    // Оранжевый для операций
+        confirmButtonText: translations[currentLang]['swal_clear_all_btn'],
+        denyButtonText: translations[currentLang]['swal_clear_ops_btn'],
+        cancelButtonText: translations[currentLang]['swal_cancel'],
+        
+        // НОВЫЕ ЦВЕТА (В стиле POS Noir)
+        confirmButtonColor: '#EA4335', // Красный (Полная очистка)
+        denyButtonColor: '#9AA0A6',    // Серый (Только операции)
+        cancelButtonColor: '#5f6368',  // Темно-серый (Отмена)
+        
         customClass: {
-            actions: 'swal-actions-vertical' // Опционально: если есть CSS для кнопок в столбик
+            actions: 'swal-actions-vertical' 
         }
     }).then((result) => {
         if (result.isConfirmed || result.isDenied) {
-            
-            // Определяем тип: 'all' (полная) или 'ops' (только чеки)
             const clearType = result.isConfirmed ? 'all' : 'ops';
             
             Swal.fire({
-                title: 'Очистка данных...',
+                title: '...', // Системные окна загрузки можно не переводить
                 allowOutsideClick: false,
                 background: 'var(--bg-panel, #ffffff)',
                 color: 'var(--text-main, #333333)',
@@ -5825,14 +5818,14 @@ window.startDatabaseClear = function() {
                 if (response && response.success) {
                     Swal.fire({
                         icon: 'success',
-                        title: 'Успешно',
+                        title: 'OK',
                         background: 'var(--bg-panel, #ffffff)',
                         color: 'var(--text-main, #333333)',
                         timer: 2000,
                         showConfirmButton: false
                     });
                 } else {
-                    Swal.fire('Ошибка', response?.message || 'Сбой при очистке', 'error');
+                    Swal.fire('Error', response?.message || 'Error', 'error');
                 }
             });
         }
@@ -5843,33 +5836,33 @@ window.startDatabaseClear = function() {
 // 2. КНОПКА ВОССТАНОВЛЕНИЯ БАЗЫ
 // ==========================================
 window.startDatabaseRestore = function() {
-    // Закрываем модалку диска
     if (typeof closeDriveModal === 'function') closeDriveModal();
     
     Swal.fire({
-        title: getDbText('swal_restore_title'),
-        text: getDbText('swal_restore_text'),
-        icon: 'question',
+        title: translations[currentLang]['swal_restore_title'],
+        text: translations[currentLang]['swal_restore_text'],
         background: 'var(--bg-panel, #ffffff)',
         color: 'var(--text-main, #333333)',
         showDenyButton: true,
         showCancelButton: true,
-        confirmButtonText: getDbText('swal_restore_all_btn'),
-        denyButtonText: getDbText('swal_restore_ops_btn'),
-        cancelButtonText: getDbText('swal_cancel'),
-        confirmButtonColor: '#1976d2', // Синий для полного восстановления
-        denyButtonColor: '#0288d1',    // Светло-синий для операций
+        confirmButtonText: translations[currentLang]['swal_restore_all_btn'],
+        denyButtonText: translations[currentLang]['swal_restore_ops_btn'],
+        cancelButtonText: translations[currentLang]['swal_cancel'],
+        
+        // НОВЫЕ ЦВЕТА (В стиле POS Noir)
+        confirmButtonColor: '#4285F4', // Синий (Восстановить всё)
+        denyButtonColor: '#9AA0A6',    // Серый (Только операции)
+        cancelButtonColor: '#5f6368',  // Темно-серый (Отмена)
+        
         customClass: {
             actions: 'swal-actions-vertical'
         }
     }).then((result) => {
         if (result.isConfirmed || result.isDenied) {
-            
-            // Определяем тип: 'all' (восстановить всё) или 'ops' (только чеки)
             const restoreType = result.isConfirmed ? 'all' : 'ops';
             
             Swal.fire({
-                title: 'Восстановление данных...',
+                title: '...',
                 allowOutsideClick: false,
                 background: 'var(--bg-panel, #ffffff)',
                 color: 'var(--text-main, #333333)',
@@ -5886,14 +5879,14 @@ window.startDatabaseRestore = function() {
                 if (response && response.success) {
                     Swal.fire({
                         icon: 'success',
-                        title: 'Успешно',
+                        title: 'OK',
                         background: 'var(--bg-panel, #ffffff)',
                         color: 'var(--text-main, #333333)',
                         timer: 2000,
                         showConfirmButton: false
                     });
                 } else {
-                    Swal.fire('Ошибка', response?.message || 'Сбой при восстановлении', 'error');
+                    Swal.fire('Error', response?.message || 'Error', 'error');
                 }
             });
         }
