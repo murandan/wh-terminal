@@ -220,6 +220,14 @@
                 swal_restore_text: "Выберите, какие данные нужно вернуть из временного архива.",
                 swal_restore_catalog_btn: "ТОЛЬКО КАТАЛОГ (Товары и Накладные)",
                 swal_restore_all_btn: "ВОССТАНОВИТЬ ВСЁ (Чеки, Накладные, Товары)",
+                smart_merge_title: "Восстановление",
+                smart_merge_text1: "Выбран архив от", 
+                smart_merge_text2: "Вернутся только удаленные записи. Дублей не будет.",
+                smart_merge_btn: "Восстановить",
+                smart_merge_loading_title: "Восстановление...",
+                smart_merge_loading_text: "Не закрывайте страницу.<br>Идет загрузка.",
+                smart_merge_success_title: "Готово!",
+                smart_merge_success_text: "Восстановлено строк:",
 
                 // Универсальные кнопки
                 swal_cancel: "ОТМЕНА"
@@ -445,6 +453,14 @@
                 swal_restore_text: "Уақытша мұрағаттан қандай деректерді қайтару керектігін таңдаңыз.",
                 swal_restore_catalog_btn: "ТЕК КАТАЛОГ (Тауарлар мен Жүкқұжаттар)",
                 swal_restore_all_btn: "БАРЛЫҒЫН ҚАЛПЫНА КЕЛТІРУ<br>(Чектер, Жүкқұжаттар, Тауарлар)",
+                smart_merge_title: "Қалпына келтіру",
+                smart_merge_text1: "Таңдалған мұрағат:", 
+                smart_merge_text2: "Тек өшірілген жазбалар қайтарылады. Дубльдер болмайды.",
+                smart_merge_btn: "Бастау",
+                smart_merge_loading_title: "Күте тұрыңыз...",
+                smart_merge_loading_text: "Бетті жаппаңыз.<br>Қалпына келтіру жүріп жатыр.",
+                smart_merge_success_title: "Дайын!",
+                smart_merge_success_text: "Қалпына келтірілді (жол саны):",
 
                 // Әмбебап батырмалар
                 swal_cancel: "БАС ТАРТУ"
@@ -6027,35 +6043,30 @@ function renderBackupsList(files) {
 
 // --- 4. Запуск умного слияния (Smart Merge) ---
 window.startSmartMerge = function(fileId, fileDate) {
-    // Закрываем окно со списком бэкапов
     if (typeof closeDeepRestoreModal === 'function') closeDeepRestoreModal();
 
-    // Показываем окно подтверждения в вашем фирменном стиле
     Swal.fire({
-        title: 'Умное восстановление',
-        html: `Вы собираетесь восстановить недостающие данные из архива за <b>${fileDate}</b>.<br><br><span style="font-size: 13px; color: var(--text-muted, #999);">Скрипт добавит только удаленные строки. Существующие данные и чеки не задублируются.</span>`,
-        icon: 'question',
+        title: translations[currentLang]['smart_merge_title'],
+        html: `${translations[currentLang]['smart_merge_text1']} <b>${fileDate}</b>.<br><br><span style="font-size: 13px; color: var(--text-muted, #999);">${translations[currentLang]['smart_merge_text2']}</span>`,
         background: 'var(--bg-panel, #ffffff)',
         color: 'var(--text-main, #333333)',
         showCancelButton: true,
-        confirmButtonText: 'Начать восстановление',
-        cancelButtonText: 'Отмена',
-        confirmButtonColor: '#4285F4', // Синий
-        cancelButtonColor: '#EA4335'   // Красный
+        confirmButtonText: translations[currentLang]['smart_merge_btn'],
+        cancelButtonText: translations[currentLang]['swal_cancel'] || 'Отмена',
+        confirmButtonColor: '#4285F4',
+        cancelButtonColor: '#EA4335'
     }).then((result) => {
         if (result.isConfirmed) {
             
-            // Показываем окно загрузки (процесс может занять 10-15 секунд)
             Swal.fire({
-                title: 'Восстановление базы...',
-                html: 'Пожалуйста, не закрывайте вкладку.<br>Выполняется анализ и слияние данных.',
+                title: translations[currentLang]['smart_merge_loading_title'],
+                html: translations[currentLang]['smart_merge_loading_text'],
                 allowOutsideClick: false,
                 background: 'var(--bg-panel, #ffffff)',
                 color: 'var(--text-main, #333333)',
                 didOpen: () => { Swal.showLoading(); }
             });
 
-            // Формируем пакет данных для отправки на Мастер-сервер
             const token = localStorage.getItem('CLIENT_API_KEY') || (typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : "");
             
             const payload = {
@@ -6064,7 +6075,6 @@ window.startSmartMerge = function(fileId, fileDate) {
                 api_key: token
             };
             
-            // Отправляем запрос на шлюз
             fetch(GATEWAY_URL, {
                 method: 'POST',
                 body: JSON.stringify(payload)
@@ -6073,25 +6083,28 @@ window.startSmartMerge = function(fileId, fileDate) {
             .then(response => {
                 if (response && response.success) {
                     Swal.fire({
-                        icon: 'success',
-                        title: 'Готово!',
-                        text: `Успешно восстановлено строк: ${response.restored_count}`,
+                        title: translations[currentLang]['smart_merge_success_title'],
+                        text: `${translations[currentLang]['smart_merge_success_text']} ${response.restored_count}`,
                         background: 'var(--bg-panel, #ffffff)',
                         color: 'var(--text-main, #333333)',
                         confirmButtonColor: '#4285F4'
                     });
                 } else {
                     Swal.fire({
-                        icon: 'error',
-                        title: 'Ошибка',
-                        text: response?.message || response?.error || 'Неизвестная ошибка сервера',
+                        title: 'Error',
+                        text: response?.message || response?.error || 'Server error',
                         background: 'var(--bg-panel, #ffffff)',
                         color: 'var(--text-main, #333333)'
                     });
                 }
             })
             .catch(error => {
-                Swal.fire('Ошибка связи', error.message, 'error');
+                Swal.fire({
+                    title: 'Network Error', 
+                    text: error.message, 
+                    background: 'var(--bg-panel, #ffffff)',
+                    color: 'var(--text-main, #333333)'
+                });
             });
         }
     });
