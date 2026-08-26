@@ -5948,3 +5948,64 @@ window.startDatabaseRestore = function() {
         });
     }
 };
+
+// --- 1. Открытие окна и запуск поиска ---
+function openDeepRestoreModal() {
+    // Прячем предыдущее окно (меню базы)
+    const baseModal = document.getElementById('drive-base-modal');
+    if (baseModal) baseModal.style.display = 'none';
+
+    // Показываем новое окно
+    const deepModal = document.getElementById('deep-restore-modal');
+    if (deepModal) deepModal.style.display = 'flex'; 
+
+    // Включаем спиннер, очищаем старый список
+    document.getElementById('deep-restore-loader').style.display = 'block';
+    const listContainer = document.getElementById('deep-restore-list');
+    listContainer.style.display = 'none';
+    listContainer.innerHTML = '';
+
+    // Отправляем запрос на сервер (Google Apps Script)
+    google.script.run
+        .withSuccessHandler(renderBackupsList)
+        .withFailureHandler(function(error) {
+            // Если произошла ошибка при поиске
+            document.getElementById('deep-restore-loader').style.display = 'none';
+            listContainer.style.display = 'flex';
+            listContainer.innerHTML = `<div style="color: #EA4335; text-align: center; padding: 15px;">❌ Ошибка доступа к архиву: <br>${error.message}</div>`;
+        })
+        .getAvailableBackups(); // Эта функция будет искать бэкапы
+}
+
+// --- 2. Закрытие окна ---
+function closeDeepRestoreModal() {
+    const deepModal = document.getElementById('deep-restore-modal');
+    if (deepModal) deepModal.style.display = 'none';
+}
+
+// --- 3. Отрисовка найденных файлов ---
+function renderBackupsList(files) {
+    document.getElementById('deep-restore-loader').style.display = 'none';
+    const listContainer = document.getElementById('deep-restore-list');
+    listContainer.style.display = 'flex';
+
+    // Если папка пуста
+    if (!files || files.length === 0) {
+        listContainer.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 15px;">Архив пуст. Резервные копии не найдены.</div>';
+        return;
+    }
+
+    // Если файлы есть, собираем из них кнопки
+    let html = '';
+    files.forEach(function(file) {
+        html += `
+        <button onclick="startSmartMerge('${file.id}', '${file.cleanName}')" style="background: var(--bg-panel); color: var(--text-main); padding: 14px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; border: 1px solid var(--border-light); cursor: pointer; display: flex; align-items: center; justify-content: space-between; text-align: left; box-shadow: 0 2px 4px rgba(0,0,0,0.02); transition: background 0.2s;">
+            <span style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 18px;">📅</span> 
+                ${file.cleanName}
+            </span>
+        </button>`;
+    });
+    
+    listContainer.innerHTML = html;
+}
