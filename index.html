@@ -677,9 +677,15 @@
                     <span style="flex: 1;" data-i18n="drive_clear_btn">ОЧИСТИТЬ БАЗУ ДАННЫХ</span>
                 </button>
 
-                <button onclick="startDatabaseRestore()" style="background: var(--bg-panel); color: var(--text-main); margin-bottom: 25px; width: 100%; padding: 16px 20px; border-radius: 12px; font-weight: 600; font-size: 13px; text-transform: uppercase; border: 1px solid var(--border-light); border-left: 5px solid #FBBC04; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; text-align: left; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                <button onclick="startDatabaseRestore()" style="background: var(--bg-panel); color: var(--text-main); margin-bottom: 12px; width: 100%; padding: 16px 20px; border-radius: 12px; font-weight: 600; font-size: 13px; text-transform: uppercase; border: 1px solid var(--border-light); border-left: 5px solid #FBBC04; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; text-align: left; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
                     <span style="font-size: 20px; width: 35px; display: inline-block;">🚑</span>
                     <span style="flex: 1;" data-i18n="drive_restore_btn">ВОССТАНОВИТЬ ДАННЫЕ</span>
+                </button>
+
+                <!-- НОВАЯ КНОПКА: SMART MERGE -->
+                <button onclick="openDeepRestoreModal()" style="background: var(--bg-panel); color: var(--text-main); margin-bottom: 25px; width: 100%; padding: 16px 20px; border-radius: 12px; font-weight: 600; font-size: 13px; text-transform: uppercase; border: 1px solid var(--border-light); border-left: 5px solid #3F51B5; cursor: pointer; display: flex; align-items: center; justify-content: flex-start; text-align: left; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                    <span style="font-size: 20px; width: 35px; display: inline-block;">💽</span>
+                    <span style="flex: 1;" data-i18n="drive_deep_restore_btn">ВОССТАНОВИТЬ ИЗ БЭКАПА</span>
                 </button>
             </div>
 

@@ -201,6 +201,7 @@
                 drive_danger_zone: "ОПЕРАТИВНЫЕ ДЕЙСТВИЯ",
                 drive_clear_btn: "ОЧИСТИТЬ БАЗУ ДАННЫХ",
                 drive_restore_btn: "ВОССТАНОВИТЬ ДАННЫЕ",
+                drive_deep_restore_btn: "ВОССТАНОВИТЬ ИЗ БЭКАПА",
 
                 // --- ОКНА ПОДТВЕРЖДЕНИЯ (SWEETALERT) ---
                 // Окно очистки
@@ -423,6 +424,7 @@
                 drive_danger_zone: "ЖЕДЕЛ ӘРЕКЕТТЕР",
                 drive_clear_btn: "ДЕРЕКҚОРДЫ ТАЗАЛАУ",
                 drive_restore_btn: "ДЕРЕКТЕРДІ ҚАЛПЫНА КЕЛТІРУ",
+                drive_deep_restore_btn: "БЭКАПТАН ҚАЛПЫНА КЕЛТІРУ",
 
                 // --- РАСТАУ ТЕРЕЗЕЛЕРІ (SWEETALERT) ---
                 // Тазалау терезесі
