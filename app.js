@@ -200,8 +200,10 @@
                 btn_close: "ЗАКРЫТЬ",
                 drive_danger_zone: "ОПЕРАТИВНЫЕ ДЕЙСТВИЯ",
                 drive_clear_btn: "ОЧИСТИТЬ БАЗУ ДАННЫХ",
-                drive_restore_btn: "ВОССТАНОВИТЬ ДАННЫЕ",
+                drive_restore_btn: "ВОССТАНОВИТЬ ОЧИЩЕННЫЕ ДАННЫЕ",
                 drive_deep_restore_btn: "ВОССТАНОВИТЬ ИЗ БЭКАПА",
+                deep_restore_title: "Выбор резервной копии",
+                deep_restore_loading: "Поиск файлов в архиве...",
 
                 // --- ОКНА ПОДТВЕРЖДЕНИЯ (SWEETALERT) ---
                 // Окно очистки
@@ -423,8 +425,10 @@
                 btn_close: "ЖАБУ",
                 drive_danger_zone: "ЖЕДЕЛ ӘРЕКЕТТЕР",
                 drive_clear_btn: "ДЕРЕКҚОРДЫ ТАЗАЛАУ",
-                drive_restore_btn: "ДЕРЕКТЕРДІ ҚАЛПЫНА КЕЛТІРУ",
+                drive_restore_btn: "ТАЗАЛАНҒАНДЫ ҚАЙТАРУ",
                 drive_deep_restore_btn: "БЭКАПТАН ҚАЛПЫНА КЕЛТІРУ",
+                deep_restore_title: "Резервтік көшірмені таңдау",
+                deep_restore_loading: "Мұрағаттан файлдарды іздеу...",
 
                 // --- РАСТАУ ТЕРЕЗЕЛЕРІ (SWEETALERT) ---
                 // Тазалау терезесі
