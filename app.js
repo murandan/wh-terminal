@@ -6024,3 +6024,75 @@ function renderBackupsList(files) {
     
     listContainer.innerHTML = html;
 }
+
+// --- 4. Запуск умного слияния (Smart Merge) ---
+window.startSmartMerge = function(fileId, fileDate) {
+    // Закрываем окно со списком бэкапов
+    if (typeof closeDeepRestoreModal === 'function') closeDeepRestoreModal();
+
+    // Показываем окно подтверждения в вашем фирменном стиле
+    Swal.fire({
+        title: 'Умное восстановление',
+        html: `Вы собираетесь восстановить недостающие данные из архива за <b>${fileDate}</b>.<br><br><span style="font-size: 13px; color: var(--text-muted, #999);">Скрипт добавит только удаленные строки. Существующие данные и чеки не задублируются.</span>`,
+        icon: 'question',
+        background: 'var(--bg-panel, #ffffff)',
+        color: 'var(--text-main, #333333)',
+        showCancelButton: true,
+        confirmButtonText: 'Начать восстановление',
+        cancelButtonText: 'Отмена',
+        confirmButtonColor: '#4285F4', // Синий
+        cancelButtonColor: '#EA4335'   // Красный
+    }).then((result) => {
+        if (result.isConfirmed) {
+            
+            // Показываем окно загрузки (процесс может занять 10-15 секунд)
+            Swal.fire({
+                title: 'Восстановление базы...',
+                html: 'Пожалуйста, не закрывайте вкладку.<br>Выполняется анализ и слияние данных.',
+                allowOutsideClick: false,
+                background: 'var(--bg-panel, #ffffff)',
+                color: 'var(--text-main, #333333)',
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            // Формируем пакет данных для отправки на Мастер-сервер
+            const token = localStorage.getItem('CLIENT_API_KEY') || (typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : "");
+            
+            const payload = {
+                action: "smart_merge",
+                file_id: fileId,
+                api_key: token
+            };
+            
+            // Отправляем запрос на шлюз
+            fetch(GATEWAY_URL, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(response => {
+                if (response && response.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Готово!',
+                        text: `Успешно восстановлено строк: ${response.restored_count}`,
+                        background: 'var(--bg-panel, #ffffff)',
+                        color: 'var(--text-main, #333333)',
+                        confirmButtonColor: '#4285F4'
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Ошибка',
+                        text: response?.message || response?.error || 'Неизвестная ошибка сервера',
+                        background: 'var(--bg-panel, #ffffff)',
+                        color: 'var(--text-main, #333333)'
+                    });
+                }
+            })
+            .catch(error => {
+                Swal.fire('Ошибка связи', error.message, 'error');
+            });
+        }
+    });
+};
