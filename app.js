@@ -5950,6 +5950,7 @@ window.startDatabaseRestore = function() {
 };
 
 // --- 1. Открытие окна и запуск поиска ---
+// --- 1. Открытие окна и запуск поиска ---
 function openDeepRestoreModal() {
     // Прячем предыдущее окно (меню базы)
     const baseModal = document.getElementById('drive-base-modal');
@@ -5965,16 +5966,30 @@ function openDeepRestoreModal() {
     listContainer.style.display = 'none';
     listContainer.innerHTML = '';
 
-    // Отправляем запрос на сервер (Google Apps Script)
-    google.script.run
-        .withSuccessHandler(renderBackupsList)
-        .withFailureHandler(function(error) {
-            // Если произошла ошибка при поиске
-            document.getElementById('deep-restore-loader').style.display = 'none';
-            listContainer.style.display = 'flex';
-            listContainer.innerHTML = `<div style="color: #EA4335; text-align: center; padding: 15px;">❌ Ошибка доступа к архиву: <br>${error.message}</div>`;
+    // Берем API ключ (как у вас в других функциях)
+    const token = localStorage.getItem('CLIENT_API_KEY') || (typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : "");
+
+    // Отправляем POST-запрос к вашему GAS-серверу
+    fetch(GATEWAY_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+            api_key: token,
+            action: 'get_available_backups'
         })
-        .getAvailableBackups(); // Эта функция будет искать бэкапы
+    })
+    .then(response => response.json())
+    .then(res => {
+        if (res.success) {
+            renderBackupsList(res.data); // Передаем список файлов на отрисовку
+        } else {
+            throw new Error(res.message || res.error || "Неизвестная ошибка сервера");
+        }
+    })
+    .catch(error => {
+        document.getElementById('deep-restore-loader').style.display = 'none';
+        listContainer.style.display = 'flex';
+        listContainer.innerHTML = `<div style="color: #EA4335; text-align: center; padding: 15px;">❌ Ошибка доступа к архиву: <br>${error.message}</div>`;
+    });
 }
 
 // --- 2. Закрытие окна ---
