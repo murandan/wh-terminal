@@ -2196,17 +2196,30 @@ async function handleAutoLogin(val) {
 }
 
         async function refreshPosData(isSilent = false) {
-            if (!navigator.onLine) {
-                // Выдаем ошибку только если обновление запрошено вручную
-                if (isSilent !== true) {
-                    alert(translations[currentLang].msg_no_internet);
-                }
-                return;
-            }
-            const btn = document.getElementById('btn-sync-data');
-            btn.classList.add('sync-spin'); 
-            try { await load(); } finally { setTimeout(() => { btn.classList.remove('sync-spin'); }, 600); }
+    if (!navigator.onLine) {
+        // Выдаем ошибку только если обновление запрошено вручную
+        if (isSilent !== true) {
+            alert(translations[currentLang].msg_no_internet);
         }
+        return;
+    }
+    
+    const btn = document.getElementById('btn-sync-data');
+    
+    // Включаем анимацию ТОЛЬКО если это ручное обновление (не тихий режим)
+    if (!isSilent && btn) {
+        btn.classList.add('sync-spin'); 
+    }
+    
+    try { 
+        await load(); 
+    } finally { 
+        // Выключаем анимацию ТОЛЬКО если мы её включали
+        if (!isSilent && btn) {
+            setTimeout(() => { btn.classList.remove('sync-spin'); }, 600); 
+        }
+    }
+}
 
         function startItemHold(id, event) {
     isItemLongPress = false;
