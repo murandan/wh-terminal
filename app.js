@@ -1554,7 +1554,9 @@ window.saveQuickEdit = function(id) {
                 item_name: item.name,
                 qty: qty,
                 cost: price, 
-                category: item.category || "Без категории",
+                // === ЖЕСТКИЙ ФИЛЬТР КАТЕГОРИИ ИЗ СТАРОЙ БАЗЫ ===
+                category: (!item.category || String(item.category).trim() === '0' || String(item.category).trim().toLowerCase() === 'не выбрано') ? "Без категории" : item.category,
+                // ===============================================
                 cbm: 0,
                 weight: 0
             }]
@@ -1582,15 +1584,16 @@ window.saveQuickEdit = function(id) {
         const newPrice = parseFloat(String(rawPrice).replace(/\s/g, '').replace(',', '.')) || 0;
         const newMinStock = parseFloat(String(rawMinStock).replace(/\s/g, '').replace(',', '.')) || 0;
 
-        let newCategory = rawCategory;
+        // === НОВЫЙ ЖЕСТКИЙ ФИЛЬТР КАТЕГОРИИ ПРИ РЕДАКТИРОВАНИИ ===
+        let newCategory = String(rawCategory || '').trim();
         if (newCategory === 'new') {
             newCategory = window.getLatestValue('qe-new-category').trim();
-            if (!newCategory || newCategory.trim() === '') {
-                newCategory = "Без категории"; 
-            }
-        } else if (newCategory === '0' || newCategory === 'Не выбрано') {
+        }
+        
+        if (!newCategory || newCategory === '0' || newCategory.toLowerCase() === 'не выбрано') {
             newCategory = "Без категории"; 
         }
+        // =========================================================
 
         payload = {
             action: "update_single_item",
@@ -1605,7 +1608,12 @@ window.saveQuickEdit = function(id) {
             }
         };
 
-        item.name = newName; item.item_name = newName; item.price = newPrice; item.category = newCategory; item.min_stock = newMinStock; item.barcode = rawBarcode.trim();
+        item.name = newName; 
+        item.item_name = newName; 
+        item.price = newPrice; 
+        item.category = newCategory; 
+        item.min_stock = newMinStock; 
+        item.barcode = rawBarcode.trim();
     }
 
     // ==========================================
@@ -1634,9 +1642,15 @@ window.saveNewProduct = function() {
     const barcode = document.getElementById('nt-barcode').value.trim();
     const name = document.getElementById('nt-name').value.trim();
     
-    // Берем поставщика и категорию, либо ставим значения по умолчанию
+    // Берем поставщика
     const supplier = document.getElementById('nt-supplier-input').value.trim() || "Не указан";
-    const category = document.getElementById('nt-category-input').value.trim() || "Без категории";
+    
+    // === НОВЫЙ ЖЕСТКИЙ ФИЛЬТР КАТЕГОРИИ ===
+    let category = document.getElementById('nt-category-input').value.trim();
+    if (!category || category === '0' || category.toLowerCase() === 'не выбрано') {
+        category = "Без категории";
+    }
+    // =====================================
     
     // Очищаем цифры от пробелов
     const qty = parseInt(document.getElementById('nt-qty').value.replace(/\D/g, ''), 10) || 0;
