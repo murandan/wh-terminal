@@ -6153,3 +6153,26 @@ window.startSmartMerge = function(fileId, fileDate) {
         }
     });
 };
+// ===================================================================
+// АВТОМАТИЗАЦИЯ СИНХРОНИЗАЦИИ (УМНЫЙ ГИБРИД)
+// ===================================================================
+
+// 1. Фоновый пульс: проверяем базу каждую 1 минуту (60 000 мс)
+setInterval(() => {
+    // Выполняем только если есть интернет и кассир авторизован
+    if (navigator.onLine && typeof currentUser !== 'undefined' && currentUser) {
+        console.log("⏳ Фоновый пульс: проверка обновлений...");
+        refreshPosData(true); // true = тихий режим, без блокировки экрана
+    }
+}, 60000);
+
+// 2. Пробуждение браузера: проверка при возврате на вкладку кассы
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        if (navigator.onLine && typeof currentUser !== 'undefined' && currentUser) {
+            console.log("👀 Кассир вернулся во вкладку: проверка обновлений...");
+            refreshPosData(true);
+        }
+    }
+});
+// ===================================================================
