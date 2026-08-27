@@ -2092,7 +2092,7 @@ async function load() {
     
     if (typeof currentUser === 'undefined' || !currentUser) return;
 
-    // === БЛОК 1: МИКРО-ПИНГ (Уже исправленный и работает) ===
+    // === БЛОК 1: МИКРО-ПИНГ (POST, работает отлично) ===
     try {
         const pingPayload = { action: 'ping', api_key: typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : "" };
         const pingRes = await fetch(typeof APPS_SCRIPT_URL !== 'undefined' ? APPS_SCRIPT_URL : "", {
@@ -2108,36 +2108,26 @@ async function load() {
             if (pingData.success && pingData.timestamp) {
                 const localTimestamp = localStorage.getItem('db_timestamp');
                 if (localTimestamp === pingData.timestamp) {
-                    console.log("✅ База актуальна (ping совпал), загрузка отменена.");
+                    console.log("✅ База актуальна, загрузка отменена.");
                     return; 
                 }
                 window._pendingTimestamp = pingData.timestamp; 
             }
         }
     } catch (pingErr) {
-        console.warn("⚠️ Ошибка пинга, продолжаем стандартную загрузку базы:", pingErr);
+        console.warn("⚠️ Ошибка пинга:", pingErr);
     }
     
-    // === БЛОК 2: ТЯЖЕЛАЯ ЗАГРУЗКА (НОВЫЙ POST-ЗАПРОС) ===
+    // === БЛОК 2: ТЯЖЕЛАЯ ЗАГРУЗКА (ОТКАТ НА GET) ===
     let fetchSuccess = false;
     let data = null;
     
-    const initPayload = {
-        action: 'getInitialData',
-        api_key: typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : "",
-        t: Date.now(),
-        uid: savedUid,
-        role: savedRole
-    };
+    // Возвращаем ваш старый, рабочий URL
+    const fetchUrl = `${typeof APPS_SCRIPT_URL !== 'undefined' ? APPS_SCRIPT_URL : ""}?action=getInitialData&api_key=${typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : ""}&t=${Date.now()}&uid=${savedUid}&role=${savedRole}`;
 
     for (let i = 0; i < 3; i++) {
         try {
-            const res = await fetch(typeof APPS_SCRIPT_URL !== 'undefined' ? APPS_SCRIPT_URL : "", { 
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(initPayload),
-                redirect: 'follow' 
-            });
+            const res = await fetch(fetchUrl, { redirect: 'follow' });
             
             const text = await res.text(); 
             if (text.trim().startsWith('<')) throw new Error('Сервер вернул HTML вместо JSON');
@@ -2152,7 +2142,7 @@ async function load() {
     }
 
     if (!fetchSuccess || !data) {
-        console.error("Не удалось обновить базу с сервера. Продолжаем работу на локальном кэше.");
+        console.error("Не удалось обновить базу с сервера.");
         return; 
     }
 
@@ -2668,13 +2658,27 @@ function handleItemClick(id, event) {
 }
         function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
 
-        async function forceAppUpdate() {
-            document.getElementById('update-status').innerText = '⏳'; 
-            try {
-                if ('caches' in window) await Promise.all((await caches.keys()).map(k => caches.delete(k)));
-                setTimeout(() => { window.location.reload(true); }, 1000);
-            } catch (e) { window.location.reload(true); }
+        window.forceAppUpdate = async function() {
+    const statusIcon = document.getElementById('update-status');
+    if (statusIcon) statusIcon.innerText = '⏳'; 
+    
+    try {
+        localStorage.clear();
+        sessionStorage.clear();
+
+        if ('caches' in window) {
+            const cacheNames = await caches.keys();
+            for (let name of cacheNames) {
+                await caches.delete(name);
+            }
         }
+    } catch (e) { 
+        console.warn("Ошибка при глубокой очистке:", e);
+    } finally {
+        // Обычная перезагрузка, которая НЕ отрезает параметры ссылки!
+        window.location.reload();
+    }
+};
 
         function openReport() {
     document.getElementById('report-modal').style.display = 'flex';
