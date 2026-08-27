@@ -2065,10 +2065,9 @@ async function handleAutoLogin(val) {
             });
         }
 
-        async function load() {
+async function load() {
     const savedUid = localStorage.getItem('user_uid') || (typeof currentUser !== 'undefined' && currentUser ? currentUser.uid : '');
     const savedRole = localStorage.getItem('user_role') || '';
-    // Делаем персональный кэш, чтобы продавцы не видели суммы друг друга при перезагрузке
     const cacheKey = 'totals_cache_' + (savedUid || 'anon');
 
     // 1. МГНОВЕННАЯ ЗАГРУЗКА ИЗ КЭША
@@ -2091,18 +2090,15 @@ async function handleAutoLogin(val) {
 
     if (!navigator.onLine) return; 
     
-    // Запрещаем сетевой запрос к серверу, пока кассир не прошел ПИН-код
     if (typeof currentUser === 'undefined' || !currentUser) return;
 
-    // === БЛОК: МИКРО-ПИНГ (Проверка изменений базы) ===
+    // === БЛОК 1: МИКРО-ПИНГ (Уже исправленный и работает) ===
     try {
         const pingPayload = { action: 'ping', api_key: typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : "" };
         const pingRes = await fetch(typeof APPS_SCRIPT_URL !== 'undefined' ? APPS_SCRIPT_URL : "", {
             method: 'POST',
-            body: JSON.stringify(pingPayload),
-            // === ВОТ ЭТА СТРОКА СПАСАЕТ ОТ 10-СЕКУНДНЫХ ЗАВИСАНИЙ ===
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            // ==========================================================
+            body: JSON.stringify(pingPayload),
             redirect: 'follow'
         });
         const pingText = await pingRes.text();
@@ -2111,27 +2107,21 @@ async function handleAutoLogin(val) {
             const pingData = JSON.parse(pingText);
             if (pingData.success && pingData.timestamp) {
                 const localTimestamp = localStorage.getItem('db_timestamp');
-                
-                // Если время совпадает — база актуальна, отменяем тяжелую загрузку!
                 if (localTimestamp === pingData.timestamp) {
                     console.log("✅ База актуальна (ping совпал), загрузка отменена.");
-                    return; // Прерываем выполнение! 
+                    return; 
                 }
-                
-                // Если не совпадает, запоминаем новую метку
                 window._pendingTimestamp = pingData.timestamp; 
             }
         }
     } catch (pingErr) {
         console.warn("⚠️ Ошибка пинга, продолжаем стандартную загрузку базы:", pingErr);
     }
-    // ========================================================
-
-    // 2. БРОНИРОВАННЫЙ СЕТЕВОЙ ЗАПРОС (С 3 попытками через POST)
+    
+    // === БЛОК 2: ТЯЖЕЛАЯ ЗАГРУЗКА (НОВЫЙ POST-ЗАПРОС) ===
     let fetchSuccess = false;
     let data = null;
     
-    // Формируем payload вместо длинного URL
     const initPayload = {
         action: 'getInitialData',
         api_key: typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : "",
@@ -2150,15 +2140,11 @@ async function handleAutoLogin(val) {
             });
             
             const text = await res.text(); 
-            
-            if (text.trim().startsWith('<')) {
-                throw new Error('Сервер вернул HTML вместо JSON');
-            }
+            if (text.trim().startsWith('<')) throw new Error('Сервер вернул HTML вместо JSON');
             
             data = JSON.parse(text);
             fetchSuccess = true;
             break; 
-
         } catch (err) {
             console.warn(`Попытка ${i + 1} из 3 для загрузки базы не удалась:`, err.message);
             if (i < 2) await new Promise(resolve => setTimeout(resolve, 500)); 
@@ -2170,18 +2156,14 @@ async function handleAutoLogin(val) {
         return; 
     }
 
-    // 3. УСПЕХ: ОБНОВЛЯЕМ ДАННЫЕ И ПЕРЕЗАПИСЫВАЕМ КЭШ
+    // === БЛОК 3: УСПЕХ И СОХРАНЕНИЕ ===
     try {
         if (data.items) db = data.items;
         if (data.staff) {
             staffList = data.staff;
             localStorage.setItem('staff_cache', JSON.stringify(staffList));
         }
-        
-        if (data.synonyms && Object.keys(data.synonyms).length > 0) {
-            invoiceSynonyms = data.synonyms;
-        }
-
+        if (data.synonyms && Object.keys(data.synonyms).length > 0) invoiceSynonyms = data.synonyms;
         if (data.suppliers) {
             window.suppliersList = data.suppliers;
             localStorage.setItem('suppliers_cache', JSON.stringify(data.suppliers));
@@ -2199,12 +2181,10 @@ async function handleAutoLogin(val) {
         localStorage.setItem('db_cache', JSON.stringify(db));
         localStorage.setItem(cacheKey, JSON.stringify(t));
 
-        // === СОХРАНЯЕМ МЕТКУ ВРЕМЕНИ ===
         if (window._pendingTimestamp) {
             localStorage.setItem('db_timestamp', window._pendingTimestamp);
             delete window._pendingTimestamp;
         }
-        
     } catch (e) { 
         console.error("Ошибка обработки полученных данных", e); 
     }
