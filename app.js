@@ -2673,11 +2673,9 @@ function handleItemClick(id, event) {
     if (statusIcon) statusIcon.innerText = '⏳'; 
     
     try {
-        // 1. Выжигаем локальную базу
         localStorage.clear();
         sessionStorage.clear();
 
-        // 2. Выжигаем системный кэш браузера
         if ('caches' in window) {
             const cacheNames = await caches.keys();
             for (let name of cacheNames) {
@@ -2687,9 +2685,8 @@ function handleItemClick(id, event) {
     } catch (e) { 
         console.warn("Ошибка при глубокой очистке:", e);
     } finally {
-        // 3. Жесткая перезагрузка страницы (БЕЗ хвоста ?v=)
-        // Возвращаемся на чистый адрес, который знает и пропускает Google
-        window.location.href = window.location.pathname;
+        // Обычная перезагрузка, которая НЕ отрезает параметры ссылки!
+        window.location.reload();
     }
 };
 
