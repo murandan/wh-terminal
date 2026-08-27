@@ -2069,6 +2069,7 @@ async function load() {
     const savedUid = localStorage.getItem('user_uid') || (typeof currentUser !== 'undefined' && currentUser ? currentUser.uid : '');
     const savedRole = localStorage.getItem('user_role') || '';
     const cacheKey = 'totals_cache_' + (savedUid || 'anon');
+    const localTimestamp = localStorage.getItem('db_timestamp') || "0"; // Читаем время для Дельты
 
     // 1. МГНОВЕННАЯ ЗАГРУЗКА ИЗ КЭША
     try {
@@ -2092,8 +2093,7 @@ async function load() {
     
     if (typeof currentUser === 'undefined' || !currentUser) return;
 
-    // === БЛОК 1: МИКРО-ПИНГ (Только если есть кэш!) ===
-    // Если базы нет, пропускаем пинг, чтобы не душить сервер Google
+    // === БЛОК 1: МИКРО-ПИНГ (Только если есть кэш, чтобы не душить сервер) ===
     if (localStorage.getItem('db_cache')) {
         try {
             const pingPayload = { action: 'ping', api_key: typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : "" };
@@ -2108,7 +2108,6 @@ async function load() {
             if (!pingText.trim().startsWith('<')) {
                 const pingData = JSON.parse(pingText);
                 if (pingData.success && pingData.timestamp) {
-                    const localTimestamp = localStorage.getItem('db_timestamp');
                     if (localTimestamp === pingData.timestamp) {
                         console.log("✅ База актуальна, загрузка отменена.");
                         return; 
@@ -2121,17 +2120,16 @@ async function load() {
         }
     }
     
-    // === БЛОК 2: ТЯЖЕЛАЯ ЗАГРУЗКА (ОТКАТ НА GET) ===
+    // === БЛОК 2: ЗАГРУЗКА БАЗЫ ИЛИ ДЕЛЬТЫ (Передаем last_sync) ===
     let fetchSuccess = false;
     let data = null;
     
-    // Возвращаем ваш старый, рабочий URL
-    const fetchUrl = `${typeof APPS_SCRIPT_URL !== 'undefined' ? APPS_SCRIPT_URL : ""}?action=getInitialData&api_key=${typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : ""}&t=${Date.now()}&uid=${savedUid}&role=${savedRole}`;
+    // Добавили параметр &last_sync к запросу!
+    const fetchUrl = `${typeof APPS_SCRIPT_URL !== 'undefined' ? APPS_SCRIPT_URL : ""}?action=getInitialData&api_key=${typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : ""}&t=${Date.now()}&uid=${savedUid}&role=${savedRole}&last_sync=${localTimestamp}`;
 
     for (let i = 0; i < 3; i++) {
         try {
             const res = await fetch(fetchUrl, { redirect: 'follow' });
-            
             const text = await res.text(); 
             if (text.trim().startsWith('<')) throw new Error('Сервер вернул HTML вместо JSON');
             
@@ -2149,9 +2147,30 @@ async function load() {
         return; 
     }
 
-    // === БЛОК 3: УСПЕХ И СОХРАНЕНИЕ ===
+    // === БЛОК 3: УМНОЕ СЛИЯНИЕ (SMART MERGE) ===
     try {
-        if (data.items) db = data.items;
+        if (data.items) {
+            if (localTimestamp === "0" || !db || db.length === 0) {
+                // Если кэш был пуст (холодный старт) — просто берем всю базу
+                db = data.items;
+                console.log("📥 Полная загрузка базы: " + db.length + " товаров.");
+            } else {
+                // Если это Дельта — обновляем только измененные товары
+                let updatedCount = data.items.length;
+                if (updatedCount > 0) {
+                    let dbMap = new Map(db.map(item => [item.id, item])); // Превращаем массив в словарь для быстрого поиска
+                    data.items.forEach(newItem => {
+                        dbMap.set(newItem.id, newItem); // Перезаписываем старый товар новым или добавляем, если его не было
+                    });
+                    db = Array.from(dbMap.values()); // Собираем обратно в массив
+                    console.log(`🔄 Дельта-синхронизация: обновлено ${updatedCount} товаров.`);
+                } else {
+                    console.log("🔄 Дельта-синхронизация: изменений в товарах нет.");
+                }
+            }
+            localStorage.setItem('db_cache', JSON.stringify(db)); // Сохраняем обновленный кэш
+        }
+
         if (data.staff) {
             staffList = data.staff;
             localStorage.setItem('staff_cache', JSON.stringify(staffList));
@@ -2171,7 +2190,6 @@ async function load() {
         
         if (typeof render === 'function') render(); 
         
-        localStorage.setItem('db_cache', JSON.stringify(db));
         localStorage.setItem(cacheKey, JSON.stringify(t));
 
         if (window._pendingTimestamp) {
