@@ -2669,23 +2669,27 @@ function handleItemClick(id, event) {
         function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
 
         window.forceAppUpdate = async function() {
-    document.getElementById('update-status').innerText = '⏳'; 
+    const statusIcon = document.getElementById('update-status');
+    if (statusIcon) statusIcon.innerText = '⏳'; 
+    
     try {
-        // 1. Выжигаем локальную базу данных (ЭТОГО НЕ ХВАТАЛО)
+        // 1. Выжигаем локальную базу
         localStorage.clear();
         sessionStorage.clear();
 
-        // 2. Выжигаем системный кэш (оставляем ваш изящный код)
+        // 2. Выжигаем системный кэш браузера
         if ('caches' in window) {
-            await Promise.all((await caches.keys()).map(k => caches.delete(k)));
+            const cacheNames = await caches.keys();
+            for (let name of cacheNames) {
+                await caches.delete(name);
+            }
         }
-
-        // 3. Жесткая перезагрузка с защитой от кэширования браузером
-        setTimeout(() => { 
-            window.location.href = window.location.pathname + "?v=" + Date.now(); 
-        }, 1000);
     } catch (e) { 
-        window.location.href = window.location.pathname + "?v=" + Date.now(); 
+        console.warn("Ошибка при глубокой очистке:", e);
+    } finally {
+        // 3. Жесткая перезагрузка страницы (БЕЗ хвоста ?v=)
+        // Возвращаемся на чистый адрес, который знает и пропускает Google
+        window.location.href = window.location.pathname;
     }
 };
 
