@@ -505,7 +505,8 @@
                     const response = await fetch(url, {
                         method: 'POST',
                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                        body: JSON.stringify(payload)
+                        body: JSON.stringify(payload),
+                        redirect: 'follow'
                     });
 
                     // 1. Сначала читаем ответ как обычный текст
@@ -2126,15 +2127,29 @@ async function handleAutoLogin(val) {
     }
     // ========================================================
 
-    // 2. БРОНИРОВАННЫЙ СЕТЕВОЙ ЗАПРОС (С 3 попытками)
+    // 2. БРОНИРОВАННЫЙ СЕТЕВОЙ ЗАПРОС (С 3 попытками через POST)
     let fetchSuccess = false;
     let data = null;
-    const fetchUrl = `${typeof APPS_SCRIPT_URL !== 'undefined' ? APPS_SCRIPT_URL : ""}?action=getInitialData&api_key=${typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : ""}&t=${Date.now()}&uid=${savedUid}&role=${savedRole}`;
+    
+    // Формируем payload вместо длинного URL
+    const initPayload = {
+        action: 'getInitialData',
+        api_key: typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : "",
+        t: Date.now(),
+        uid: savedUid,
+        role: savedRole
+    };
 
     for (let i = 0; i < 3; i++) {
         try {
-            const res = await fetch(fetchUrl, { redirect: 'follow' });
-            const text = await res.text(); // Читаем как текст, чтобы не упасть на HTML
+            const res = await fetch(typeof APPS_SCRIPT_URL !== 'undefined' ? APPS_SCRIPT_URL : "", { 
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(initPayload),
+                redirect: 'follow' 
+            });
+            
+            const text = await res.text(); 
             
             if (text.trim().startsWith('<')) {
                 throw new Error('Сервер вернул HTML вместо JSON');
@@ -2142,7 +2157,7 @@ async function handleAutoLogin(val) {
             
             data = JSON.parse(text);
             fetchSuccess = true;
-            break; // Данные получены, вырываемся из цикла!
+            break; 
 
         } catch (err) {
             console.warn(`Попытка ${i + 1} из 3 для загрузки базы не удалась:`, err.message);
