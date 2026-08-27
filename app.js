@@ -1620,6 +1620,11 @@ window.saveQuickEdit = function(id) {
     // ОТПРАВКА НА СЕРВЕР
     // ==========================================
     console.log("Улетает на сервер:", payload);
+    // === СОХРАНЯЕМ ИЗМЕНЕНИЯ В КЭШ, ЧТОБЫ ОНИ НЕ ИСЧЕЗЛИ ===
+    if (typeof db !== 'undefined') {
+        localStorage.setItem('db_cache', JSON.stringify(db));
+    }
+    // =======================================================
 
     document.querySelectorAll('#quickEditModal').forEach(m => m.remove());
     if (typeof render === 'function') render();
@@ -1724,6 +1729,8 @@ window.saveNewProduct = function() {
                     cost: priceIn,
                     stock: qty
                 });
+                // === ДОБАВЛЯЕМ ЭТУ СТРОКУ, ЧТОБЫ ТОВАР НЕ СТИРАЛСЯ ДО СИНХРОНИЗАЦИИ ===
+                localStorage.setItem('db_cache', JSON.stringify(db));
             }
             
             // Если есть функция обновления витрины
