@@ -2658,25 +2658,19 @@ function handleItemClick(id, event) {
 }
         function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
 
-        window.forceAppUpdate = async function() {
+window.forceAppUpdate = function() {
     const statusIcon = document.getElementById('update-status');
     if (statusIcon) statusIcon.innerText = '⏳'; 
     
     try {
+        // 1. Выжигаем ТОЛЬКО память кассы (товары, суммы, метки времени).
+        // sessionStorage мы больше не трогаем, чтобы не сломать Google Auth!
         localStorage.clear();
-        sessionStorage.clear();
-
-        if ('caches' in window) {
-            const cacheNames = await caches.keys();
-            for (let name of cacheNames) {
-                await caches.delete(name);
-            }
-        }
     } catch (e) { 
-        console.warn("Ошибка при глубокой очистке:", e);
+        console.warn("Ошибка при очистке:", e);
     } finally {
-        // Обычная перезагрузка, которая НЕ отрезает параметры ссылки!
-        window.location.reload();
+        // 2. Безопасная перезагрузка без потери исходной ссылки
+        window.location.replace(window.location.href.split('#')[0]);
     }
 };
 
