@@ -2065,11 +2065,11 @@ async function handleAutoLogin(val) {
             });
         }
 
-async function load() {
+async function load(isFullSync = false) {
     const savedUid = localStorage.getItem('user_uid') || (typeof currentUser !== 'undefined' && currentUser ? currentUser.uid : '');
     const savedRole = localStorage.getItem('user_role') || '';
     const cacheKey = 'totals_cache_' + (savedUid || 'anon');
-    const localTimestamp = localStorage.getItem('db_timestamp') || "0"; // Читаем время для Дельты
+    const localTimestamp = localStorage.getItem('db_timestamp') || "0"; 
 
     // 1. МГНОВЕННАЯ ЗАГРУЗКА ИЗ КЭША
     try {
@@ -2093,8 +2093,9 @@ async function load() {
     
     if (typeof currentUser === 'undefined' || !currentUser) return;
 
-    // === БЛОК 1: МИКРО-ПИНГ (Только если есть кэш, чтобы не душить сервер) ===
-    if (localStorage.getItem('db_cache')) {
+    // === БЛОК 1: МИКРО-ПИНГ ===
+    // Выполняем ТОЛЬКО если есть кэш и если это НЕ экстренная полная загрузка
+    if (!isFullSync && localStorage.getItem('db_cache')) {
         try {
             const pingPayload = { action: 'ping', api_key: typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : "" };
             const pingRes = await fetch(typeof APPS_SCRIPT_URL !== 'undefined' ? APPS_SCRIPT_URL : "", {
@@ -2120,12 +2121,14 @@ async function load() {
         }
     }
     
-    // === БЛОК 2: ЗАГРУЗКА БАЗЫ ИЛИ ДЕЛЬТЫ (Передаем last_sync) ===
+    // === БЛОК 2: ЗАГРУЗКА БАЗЫ ИЛИ ДЕЛЬТЫ ===
     let fetchSuccess = false;
     let data = null;
     
-    // Добавили параметр &last_sync к запросу!
-    const fetchUrl = `${typeof APPS_SCRIPT_URL !== 'undefined' ? APPS_SCRIPT_URL : ""}?action=getInitialData&api_key=${typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : ""}&t=${Date.now()}&uid=${savedUid}&role=${savedRole}&last_sync=${localTimestamp}`;
+    // Если isFullSync (долгий тап) = true, то время сбрасывается на "0" и сервер отдает 100% базы
+    const timeToSend = isFullSync ? "0" : localTimestamp;
+    
+    const fetchUrl = `${typeof APPS_SCRIPT_URL !== 'undefined' ? APPS_SCRIPT_URL : ""}?action=getInitialData&api_key=${typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : ""}&t=${Date.now()}&uid=${savedUid}&role=${savedRole}&last_sync=${timeToSend}`;
 
     for (let i = 0; i < 3; i++) {
         try {
@@ -2150,25 +2153,25 @@ async function load() {
     // === БЛОК 3: УМНОЕ СЛИЯНИЕ (SMART MERGE) ===
     try {
         if (data.items) {
-            if (localTimestamp === "0" || !db || db.length === 0) {
-                // Если кэш был пуст (холодный старт) — просто берем всю базу
+            if (isFullSync || localTimestamp === "0" || !db || db.length === 0) {
+                // Если мы нажали долгий тап (isFullSync) или кэш пуст — просто берем всю базу
                 db = data.items;
                 console.log("📥 Полная загрузка базы: " + db.length + " товаров.");
             } else {
-                // Если это Дельта — обновляем только измененные товары
+                // Если это обычный тап (Дельта) — обновляем только измененные товары
                 let updatedCount = data.items.length;
                 if (updatedCount > 0) {
-                    let dbMap = new Map(db.map(item => [item.id, item])); // Превращаем массив в словарь для быстрого поиска
+                    let dbMap = new Map(db.map(item => [item.id, item])); 
                     data.items.forEach(newItem => {
-                        dbMap.set(newItem.id, newItem); // Перезаписываем старый товар новым или добавляем, если его не было
+                        dbMap.set(newItem.id, newItem); 
                     });
-                    db = Array.from(dbMap.values()); // Собираем обратно в массив
+                    db = Array.from(dbMap.values()); 
                     console.log(`🔄 Дельта-синхронизация: обновлено ${updatedCount} товаров.`);
                 } else {
                     console.log("🔄 Дельта-синхронизация: изменений в товарах нет.");
                 }
             }
-            localStorage.setItem('db_cache', JSON.stringify(db)); // Сохраняем обновленный кэш
+            localStorage.setItem('db_cache', JSON.stringify(db)); 
         }
 
         if (data.staff) {
@@ -2195,13 +2198,16 @@ async function load() {
         if (window._pendingTimestamp) {
             localStorage.setItem('db_timestamp', window._pendingTimestamp);
             delete window._pendingTimestamp;
+        } else if (isFullSync) {
+            // При экстренной загрузке обновляем локальное время на текущее
+            localStorage.setItem('db_timestamp', new Date().getTime().toString());
         }
     } catch (e) { 
         console.error("Ошибка обработки полученных данных", e); 
     }
 }
 
-        async function refreshPosData(isSilent = false) {
+async function refreshPosData(isSilent = false, isFullSync = false) {
     if (!navigator.onLine) {
         // Выдаем ошибку только если обновление запрошено вручную
         if (isSilent !== true) {
@@ -2218,7 +2224,8 @@ async function load() {
     }
     
     try { 
-        await load(); 
+        // ПЕРЕДАЕМ ПАРАМЕТР ДАЛЬШЕ В ФУНКЦИЮ ЗАГРУЗКИ
+        await load(isFullSync); 
     } finally { 
         // Выключаем анимацию ТОЛЬКО если мы её включали
         if (!isSilent && btn) {
@@ -6225,3 +6232,49 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 // ===================================================================
+document.addEventListener("DOMContentLoaded", () => {
+    const syncBtn = document.getElementById('btn-sync-data');
+    if (!syncBtn) return;
+
+    let pressTimer;
+    let isLongPress = false;
+
+    // Начало нажатия (мышь или палец)
+    const startPress = (e) => {
+        isLongPress = false;
+        // Если держим 1.5 секунды — запускаем полную загрузку
+        pressTimer = setTimeout(() => {
+            isLongPress = true;
+            console.log("Экстренная ПОЛНАЯ загрузка базы...");
+            
+            // Визуальный эффект, чтобы кассир понял, что долгое нажатие сработало
+            const originalColor = syncBtn.style.color;
+            syncBtn.style.color = "#ff4444"; 
+            setTimeout(() => syncBtn.style.color = originalColor, 500);
+
+            // Вызываем вашу функцию с параметром true (полная загрузка)
+            if (typeof refreshPosData === 'function') refreshPosData(true);
+        }, 1500); 
+    };
+
+    // Конец нажатия (отпустили кнопку)
+    const endPress = (e) => {
+        clearTimeout(pressTimer);
+        
+        // Если отпустили быстро (раньше 1.5 сек) — запускаем быструю Дельту
+        if (!isLongPress) {
+            console.log("Быстрая ДЕЛЬТА-синхронизация...");
+            // Вызываем вашу функцию с параметром false (дельта)
+            if (typeof refreshPosData === 'function') refreshPosData(false);
+        }
+    };
+
+    // Вешаем слушатели для мобилок (Touch)
+    syncBtn.addEventListener('touchstart', startPress, {passive: true});
+    syncBtn.addEventListener('touchend', endPress);
+    
+    // Вешаем слушатели для ПК (Мышь)
+    syncBtn.addEventListener('mousedown', startPress);
+    syncBtn.addEventListener('mouseup', endPress);
+    syncBtn.addEventListener('mouseleave', () => clearTimeout(pressTimer)); 
+});
