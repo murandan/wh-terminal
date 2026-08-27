@@ -6125,6 +6125,7 @@ window.startSmartMerge = function(fileId, fileDate) {
             .then(res => res.json())
             .then(response => {
                 if (response && response.success) {
+                    refreshPosData(true);
                     Swal.fire({
                         title: translations[currentLang]['smart_merge_success_title'],
                         text: `${translations[currentLang]['smart_merge_success_text']} ${response.restored_count}`,
