@@ -2092,30 +2092,33 @@ async function load() {
     
     if (typeof currentUser === 'undefined' || !currentUser) return;
 
-    // === БЛОК 1: МИКРО-ПИНГ (POST, работает отлично) ===
-    try {
-        const pingPayload = { action: 'ping', api_key: typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : "" };
-        const pingRes = await fetch(typeof APPS_SCRIPT_URL !== 'undefined' ? APPS_SCRIPT_URL : "", {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(pingPayload),
-            redirect: 'follow'
-        });
-        const pingText = await pingRes.text();
-        
-        if (!pingText.trim().startsWith('<')) {
-            const pingData = JSON.parse(pingText);
-            if (pingData.success && pingData.timestamp) {
-                const localTimestamp = localStorage.getItem('db_timestamp');
-                if (localTimestamp === pingData.timestamp) {
-                    console.log("✅ База актуальна, загрузка отменена.");
-                    return; 
+    // === БЛОК 1: МИКРО-ПИНГ (Только если есть кэш!) ===
+    // Если базы нет, пропускаем пинг, чтобы не душить сервер Google
+    if (localStorage.getItem('db_cache')) {
+        try {
+            const pingPayload = { action: 'ping', api_key: typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : "" };
+            const pingRes = await fetch(typeof APPS_SCRIPT_URL !== 'undefined' ? APPS_SCRIPT_URL : "", {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(pingPayload),
+                redirect: 'follow'
+            });
+            const pingText = await pingRes.text();
+            
+            if (!pingText.trim().startsWith('<')) {
+                const pingData = JSON.parse(pingText);
+                if (pingData.success && pingData.timestamp) {
+                    const localTimestamp = localStorage.getItem('db_timestamp');
+                    if (localTimestamp === pingData.timestamp) {
+                        console.log("✅ База актуальна, загрузка отменена.");
+                        return; 
+                    }
+                    window._pendingTimestamp = pingData.timestamp; 
                 }
-                window._pendingTimestamp = pingData.timestamp; 
             }
+        } catch (pingErr) {
+            console.warn("⚠️ Ошибка пинга:", pingErr);
         }
-    } catch (pingErr) {
-        console.warn("⚠️ Ошибка пинга:", pingErr);
     }
     
     // === БЛОК 2: ТЯЖЕЛАЯ ЗАГРУЗКА (ОТКАТ НА GET) ===
