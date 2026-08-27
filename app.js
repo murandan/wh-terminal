@@ -2668,13 +2668,26 @@ function handleItemClick(id, event) {
 }
         function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
 
-        async function forceAppUpdate() {
-            document.getElementById('update-status').innerText = '⏳'; 
-            try {
-                if ('caches' in window) await Promise.all((await caches.keys()).map(k => caches.delete(k)));
-                setTimeout(() => { window.location.reload(true); }, 1000);
-            } catch (e) { window.location.reload(true); }
+        window.forceAppUpdate = async function() {
+    document.getElementById('update-status').innerText = '⏳'; 
+    try {
+        // 1. Выжигаем локальную базу данных (ЭТОГО НЕ ХВАТАЛО)
+        localStorage.clear();
+        sessionStorage.clear();
+
+        // 2. Выжигаем системный кэш (оставляем ваш изящный код)
+        if ('caches' in window) {
+            await Promise.all((await caches.keys()).map(k => caches.delete(k)));
         }
+
+        // 3. Жесткая перезагрузка с защитой от кэширования браузером
+        setTimeout(() => { 
+            window.location.href = window.location.pathname + "?v=" + Date.now(); 
+        }, 1000);
+    } catch (e) { 
+        window.location.href = window.location.pathname + "?v=" + Date.now(); 
+    }
+};
 
         function openReport() {
     document.getElementById('report-modal').style.display = 'flex';
