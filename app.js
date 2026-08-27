@@ -2065,134 +2065,135 @@ async function handleAutoLogin(val) {
         }
 
         async function load() {
-            const savedUid = localStorage.getItem('user_uid') || (currentUser ? currentUser.uid : '');
-            const savedRole = localStorage.getItem('user_role') || '';
-            // Делаем персональный кэш, чтобы продавцы не видели суммы друг друга при перезагрузке
-            const cacheKey = 'totals_cache_' + (savedUid || 'anon');
+    const savedUid = localStorage.getItem('user_uid') || (typeof currentUser !== 'undefined' && currentUser ? currentUser.uid : '');
+    const savedRole = localStorage.getItem('user_role') || '';
+    // Делаем персональный кэш, чтобы продавцы не видели суммы друг друга при перезагрузке
+    const cacheKey = 'totals_cache_' + (savedUid || 'anon');
 
-            // 1. МГНОВЕННАЯ ЗАГРУЗКА ИЗ КЭША
-            try {
-                const cachedDb = localStorage.getItem('db_cache');
-                const cachedTotals = localStorage.getItem(cacheKey);
-                const cachedStaff = localStorage.getItem('staff_cache'); 
-                if (cachedDb) db = JSON.parse(cachedDb);
-                if (cachedStaff) staffList = JSON.parse(cachedStaff);
-                if (cachedTotals) {
-                    const t = JSON.parse(cachedTotals);
-                    document.getElementById('sum-cash').innerText = (t.cash || 0).toLocaleString() + ' ₸';
-                    document.getElementById('sum-qr').innerText = (t.qr_kaspi || t.qr || 0).toLocaleString() + ' ₸';
-                    document.getElementById('sum-red').innerText = (t.installment || 0).toLocaleString() + ' ₸';
-                    document.getElementById('sum-card').innerText = (t.pos_terminal || t.card || 0).toLocaleString() + ' ₸';
-                    document.getElementById('sum-trans').innerText = (t.transfer || 0).toLocaleString() + ' ₸';
-                }
-                if (db.length > 0) render();
-            } catch (e) { console.error("Ошибка чтения кэша", e); }
+    // 1. МГНОВЕННАЯ ЗАГРУЗКА ИЗ КЭША
+    try {
+        const cachedDb = localStorage.getItem('db_cache');
+        const cachedTotals = localStorage.getItem(cacheKey);
+        const cachedStaff = localStorage.getItem('staff_cache'); 
+        if (cachedDb) db = JSON.parse(cachedDb);
+        if (cachedStaff) staffList = JSON.parse(cachedStaff);
+        if (cachedTotals) {
+            const t = JSON.parse(cachedTotals);
+            document.getElementById('sum-cash').innerText = (t.cash || 0).toLocaleString() + ' ₸';
+            document.getElementById('sum-qr').innerText = (t.qr_kaspi || t.qr || 0).toLocaleString() + ' ₸';
+            document.getElementById('sum-red').innerText = (t.installment || 0).toLocaleString() + ' ₸';
+            document.getElementById('sum-card').innerText = (t.pos_terminal || t.card || 0).toLocaleString() + ' ₸';
+            document.getElementById('sum-trans').innerText = (t.transfer || 0).toLocaleString() + ' ₸';
+        }
+        if (db && db.length > 0 && typeof render === 'function') render();
+    } catch (e) { console.error("Ошибка чтения кэша", e); }
 
-            if (!navigator.onLine) return; 
-            
-            // Запрещаем сетевой запрос к серверу, пока кассир не прошел ПИН-код
-            if (!currentUser) return;
+    if (!navigator.onLine) return; 
+    
+    // Запрещаем сетевой запрос к серверу, пока кассир не прошел ПИН-код
+    if (typeof currentUser === 'undefined' || !currentUser) return;
 
-            // === НОВЫЙ БЛОК: МИКРО-ПИНГ (Проверка изменений базы) ===
-            try {
-                const pingPayload = { action: 'ping', api_key: CLIENT_API_KEY };
-                const pingRes = await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    body: JSON.stringify(pingPayload),
-                    redirect: 'follow'
-                });
-                const pingText = await pingRes.text();
+    // === БЛОК: МИКРО-ПИНГ (Проверка изменений базы) ===
+    try {
+        const pingPayload = { action: 'ping', api_key: typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : "" };
+        const pingRes = await fetch(typeof APPS_SCRIPT_URL !== 'undefined' ? APPS_SCRIPT_URL : "", {
+            method: 'POST',
+            body: JSON.stringify(pingPayload),
+            // === ВОТ ЭТА СТРОКА СПАСАЕТ ОТ 10-СЕКУНДНЫХ ЗАВИСАНИЙ ===
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            // ==========================================================
+            redirect: 'follow'
+        });
+        const pingText = await pingRes.text();
+        
+        if (!pingText.trim().startsWith('<')) {
+            const pingData = JSON.parse(pingText);
+            if (pingData.success && pingData.timestamp) {
+                const localTimestamp = localStorage.getItem('db_timestamp');
                 
-                if (!pingText.trim().startsWith('<')) {
-                    const pingData = JSON.parse(pingText);
-                    if (pingData.success && pingData.timestamp) {
-                        const localTimestamp = localStorage.getItem('db_timestamp');
-                        
-                        // Если время совпадает — база актуальна, отменяем тяжелую загрузку!
-                        if (localTimestamp === pingData.timestamp) {
-                            console.log("✅ База актуальна (ping совпал), загрузка с сервера отменена.");
-                            return; // ВАЖНО: прерываем выполнение функции, оставляем данные из кэша
-                        }
-                        
-                        // Если не совпадает, запоминаем новую метку (пока во временную переменную)
-                        window._pendingTimestamp = pingData.timestamp; 
-                    }
-                }
-            } catch (pingErr) {
-                console.warn("⚠️ Ошибка пинга, продолжаем стандартную загрузку базы:", pingErr);
-            }
-            // ========================================================
-
-            // 2. БРОНИРОВАННЫЙ СЕТЕВОЙ ЗАПРОС (С 3 попытками)
-            let fetchSuccess = false;
-            let data = null;
-            const fetchUrl = `${APPS_SCRIPT_URL}?action=getInitialData&api_key=${CLIENT_API_KEY}&t=${Date.now()}&uid=${savedUid}&role=${savedRole}`;
-
-            for (let i = 0; i < 3; i++) {
-                try {
-                    const res = await fetch(fetchUrl, { redirect: 'follow' });
-                    const text = await res.text(); // Читаем как текст, чтобы не упасть на HTML
-                    
-                    if (text.trim().startsWith('<')) {
-                        throw new Error('Сервер вернул HTML вместо JSON');
-                    }
-                    
-                    data = JSON.parse(text);
-                    fetchSuccess = true;
-                    break; // Данные получены, вырываемся из цикла!
-
-                } catch (err) {
-                    console.warn(`Попытка ${i + 1} из 3 для загрузки базы не удалась:`, err.message);
-                    if (i < 2) await new Promise(resolve => setTimeout(resolve, 500)); // Ждем полсекунды перед новой попыткой
-                }
-            }
-
-            // Если после 3 раз ничего не вышло — просто сдаемся. Кэш уже на экране, работа не стоит.
-            if (!fetchSuccess || !data) {
-                console.error("Не удалось обновить базу с сервера. Продолжаем работу на локальном кэше.");
-                return; 
-            }
-
-            // 3. УСПЕХ: ОБНОВЛЯЕМ ДАННЫЕ И ПЕРЕЗАПИСЫВАЕМ КЭШ
-            try {
-                if (data.items) db = data.items;
-                if (data.staff) {
-                    staffList = data.staff;
-                    localStorage.setItem('staff_cache', JSON.stringify(staffList));
+                // Если время совпадает — база актуальна, отменяем тяжелую загрузку!
+                if (localTimestamp === pingData.timestamp) {
+                    console.log("✅ База актуальна (ping совпал), загрузка отменена.");
+                    return; // Прерываем выполнение! 
                 }
                 
-                if (data.synonyms && Object.keys(data.synonyms).length > 0) {
-                    invoiceSynonyms = data.synonyms;
-                }
-
-                if (data.suppliers) {
-                    window.suppliersList = data.suppliers;
-                    localStorage.setItem('suppliers_cache', JSON.stringify(data.suppliers));
-                }
-                
-                const t = data.totals || { cash: 0, qr_kaspi: 0, installment: 0, pos_terminal: 0, transfer: 0 };
-                document.getElementById('sum-cash').innerText = (t.cash || 0).toLocaleString() + ' ₸';
-                document.getElementById('sum-qr').innerText   = (t.qr_kaspi || t.qr || 0).toLocaleString() + ' ₸';
-                document.getElementById('sum-red').innerText  = (t.installment || t.red || 0).toLocaleString() + ' ₸';
-                document.getElementById('sum-card').innerText = (t.pos_terminal || t.pos || t.card || 0).toLocaleString() + ' ₸';
-                document.getElementById('sum-trans').innerText= (t.transfer || 0).toLocaleString() + ' ₸';
-                
-                render(); // Перерисовываем интерфейс свежими данными
-                
-                // Тихо сохраняем свежак в кэш для следующего раза
-                localStorage.setItem('db_cache', JSON.stringify(db));
-                localStorage.setItem(cacheKey, JSON.stringify(t));
-
-                // === СОХРАНЯЕМ МЕТКУ ВРЕМЕНИ ===
-                if (window._pendingTimestamp) {
-                    localStorage.setItem('db_timestamp', window._pendingTimestamp);
-                    delete window._pendingTimestamp;
-                }
-                
-            } catch (e) { 
-                console.error("Ошибка обработки полученных данных", e); 
+                // Если не совпадает, запоминаем новую метку
+                window._pendingTimestamp = pingData.timestamp; 
             }
         }
+    } catch (pingErr) {
+        console.warn("⚠️ Ошибка пинга, продолжаем стандартную загрузку базы:", pingErr);
+    }
+    // ========================================================
+
+    // 2. БРОНИРОВАННЫЙ СЕТЕВОЙ ЗАПРОС (С 3 попытками)
+    let fetchSuccess = false;
+    let data = null;
+    const fetchUrl = `${typeof APPS_SCRIPT_URL !== 'undefined' ? APPS_SCRIPT_URL : ""}?action=getInitialData&api_key=${typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : ""}&t=${Date.now()}&uid=${savedUid}&role=${savedRole}`;
+
+    for (let i = 0; i < 3; i++) {
+        try {
+            const res = await fetch(fetchUrl, { redirect: 'follow' });
+            const text = await res.text(); // Читаем как текст, чтобы не упасть на HTML
+            
+            if (text.trim().startsWith('<')) {
+                throw new Error('Сервер вернул HTML вместо JSON');
+            }
+            
+            data = JSON.parse(text);
+            fetchSuccess = true;
+            break; // Данные получены, вырываемся из цикла!
+
+        } catch (err) {
+            console.warn(`Попытка ${i + 1} из 3 для загрузки базы не удалась:`, err.message);
+            if (i < 2) await new Promise(resolve => setTimeout(resolve, 500)); 
+        }
+    }
+
+    if (!fetchSuccess || !data) {
+        console.error("Не удалось обновить базу с сервера. Продолжаем работу на локальном кэше.");
+        return; 
+    }
+
+    // 3. УСПЕХ: ОБНОВЛЯЕМ ДАННЫЕ И ПЕРЕЗАПИСЫВАЕМ КЭШ
+    try {
+        if (data.items) db = data.items;
+        if (data.staff) {
+            staffList = data.staff;
+            localStorage.setItem('staff_cache', JSON.stringify(staffList));
+        }
+        
+        if (data.synonyms && Object.keys(data.synonyms).length > 0) {
+            invoiceSynonyms = data.synonyms;
+        }
+
+        if (data.suppliers) {
+            window.suppliersList = data.suppliers;
+            localStorage.setItem('suppliers_cache', JSON.stringify(data.suppliers));
+        }
+        
+        const t = data.totals || { cash: 0, qr_kaspi: 0, installment: 0, pos_terminal: 0, transfer: 0 };
+        document.getElementById('sum-cash').innerText = (t.cash || 0).toLocaleString() + ' ₸';
+        document.getElementById('sum-qr').innerText   = (t.qr_kaspi || t.qr || 0).toLocaleString() + ' ₸';
+        document.getElementById('sum-red').innerText  = (t.installment || t.red || 0).toLocaleString() + ' ₸';
+        document.getElementById('sum-card').innerText = (t.pos_terminal || t.pos || t.card || 0).toLocaleString() + ' ₸';
+        document.getElementById('sum-trans').innerText= (t.transfer || 0).toLocaleString() + ' ₸';
+        
+        if (typeof render === 'function') render(); 
+        
+        localStorage.setItem('db_cache', JSON.stringify(db));
+        localStorage.setItem(cacheKey, JSON.stringify(t));
+
+        // === СОХРАНЯЕМ МЕТКУ ВРЕМЕНИ ===
+        if (window._pendingTimestamp) {
+            localStorage.setItem('db_timestamp', window._pendingTimestamp);
+            delete window._pendingTimestamp;
+        }
+        
+    } catch (e) { 
+        console.error("Ошибка обработки полученных данных", e); 
+    }
+}
 
         async function refreshPosData(isSilent = false) {
             if (!navigator.onLine) {
