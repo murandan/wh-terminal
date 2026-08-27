@@ -6239,42 +6239,55 @@ document.addEventListener("DOMContentLoaded", () => {
     let pressTimer;
     let isLongPress = false;
 
-    // Начало нажатия (мышь или палец)
+    // Отключаем всплывающее меню браузера при долгом нажатии
+    syncBtn.addEventListener('contextmenu', e => e.preventDefault());
+
     const startPress = (e) => {
+        // Игнорируем нажатие правой кнопкой мыши
+        if (e.pointerType === 'mouse' && e.button !== 0) return; 
+        
         isLongPress = false;
-        // Если держим 1.5 секунды — запускаем полную загрузку
+        syncBtn.style.opacity = '0.5'; // Кнопка "проваливается" при нажатии
+
         pressTimer = setTimeout(() => {
             isLongPress = true;
             console.log("Экстренная ПОЛНАЯ загрузка базы...");
             
-            // Визуальный эффект, чтобы кассир понял, что долгое нажатие сработало
-            const originalColor = syncBtn.style.color;
-            syncBtn.style.color = "#ff4444"; 
-            setTimeout(() => syncBtn.style.color = originalColor, 500);
+            // 1. Физический отклик: двойная вибрация (работает на телефонах)
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+            
+            // 2. Визуальный отклик: красим фон кнопки в красный, чтобы было видно края
+            const originalBg = syncBtn.style.backgroundColor;
+            syncBtn.style.backgroundColor = "#ff4444"; 
+            syncBtn.style.opacity = '1';
+            setTimeout(() => syncBtn.style.backgroundColor = originalBg, 1000);
 
-            // Вызываем вашу функцию с параметром true (полная загрузка)
-            if (typeof refreshPosData === 'function') refreshPosData(true);
+            if (typeof refreshPosData === 'function') refreshPosData(false, true);
         }, 1500); 
     };
 
-    // Конец нажатия (отпустили кнопку)
     const endPress = (e) => {
+        syncBtn.style.opacity = '1'; 
         clearTimeout(pressTimer);
         
-        // Если отпустили быстро (раньше 1.5 сек) — запускаем быструю Дельту
+        // Если отпустили быстро — запускаем Дельту
         if (!isLongPress) {
             console.log("Быстрая ДЕЛЬТА-синхронизация...");
-            // Вызываем вашу функцию с параметром false (дельта)
-            if (typeof refreshPosData === 'function') refreshPosData(false);
+            if (typeof refreshPosData === 'function') refreshPosData(false, false);
         }
     };
 
-    // Вешаем слушатели для мобилок (Touch)
-    syncBtn.addEventListener('touchstart', startPress, {passive: true});
-    syncBtn.addEventListener('touchend', endPress);
+    // Используем Pointer Events (решает баг фантомных кликов на телефонах)
+    syncBtn.addEventListener('pointerdown', startPress);
+    syncBtn.addEventListener('pointerup', endPress);
     
-    // Вешаем слушатели для ПК (Мышь)
-    syncBtn.addEventListener('mousedown', startPress);
-    syncBtn.addEventListener('mouseup', endPress);
-    syncBtn.addEventListener('mouseleave', () => clearTimeout(pressTimer)); 
+    // Если палец уехал за пределы кнопки — отменяем таймер
+    syncBtn.addEventListener('pointerout', () => {
+        syncBtn.style.opacity = '1';
+        clearTimeout(pressTimer);
+    }); 
+    syncBtn.addEventListener('pointercancel', () => {
+        syncBtn.style.opacity = '1';
+        clearTimeout(pressTimer);
+    });
 });
