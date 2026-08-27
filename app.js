@@ -5966,46 +5966,89 @@ window.startDatabaseRestore = function() {
 };
 
 // --- 1. Открытие окна и запуск поиска ---
-// --- 1. Открытие окна и запуск поиска ---
-function openDeepRestoreModal() {
-    // Прячем предыдущее окно (меню базы)
+async function openDeepRestoreModal() {
+    // 1. Управление модальными окнами
     const baseModal = document.getElementById('drive-base-modal');
     if (baseModal) baseModal.style.display = 'none';
 
-    // Показываем новое окно
     const deepModal = document.getElementById('deep-restore-modal');
     if (deepModal) deepModal.style.display = 'flex'; 
 
-    // Включаем спиннер, очищаем старый список
+    // 2. Включаем спиннер, очищаем старый список
     document.getElementById('deep-restore-loader').style.display = 'block';
     const listContainer = document.getElementById('deep-restore-list');
     listContainer.style.display = 'none';
     listContainer.innerHTML = '';
 
-    // Берем API ключ (как у вас в других функциях)
+    // 3. Получаем API ключ
     const token = localStorage.getItem('CLIENT_API_KEY') || (typeof CLIENT_API_KEY !== 'undefined' ? CLIENT_API_KEY : "");
 
-    // Отправляем POST-запрос к вашему GAS-серверу
-    fetch(GATEWAY_URL, {
-        method: 'POST',
-        body: JSON.stringify({
-            api_key: token,
-            action: 'get_available_backups'
-        })
-    })
-    .then(response => response.json())
-    .then(res => {
-        if (res.success) {
-            renderBackupsList(res.data); // Передаем список файлов на отрисовку
-        } else {
-            throw new Error(res.message || res.error || "Неизвестная ошибка сервера");
+    const payload = JSON.stringify({
+        api_key: token,
+        action: 'get_available_backups'
+    });
+
+    const maxRetries = 2;       // Количество повторных попыток
+    const timeoutMs = 5000;     // Тайм-аут ожидания: 5 секунд
+    let res = null;
+
+    // 4. Цикл с защитой от таймаута и холодного старта
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+        try {
+            const response = await fetch(GATEWAY_URL, {
+                method: 'POST',
+                body: payload,
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            const text = await response.text();
+
+            // Проверка на HTML-ответ от Google (Cold Start)
+            if (text.trim().startsWith('<')) {
+                if (attempt < maxRetries) {
+                    await new Promise(r => setTimeout(r, 500));
+                    continue;
+                }
+                throw new Error("Сервер вернул некорректный ответ (HTML вместо JSON)");
+            }
+
+            res = JSON.parse(text);
+            break; // Успешно получили и распарсили JSON — выходим из цикла
+
+        } catch (err) {
+            clearTimeout(timeoutId);
+
+            // Если сработал наш таймер на 5 секунд
+            if (err.name === 'AbortError') {
+                if (attempt < maxRetries) {
+                    continue; // Пробуем снова
+                }
+                throw new Error("Сервер не ответил вовремя. Попробуйте еще раз.");
+            }
+
+            // Если это последняя попытка или фатальная сетевая ошибка
+            if (attempt === maxRetries) {
+                throw err;
+            }
         }
-    })
-    .catch(error => {
+    }
+
+    // 5. Обработка результата
+    try {
+        if (res && res.success) {
+            renderBackupsList(res.data);
+        } else {
+            throw new Error((res && (res.message || res.error)) || "Неизвестная ошибка сервера");
+        }
+    } catch (error) {
         document.getElementById('deep-restore-loader').style.display = 'none';
         listContainer.style.display = 'flex';
         listContainer.innerHTML = `<div style="color: #EA4335; text-align: center; padding: 15px;">❌ Ошибка доступа к архиву: <br>${error.message}</div>`;
-    });
+    }
 }
 
 // --- 2. Закрытие окна ---
