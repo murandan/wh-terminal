@@ -6239,28 +6239,37 @@ document.addEventListener("DOMContentLoaded", () => {
     let pressTimer;
     let isLongPress = false;
 
-    // Отключаем всплывающее меню браузера при долгом нажатии
+    // Отключаем меню браузера при долгом нажатии
     syncBtn.addEventListener('contextmenu', e => e.preventDefault());
 
     const startPress = (e) => {
-        // Игнорируем нажатие правой кнопкой мыши
         if (e.pointerType === 'mouse' && e.button !== 0) return; 
         
         isLongPress = false;
-        syncBtn.style.opacity = '0.5'; // Кнопка "проваливается" при нажатии
+        syncBtn.style.opacity = '0.5'; 
 
         pressTimer = setTimeout(() => {
             isLongPress = true;
             console.log("Экстренная ПОЛНАЯ загрузка базы...");
             
-            // 1. Физический отклик: двойная вибрация (работает на телефонах)
-            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-            
-            // 2. Визуальный отклик: красим фон кнопки в красный, чтобы было видно края
-            const originalBg = syncBtn.style.backgroundColor;
-            syncBtn.style.backgroundColor = "#ff4444"; 
-            syncBtn.style.opacity = '1';
-            setTimeout(() => syncBtn.style.backgroundColor = originalBg, 1000);
+            // === НОВЫЙ ВИЗУАЛЬНЫЙ ЭФФЕКТ: ВСПЫШКА ВСЕГО ЭКРАНА ===
+            const flash = document.createElement('div');
+            flash.style.position = 'fixed';
+            flash.style.top = '0';
+            flash.style.left = '0';
+            flash.style.width = '100vw';
+            flash.style.height = '100vh';
+            flash.style.backgroundColor = 'rgba(255, 0, 0, 0.4)'; // Красный, полупрозрачный
+            flash.style.zIndex = '999999'; // Поверх всего
+            flash.style.pointerEvents = 'none'; // Чтобы не мешал нажимать
+            flash.style.transition = 'opacity 0.4s ease-out';
+            document.body.appendChild(flash);
+
+            // Плавно растворяем вспышку
+            setTimeout(() => {
+                flash.style.opacity = '0';
+                setTimeout(() => flash.remove(), 400); // Удаляем элемент после анимации
+            }, 100);
 
             if (typeof refreshPosData === 'function') refreshPosData(false, true);
         }, 1500); 
@@ -6270,18 +6279,14 @@ document.addEventListener("DOMContentLoaded", () => {
         syncBtn.style.opacity = '1'; 
         clearTimeout(pressTimer);
         
-        // Если отпустили быстро — запускаем Дельту
         if (!isLongPress) {
             console.log("Быстрая ДЕЛЬТА-синхронизация...");
             if (typeof refreshPosData === 'function') refreshPosData(false, false);
         }
     };
 
-    // Используем Pointer Events (решает баг фантомных кликов на телефонах)
     syncBtn.addEventListener('pointerdown', startPress);
     syncBtn.addEventListener('pointerup', endPress);
-    
-    // Если палец уехал за пределы кнопки — отменяем таймер
     syncBtn.addEventListener('pointerout', () => {
         syncBtn.style.opacity = '1';
         clearTimeout(pressTimer);
