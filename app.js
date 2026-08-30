@@ -2812,9 +2812,31 @@ async function renderReport() {
         });
     }
 
-    // Добавлены ключи для маркетов
-    const methodNames = { 'cash': translations[currentLang].pay_cash, 'qr_kaspi': 'QR', 'installment': 'Red', 'pos_terminal': translations[currentLang].pay_card, 'transfer': translations[currentLang].pay_trans, 'market': translations[currentLang].pay_market_full || 'МАРКЕТЫ' };
-    const methodColors = { 'cash': 'var(--pay-cash)', 'qr_kaspi': 'var(--pay-qr)', 'installment': 'var(--pay-red)', 'pos_terminal': 'var(--pay-card)', 'transfer': 'var(--pay-trans)', 'market': 'var(--pay-market)' };
+    // Добавляем теги для конкретных маркетов внутри списка
+    const methodNames = { 
+        'cash': translations[currentLang].pay_cash, 
+        'qr_kaspi': 'QR', 
+        'installment': 'Red', 
+        'pos_terminal': translations[currentLang].pay_card, 
+        'transfer': translations[currentLang].pay_trans, 
+        'kaspi_market': 'KASPI',   // <-- Заготовка
+        'halyk_market': 'HALYK',   // <-- Заготовка
+        'ozon_market': 'OZON',     // <-- Заготовка
+        'market': translations[currentLang].pay_market_full || 'МАРКЕТЫ' 
+    };
+    
+    // Раскрашиваем теги в фирменные цвета площадок
+    const methodColors = { 
+        'cash': 'var(--pay-cash)', 
+        'qr_kaspi': 'var(--pay-qr)', 
+        'installment': 'var(--pay-red)', 
+        'pos_terminal': 'var(--pay-card)', 
+        'transfer': 'var(--pay-trans)', 
+        'kaspi_market': '#f24e1e', // Красный Каспи
+        'halyk_market': '#007054', // Зеленый Халык
+        'ozon_market': '#005bff',  // Синий Озон
+        'market': 'var(--pay-market)' 
+    };
     const uiStr = { sale: translations[currentLang].report_sales, ret: translations[currentLang].report_returns, avg: translations[currentLang].report_avg || 'ср:' };
 
     // ==========================================
