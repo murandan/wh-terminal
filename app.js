@@ -2902,7 +2902,6 @@ async function renderReport() {
             tx.cart.forEach(c => {
                 let key = reportState.method === 'all' ? `${c.name}_${mGroup}` : c.name;
                 
-                // Добавляем счетчики для грязной суммы, комиссии и логистики
                 if (!agg[key]) agg[key] = { name: c.name, method: mGroup, qty:0, sum:0, sellers:{}, rawGross:0, totalCom:0, totalLog:0 };
                 if (!agg[key].sellers[tx.seller]) agg[key].sellers[tx.seller] = { qty:0, sum:0 };
                 
@@ -2914,10 +2913,10 @@ async function renderReport() {
                 let cNet = mGroup === 'market' ? (c.netPayout !== undefined ? c.netPayout : (s - cCom - cLog)) : s;
                 
                 agg[key].qty += q; 
-                agg[key].sum += cNet;         // Чистая прибыль
-                agg[key].rawGross += s;       // Грязная сумма (для визуала)
-                agg[key].totalCom += cCom;    // Сумма комиссий по товару
-                agg[key].totalLog += cLog;    // Сумма логистики по товару
+                agg[key].sum += cNet;         
+                agg[key].rawGross += s;       
+                agg[key].totalCom += cCom;    
+                agg[key].totalLog += cLog;    
                 
                 agg[key].sellers[tx.seller].qty += q; 
                 agg[key].sellers[tx.seller].sum += cNet;
@@ -2932,7 +2931,6 @@ async function renderReport() {
             
             let detHtml = '';
             
-            // ЕСЛИ ЭТО МАРКЕТ — ВЫВОДИМ РАСШИФРОВКУ ДЛЯ ТОВАРА
             if (item.method === 'market' && (item.totalCom > 0 || item.totalLog > 0)) {
                 let strCom = translations[currentLang].report_market_commission || "Комиссия маркета";
                 let strLog = translations[currentLang].report_market_logistics || "Логистика";
@@ -2944,7 +2942,6 @@ async function renderReport() {
                 detHtml += `<div class="acc-detail-row" style="font-weight: bold; border-top: 1px dashed var(--border-main); margin-top: 4px; padding-top: 4px; margin-bottom: 8px;"><span>Итого ${strNet}:</span><span style="color:${sumColor}">${item.sum.toLocaleString()}</span></div>`;
             }
 
-            // Классическая раскладка по продавцам
             for (let seller in item.sellers) {
                 let s = item.sellers[seller];
                 let lbl = isSaleMode ? uiStr.sale : uiStr.ret;
@@ -2961,10 +2958,8 @@ async function renderReport() {
                     <div class="acc-body">${detHtml}</div>
                 </div>`;
         });
-    }
-
     } else {
-        // Режим "ЧЕКИ" с детализацией вычетов
+        // Режим "ЧЕКИ"
         viewTx.forEach(tx => {
             let txSum = 0; let txQty = 0;
             let mGroup = (tx.methodCode || 'cash').includes('market') ? 'market' : (tx.methodCode || 'cash');
@@ -2978,7 +2973,6 @@ async function renderReport() {
                 detHtml += `<div class="acc-detail-row"><span>${c.name}</span><span style="color:${sumColor}">${q} x ${Math.abs(c.price).toLocaleString()}</span></div>`;
             });
 
-            // ВНЕДРЯЕМ БЛОК ВЫЧЕТОВ ДЛЯ МАРКЕТПЛЕЙСОВ
             if (mGroup === 'market') {
                 let tCom = tx.marketCommission || 0;
                 let tLog = tx.marketLogistics || 0;
@@ -2993,7 +2987,6 @@ async function renderReport() {
                 
                 detHtml += `<div class="acc-detail-row" style="font-weight: bold; border-top: 1px dashed var(--border-main); margin-top: 4px; padding-top: 4px;"><span>${strNet}</span><span style="color:${sumColor}">${tNet.toLocaleString()}</span></div>`;
                 
-                // Перезаписываем сумму чека на Net, чтобы в шапке показывалась чистая прибыль
                 txSum = tNet;
             }
 
