@@ -228,6 +228,10 @@
                 smart_merge_loading_text: "Не закрывайте страницу.<br>Идет загрузка.",
                 smart_merge_success_title: "Готово!",
                 smart_merge_success_text: "Восстановлено строк:",
+                pay_market_full: "МАРКЕТЫ",
+                report_market_commission: "Комиссия маркета",
+                report_market_logistics: "Логистика",
+                report_market_net: "К выплате",
 
                 // Универсальные кнопки
                 swal_cancel: "ОТМЕНА"
@@ -461,6 +465,10 @@
                 smart_merge_loading_text: "Бетті жаппаңыз.<br>Қалпына келтіру жүріп жатыр.",
                 smart_merge_success_title: "Дайын!",
                 smart_merge_success_text: "Қалпына келтірілді (жол саны):",
+                pay_market_full: "МАРКЕТТЕР",
+                report_market_commission: "Маркет комиссиясы",
+                report_market_logistics: "Логистика",
+                report_market_net: "Төлеуге",
 
                 // Әмбебап батырмалар
                 swal_cancel: "БАС ТАРТУ"
@@ -2788,7 +2796,6 @@ async function renderReport() {
     }
 
     let fullQueue = JSON.parse(localStorage.getItem('offlineQueue') || '[]');
-    // Выбираем из очереди только чеки продаж
     let queue = fullQueue.filter(item => item.tx_type === 'sale' || item.cart);
     if (queue.length > 0) {
         queue.forEach(qTx => {
@@ -2805,22 +2812,22 @@ async function renderReport() {
         });
     }
 
-    const methodNames = { 'cash': translations[currentLang].pay_cash, 'qr_kaspi': 'QR', 'installment': 'Red', 'pos_terminal': translations[currentLang].pay_card, 'transfer': translations[currentLang].pay_trans };
-    const methodColors = { 'cash': 'var(--pay-cash)', 'qr_kaspi': 'var(--pay-qr)', 'installment': 'var(--pay-red)', 'pos_terminal': 'var(--pay-card)', 'transfer': 'var(--pay-trans)' };
+    // Добавлены ключи для маркетов
+    const methodNames = { 'cash': translations[currentLang].pay_cash, 'qr_kaspi': 'QR', 'installment': 'Red', 'pos_terminal': translations[currentLang].pay_card, 'transfer': translations[currentLang].pay_trans, 'market': translations[currentLang].pay_market_full || 'МАРКЕТЫ' };
+    const methodColors = { 'cash': 'var(--pay-cash)', 'qr_kaspi': 'var(--pay-qr)', 'installment': 'var(--pay-red)', 'pos_terminal': 'var(--pay-card)', 'transfer': 'var(--pay-trans)', 'market': 'var(--pay-market)' };
     const uiStr = { sale: translations[currentLang].report_sales, ret: translations[currentLang].report_returns, avg: translations[currentLang].report_avg || 'ср:' };
 
     // ==========================================
-    // ШАГ 1: ЖЕЛЕЗОБЕТОННАЯ МАТЕМАТИКА (КАРТОЧКИ И ПОДВАЛ)
+    // ШАГ 1: ЖЕЛЕЗОБЕТОННАЯ МАТЕМАТИКА
     // ==========================================
-    let cardSums = { cash: 0, qr_kaspi: 0, pos_terminal: 0, installment: 0, transfer: 0 };
+    let cardSums = { cash: 0, qr_kaspi: 0, pos_terminal: 0, installment: 0, transfer: 0, market: 0 };
     let totalAllNet = 0;
-    
-    // Итоги для подвала (Считаются независимо от тумблеров 2x2!)
     let footSalesQty = 0, footSalesSum = 0, footRetQty = 0, footRetSum = 0;
 
     reportDataToRender.forEach(tx => {
         let isRet = (tx.type === 'return' || tx.type === 'refund');
         let m = tx.methodCode || 'cash';
+        let mGroup = m.includes('market') ? 'market' : m; // Умная группировка всех маркетов
         
         let txSum = 0, txQty = 0;
         tx.cart.forEach(c => {
@@ -2830,29 +2837,36 @@ async function renderReport() {
             txSum += s;
         });
 
-        // 1. Пополняем суммы карточек наверху
-        let sign = isRet ? -1 : 1;
-        if (cardSums[m] !== undefined) cardSums[m] += (txSum * sign);
-        totalAllNet += (txSum * sign);
+        // Если это маркет, берем чистую выплату (или считаем её как страховку)
+        let txNet = txSum;
+        if (mGroup === 'market') {
+            let tCom = tx.marketCommission || 0;
+            let tLog = tx.marketLogistics || 0;
+            txNet = tx.netPayoutTotal !== undefined ? tx.netPayoutTotal : (txSum - tCom - tLog);
+        }
 
-        // 2. Пополняем суммы подвала (Только для выбранной вкладки)
-        if (reportState.method === 'all' || reportState.method === m) {
-            if (isRet) {
-                footRetQty += txQty;
-                footRetSum += txSum;
-            } else {
-                footSalesQty += txQty;
-                footSalesSum += txSum;
-            }
+        let sign = isRet ? -1 : 1;
+        if (cardSums[mGroup] !== undefined) cardSums[mGroup] += (txNet * sign);
+        else cardSums[mGroup] = (txNet * sign);
+        
+        totalAllNet += (txNet * sign);
+
+        if (reportState.method === 'all' || reportState.method === mGroup) {
+            if (isRet) { footRetQty += txQty; footRetSum += txNet; } 
+            else { footSalesQty += txQty; footSalesSum += txNet; }
         }
     });
 
     document.getElementById('rep-sum-all').innerText = totalAllNet.toLocaleString() + ' ₸';
-    document.getElementById('rep-sum-cash').innerText = cardSums.cash.toLocaleString() + ' ₸';
-    document.getElementById('rep-sum-qr').innerText = cardSums.qr_kaspi.toLocaleString() + ' ₸';
-    document.getElementById('rep-sum-card').innerText = cardSums.pos_terminal.toLocaleString() + ' ₸';
-    document.getElementById('rep-sum-red').innerText = cardSums.installment.toLocaleString() + ' ₸';
-    document.getElementById('rep-sum-trans').innerText = cardSums.transfer.toLocaleString() + ' ₸';
+    document.getElementById('rep-sum-cash').innerText = (cardSums.cash || 0).toLocaleString() + ' ₸';
+    document.getElementById('rep-sum-qr').innerText = (cardSums.qr_kaspi || 0).toLocaleString() + ' ₸';
+    document.getElementById('rep-sum-card').innerText = (cardSums.pos_terminal || 0).toLocaleString() + ' ₸';
+    document.getElementById('rep-sum-red').innerText = (cardSums.installment || 0).toLocaleString() + ' ₸';
+    document.getElementById('rep-sum-trans').innerText = (cardSums.transfer || 0).toLocaleString() + ' ₸';
+    
+    // Обновляем новую карточку
+    const marketCardSum = document.getElementById('rep-sum-market');
+    if (marketCardSum) marketCardSum.innerText = (cardSums.market || 0).toLocaleString() + ' ₸';
 
     if (!reportDataToRender || reportDataToRender.length === 0) {
         repList.innerHTML = `<div style="text-align:center; color:var(--text-muted); margin-top:30px; font-size: 13px;">${translations[currentLang].msg_no_data}</div>`;
@@ -2861,51 +2875,50 @@ async function renderReport() {
     }
 
     // ==========================================
-    // ШАГ 2: НАРЕЗКА СПИСКА (УНИВЕРСАЛЬНАЯ ЛОГИКА 2x2)
+    // ШАГ 2: НАРЕЗКА СПИСКА
     // ==========================================
     let htmlString = '';
-
-    // 1. Фильтр по способу оплаты (Кнопка "ВСЕ" пропускает всё)
     let viewTx = reportDataToRender;
+    
+    // Фильтр по способу оплаты с учетом группировки маркетов
     if (reportState.method !== 'all') {
-        viewTx = viewTx.filter(tx => (tx.methodCode || 'cash') === reportState.method);
+        viewTx = viewTx.filter(tx => {
+            let grp = (tx.methodCode || 'cash').includes('market') ? 'market' : (tx.methodCode || 'cash');
+            return grp === reportState.method;
+        });
     }
 
-    // 2. Фильтр по типу (Продажи / Возвраты) - ПЕРВЫЙ ТУМБЛЕР 2x2
     let isSaleMode = reportState.type === 'sale';
     viewTx = viewTx.filter(tx => isSaleMode ? (tx.type !== 'return' && tx.type !== 'refund') : (tx.type === 'return' || tx.type === 'refund'));
 
     let sumColor = isSaleMode ? 'var(--accent-green)' : 'var(--accent-red)';
     let signPrefix = isSaleMode ? '' : '-';
 
-    // 3. Разделение на Товары / Чеки - ВТОРОЙ ТУМБЛЕР 2x2
     if (reportState.view === 'items') {
         let agg = {};
-        
         viewTx.forEach(tx => {
-            let m = tx.methodCode || 'cash';
+            let mGroup = (tx.methodCode || 'cash').includes('market') ? 'market' : (tx.methodCode || 'cash');
             tx.cart.forEach(c => {
-                // В режиме "ВСЕ" разделяем один и тот же товар на разные строки по способу оплаты (Товар [Нал], Товар [Карт])
-                let key = reportState.method === 'all' ? `${c.name}_${m}` : c.name;
-                
-                if (!agg[key]) agg[key] = { name: c.name, method: m, qty:0, sum:0, sellers:{} };
+                let key = reportState.method === 'all' ? `${c.name}_${mGroup}` : c.name;
+                if (!agg[key]) agg[key] = { name: c.name, method: mGroup, qty:0, sum:0, sellers:{} };
                 if (!agg[key].sellers[tx.seller]) agg[key].sellers[tx.seller] = { qty:0, sum:0 };
                 
                 let q = Math.abs(c.qty); 
                 let s = q * Math.abs(c.price);
                 
+                // Для маркетов считаем чистую сумму товара, чтобы итоги сошлись с подвалом
+                let cNet = mGroup === 'market' ? (c.netPayout !== undefined ? c.netPayout : (s - (c.commission||0) - (c.logistics||0))) : s;
+                
                 agg[key].qty += q; 
-                agg[key].sum += s;
+                agg[key].sum += cNet;
                 agg[key].sellers[tx.seller].qty += q; 
-                agg[key].sellers[tx.seller].sum += s;
+                agg[key].sellers[tx.seller].sum += cNet;
             });
         });
 
         let sorted = Object.values(agg).sort((a,b) => b.sum - a.sum);
-        
         sorted.forEach(item => {
             let mColor = methodColors[item.method] || 'var(--text-muted)';
-            // Тег оплаты показываем только если нажата кнопка "ВСЕ"
             let methodTag = reportState.method === 'all' ? ` <span class="acc-method-tag" style="color:${mColor}; font-size:10px;">[${methodNames[item.method]}]</span>` : '';
             
             let detHtml = '';
@@ -2927,13 +2940,12 @@ async function renderReport() {
         });
 
     } else {
-        // Режим "ЧЕКИ"
+        // Режим "ЧЕКИ" с детализацией вычетов
         viewTx.forEach(tx => {
             let txSum = 0; let txQty = 0;
-            let m = tx.methodCode || 'cash';
-            let mColor = methodColors[m] || 'var(--text-muted)';
-            // Тег оплаты для чека показываем только если нажата кнопка "ВСЕ"
-            let methodTag = reportState.method === 'all' ? ` <span style="color:${mColor}; font-size:10px;">[${methodNames[m]}]</span>` : '';
+            let mGroup = (tx.methodCode || 'cash').includes('market') ? 'market' : (tx.methodCode || 'cash');
+            let mColor = methodColors[mGroup] || 'var(--text-muted)';
+            let methodTag = reportState.method === 'all' ? ` <span style="color:${mColor}; font-size:10px;">[${methodNames[mGroup]}]</span>` : '';
 
             let detHtml = '';
             tx.cart.forEach(c => {
@@ -2941,6 +2953,25 @@ async function renderReport() {
                 txSum += s; txQty += q;
                 detHtml += `<div class="acc-detail-row"><span>${c.name}</span><span style="color:${sumColor}">${q} x ${Math.abs(c.price).toLocaleString()}</span></div>`;
             });
+
+            // ВНЕДРЯЕМ БЛОК ВЫЧЕТОВ ДЛЯ МАРКЕТПЛЕЙСОВ
+            if (mGroup === 'market') {
+                let tCom = tx.marketCommission || 0;
+                let tLog = tx.marketLogistics || 0;
+                let tNet = tx.netPayoutTotal !== undefined ? tx.netPayoutTotal : (txSum - tCom - tLog);
+                
+                let strCom = translations[currentLang].report_market_commission || "Комиссия маркета";
+                let strLog = translations[currentLang].report_market_logistics || "Логистика";
+                let strNet = translations[currentLang].report_market_net || "К выплате";
+
+                if (tCom > 0) detHtml += `<div class="acc-detail-row" style="color: var(--accent-red); font-size: 11px;"><span>↳ ${strCom}</span><span>-${tCom.toLocaleString()}</span></div>`;
+                if (tLog > 0) detHtml += `<div class="acc-detail-row" style="color: var(--accent-red); font-size: 11px;"><span>↳ ${strLog}</span><span>-${tLog.toLocaleString()}</span></div>`;
+                
+                detHtml += `<div class="acc-detail-row" style="font-weight: bold; border-top: 1px dashed var(--border-main); margin-top: 4px; padding-top: 4px;"><span>${strNet}</span><span style="color:${sumColor}">${tNet.toLocaleString()}</span></div>`;
+                
+                // Перезаписываем сумму чека на Net, чтобы в шапке показывалась чистая прибыль
+                txSum = tNet;
+            }
 
             htmlString += `
                 <div class="acc-item" data-name="${tx.date} ${tx.time}" style="border-left: 3px solid ${mColor};" onclick="this.classList.toggle('open')">
@@ -2957,7 +2988,6 @@ async function renderReport() {
     if (htmlString === '') {
         htmlString = `<div style="text-align:center; color:var(--text-muted); margin-top:30px; font-size:13px;">ОПЕРАЦИЙ НЕ НАЙДЕНО</div>`;
     }
-
     repList.innerHTML = htmlString;
 
     // ==========================================
@@ -2994,17 +3024,14 @@ async function renderReport() {
 function setReportMethod(method, element, activeClass) {
     reportState.method = method;
     
-    // Сбрасываем стили всех карточек
     document.querySelectorAll('.method-card').forEach(c => c.className = 'method-card');
     if (element) element.classList.add(activeClass);
     
-    // Теперь матрица 2x2 будет видна ВСЕГДА
     const toggles = document.getElementById('rep-toggles-row');
     if (toggles) toggles.style.display = 'flex';
     
-    // Очищаем поиск при смене вкладки
     clearReportSearch();
-    renderReport(); // Мгновенно перерисовываем
+    renderReport(); 
 }
 
 function setReportType(type) {
