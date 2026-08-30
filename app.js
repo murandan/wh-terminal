@@ -2896,32 +2896,55 @@ async function renderReport() {
 
     if (reportState.view === 'items') {
         let agg = {};
+        
         viewTx.forEach(tx => {
             let mGroup = (tx.methodCode || 'cash').includes('market') ? 'market' : (tx.methodCode || 'cash');
             tx.cart.forEach(c => {
                 let key = reportState.method === 'all' ? `${c.name}_${mGroup}` : c.name;
-                if (!agg[key]) agg[key] = { name: c.name, method: mGroup, qty:0, sum:0, sellers:{} };
+                
+                // Добавляем счетчики для грязной суммы, комиссии и логистики
+                if (!agg[key]) agg[key] = { name: c.name, method: mGroup, qty:0, sum:0, sellers:{}, rawGross:0, totalCom:0, totalLog:0 };
                 if (!agg[key].sellers[tx.seller]) agg[key].sellers[tx.seller] = { qty:0, sum:0 };
                 
                 let q = Math.abs(c.qty); 
                 let s = q * Math.abs(c.price);
                 
-                // Для маркетов считаем чистую сумму товара, чтобы итоги сошлись с подвалом
-                let cNet = mGroup === 'market' ? (c.netPayout !== undefined ? c.netPayout : (s - (c.commission||0) - (c.logistics||0))) : s;
+                let cCom = c.commission || 0;
+                let cLog = c.logistics || 0;
+                let cNet = mGroup === 'market' ? (c.netPayout !== undefined ? c.netPayout : (s - cCom - cLog)) : s;
                 
                 agg[key].qty += q; 
-                agg[key].sum += cNet;
+                agg[key].sum += cNet;         // Чистая прибыль
+                agg[key].rawGross += s;       // Грязная сумма (для визуала)
+                agg[key].totalCom += cCom;    // Сумма комиссий по товару
+                agg[key].totalLog += cLog;    // Сумма логистики по товару
+                
                 agg[key].sellers[tx.seller].qty += q; 
                 agg[key].sellers[tx.seller].sum += cNet;
             });
         });
 
         let sorted = Object.values(agg).sort((a,b) => b.sum - a.sum);
+        
         sorted.forEach(item => {
             let mColor = methodColors[item.method] || 'var(--text-muted)';
             let methodTag = reportState.method === 'all' ? ` <span class="acc-method-tag" style="color:${mColor}; font-size:10px;">[${methodNames[item.method]}]</span>` : '';
             
             let detHtml = '';
+            
+            // ЕСЛИ ЭТО МАРКЕТ — ВЫВОДИМ РАСШИФРОВКУ ДЛЯ ТОВАРА
+            if (item.method === 'market' && (item.totalCom > 0 || item.totalLog > 0)) {
+                let strCom = translations[currentLang].report_market_commission || "Комиссия маркета";
+                let strLog = translations[currentLang].report_market_logistics || "Логистика";
+                let strNet = translations[currentLang].report_market_net || "К выплате";
+
+                detHtml += `<div class="acc-detail-row" style="color: var(--text-muted); font-size: 11px;"><span>Исходная сумма:</span><span>${item.rawGross.toLocaleString()}</span></div>`;
+                if (item.totalCom > 0) detHtml += `<div class="acc-detail-row" style="color: var(--accent-red); font-size: 11px;"><span>↳ ${strCom}</span><span>-${item.totalCom.toLocaleString()}</span></div>`;
+                if (item.totalLog > 0) detHtml += `<div class="acc-detail-row" style="color: var(--accent-red); font-size: 11px;"><span>↳ ${strLog}</span><span>-${item.totalLog.toLocaleString()}</span></div>`;
+                detHtml += `<div class="acc-detail-row" style="font-weight: bold; border-top: 1px dashed var(--border-main); margin-top: 4px; padding-top: 4px; margin-bottom: 8px;"><span>Итого ${strNet}:</span><span style="color:${sumColor}">${item.sum.toLocaleString()}</span></div>`;
+            }
+
+            // Классическая раскладка по продавцам
             for (let seller in item.sellers) {
                 let s = item.sellers[seller];
                 let lbl = isSaleMode ? uiStr.sale : uiStr.ret;
@@ -2938,6 +2961,7 @@ async function renderReport() {
                     <div class="acc-body">${detHtml}</div>
                 </div>`;
         });
+    }
 
     } else {
         // Режим "ЧЕКИ" с детализацией вычетов
