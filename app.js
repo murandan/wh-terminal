@@ -2931,15 +2931,20 @@ async function renderReport() {
             
             let detHtml = '';
             
+            // ВНЕДРЕНЫ ДИНАМИЧЕСКИЕ ПЕРЕВОДЫ ДЛЯ ТЕКСТА
             if (item.method === 'market' && (item.totalCom > 0 || item.totalLog > 0)) {
                 let strCom = translations[currentLang].report_market_commission || "Комиссия маркета";
                 let strLog = translations[currentLang].report_market_logistics || "Логистика";
                 let strNet = translations[currentLang].report_market_net || "К выплате";
+                
+                // Авто-перевод без добавления в словарь
+                let strGross = currentLang === 'kz' ? "Бастапқы сома" : "Исходная сумма";
+                let strTotal = currentLang === 'kz' ? "Жиыны" : "Итого"; 
 
-                detHtml += `<div class="acc-detail-row" style="color: var(--text-muted); font-size: 11px;"><span>Исходная сумма:</span><span>${item.rawGross.toLocaleString()}</span></div>`;
+                detHtml += `<div class="acc-detail-row" style="color: var(--text-muted); font-size: 11px;"><span>${strGross}:</span><span>${item.rawGross.toLocaleString()}</span></div>`;
                 if (item.totalCom > 0) detHtml += `<div class="acc-detail-row" style="color: var(--accent-red); font-size: 11px;"><span>↳ ${strCom}</span><span>-${item.totalCom.toLocaleString()}</span></div>`;
                 if (item.totalLog > 0) detHtml += `<div class="acc-detail-row" style="color: var(--accent-red); font-size: 11px;"><span>↳ ${strLog}</span><span>-${item.totalLog.toLocaleString()}</span></div>`;
-                detHtml += `<div class="acc-detail-row" style="font-weight: bold; border-top: 1px dashed var(--border-main); margin-top: 4px; padding-top: 4px; margin-bottom: 8px;"><span>Итого ${strNet}:</span><span style="color:${sumColor}">${item.sum.toLocaleString()}</span></div>`;
+                detHtml += `<div class="acc-detail-row" style="font-weight: bold; border-top: 1px dashed var(--border-main); margin-top: 4px; padding-top: 4px; margin-bottom: 8px;"><span>${strTotal} ${strNet.toLowerCase()}:</span><span style="color:${sumColor}">${item.sum.toLocaleString()}</span></div>`;
             }
 
             for (let seller in item.sellers) {
