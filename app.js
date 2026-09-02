@@ -5149,11 +5149,18 @@ window.openFullscreenSupplier = function() {
 // 2. ФИЛЬТРАЦИЯ И ОТРИСОВКА СПИСКА
 // ==========================================
 window.filterFullscreenSuppliers = function() {
+    console.log("🔍 [TEST] Функция фильтрации запустилась!"); 
+
     const listContainers = document.querySelectorAll('#fullscreen-supplier-list');
+    console.log("📦 [TEST] Контейнеров найдено:", listContainers.length); 
+
     const searchInputs = document.querySelectorAll('#fullscreen-supplier-search');
     const addNewBtns = document.querySelectorAll('#fullscreen-add-new-btn');
     
-    if (listContainers.length === 0) return;
+    if (listContainers.length === 0) {
+        console.log("❌ [TEST] ОШИБКА: Контейнер для списка не найден в HTML!");
+        return;
+    }
 
     // Читаем текст только из видимого поля поиска
     let filterText = '';
@@ -5166,6 +5173,8 @@ window.filterFullscreenSuppliers = function() {
     
     const lowerFilter = filterText.toLowerCase();
     const suppliers = (window.suppliers || []).map(String);
+    console.log("👥 [TEST] Поставщиков в памяти:", suppliers.length);
+    
     const filtered = suppliers.filter(s => s.toLowerCase().includes(lowerFilter));
     filtered.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
     
