@@ -387,6 +387,7 @@
 .method-card.active-card { border-color: var(--pay-card); background: rgba(52, 152, 219, 0.1); }
 .method-card.active-red { border-color: var(--pay-red); background: rgba(155, 89, 182, 0.1); }
 .method-card.active-trans { border-color: var(--pay-trans); background: rgba(243, 156, 18, 0.1); }
+.method-card.active-market { border-color: var(--pay-market); background: rgba(147, 147, 97, 0.1); }
 
 .toggles-row { display: flex; gap: 6px; padding: 6px 10px; background: var(--bg-body); border-bottom: 1px solid var(--border-main); align-items: center; transition: 0.2s; }
 .t-group { display: flex; flex: 1; background: var(--bg-panel); border-radius: 4px; border: 1px solid var(--border-main); overflow: hidden; }

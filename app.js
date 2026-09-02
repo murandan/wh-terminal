@@ -2838,7 +2838,9 @@ async function renderReport() {
         'market': 'var(--pay-market)' 
     };
     const uiStr = { sale: translations[currentLang].report_sales, ret: translations[currentLang].report_returns, avg: translations[currentLang].report_avg || 'ср:' };
-
+    // ОТСЕКАЕМ РЕЗЕРВЫ (Они еще не стали деньгами и не должны идти в отчет)
+    reportDataToRender = reportDataToRender.filter(tx => tx.type !== 'reserve' && tx.type !== 'unreserve');
+    
     // ==========================================
     // ШАГ 1: ЖЕЛЕЗОБЕТОННАЯ МАТЕМАТИКА
     // ==========================================
