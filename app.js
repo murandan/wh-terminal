@@ -20,6 +20,7 @@
                 msg_no_data: "ОПЕРАЦИЙ НЕ НАЙДЕНО", msg_server_error: "ОШИБКА СЕРВЕРА",
                 report_avg: "ср:",
                 income_title: "📦 ИМПОРТ НАКЛАДНОЙ",
+                inc_sup_unknown: "Не указан",
                 income_rate: "Курс USD/KZT:",
                 income_file: "Выберите файл:",
                 income_parse: "ОБРАБОТАТЬ ФАЙЛ",
@@ -257,6 +258,7 @@
                 msg_no_data: "ОПЕРАЦИЯЛАР ЖОҚ", msg_server_error: "СЕРВЕР ҚАТЕСІ",
                 report_avg: "орт:",
                 income_title: "📦 ЖҮКҚҰЖАТТЫ ИМПОРТТАУ",
+                inc_sup_unknown: "Көрсетілмеген",
                 income_rate: "USD/KZT бағамы:",
                 income_file: "Файлды таңдаңыз:",
                 income_parse: "ФАЙЛДЫ ӨҢДЕУ",
@@ -3518,18 +3520,10 @@ function setReportView(view) {
                             }
                         }
                     }
+                    // Если слово "поставщик" не найдено, берем значение из словаря
                     if (file_supplier === 'UNKNOWN') {
-                        for (let i = 0; i < Math.min(8, rows.length); i++) {
-                            let row = rows[i] || [];
-                            let text = String(row[0] || "").trim();
-                            
-                            // --- ИСПРАВЛЕНИЕ 1: Защита поставщика от заголовков (SKU, ID и т.д.) ---
-                            const badSuppliers = ['sku', 'id', 'код', 'штрихкод', 'barcode', 'item', 'наименование', 'name', 'model', 'qty', 'price', 'кол', 'бренд', 'brand'];
-                            if (text && !excludes.some(ex => text.toLowerCase().includes(ex.toLowerCase())) && !badSuppliers.includes(text.toLowerCase())) {
-                                file_supplier = text.replace(/^"|"$/g, '');
-                                break;
-                            }
-                        }
+                        // Используем fallback ('Не указан') на случай, если ключ забудут добавить в словарь
+                        file_supplier = translations[currentLang].inc_sup_unknown || 'Не указан'; 
                     }
                 }
 
@@ -3728,7 +3722,12 @@ function setReportView(view) {
                                     }
                                 }
 
-                                let finalName = nameParts.join(' ').trim();
+                                // Берем Бренд и Название (model) напрямую из найденных колонок
+                                let finalNameParts = [];
+                                if (brandStr) finalNameParts.push(brandStr.toUpperCase());
+                                if (descStr) finalNameParts.push(descStr);
+
+                                let finalName = finalNameParts.join(' ').trim();
                                 if (finalName === "") finalName = codeCell;
 
                                 idParts.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
@@ -3785,7 +3784,7 @@ function setReportView(view) {
         }
 
         if (file_doc_no === 'UNKNOWN') fileErrors.push(translations[currentLang].inc_err_no_doc);
-        if (file_supplier === 'UNKNOWN') fileErrors.push(translations[currentLang].inc_err_no_sup);
+        // if (file_supplier === 'UNKNOWN') fileErrors.push(translations[currentLang].inc_err_no_sup);
         
         if (!fileParsedSuccessfully) {
             fileErrors.push(sheetErrorsList.join('<br>'));
