@@ -4136,7 +4136,7 @@ function cancelResetHold(btn, e) {
                 const cmdId = 'BM-' + Math.random().toString(36).substring(7).toUpperCase();
 
                 const commandTx = {
-                    action: 'bulk_markup_command', // Тот самый ключ для бэкенда
+                    action: 'bulk_markup', // Тот самый ключ для бэкенда
                     tx_id: cmdId,
                     created_at: localTime,
                     category: targetMarkupCategory,
