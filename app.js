@@ -3454,415 +3454,406 @@ function setReportView(view) {
         }
 
         async function processInvoiceFile() {
-            const fileInput = document.getElementById('invoiceFileInput');
-            if (!fileInput.files.length) return alert(translations[currentLang].inc_no_file);
+    const fileInput = document.getElementById('invoiceFileInput');
+    if (!fileInput.files.length) return alert(translations[currentLang].inc_no_file);
 
-            parsedInvoiceData = []; 
-            invoiceGroups = {}; 
-            let processingLogs = []; 
+    parsedInvoiceData = []; 
+    invoiceGroups = {}; 
+    let processingLogs = []; 
 
-            const markers = (invoiceSynonyms['supplier_keywords'] || ["the seller", "vendor", "supplier", "поставщик"]);
-            const excludes = (invoiceSynonyms['exclude'] || ["commercial invoice", "packing list", "invoice", "specification", "sales contract", "contract"]);
+    const markers = (invoiceSynonyms['supplier_keywords'] || ["the seller", "vendor", "supplier", "поставщик"]);
+    const excludes = (invoiceSynonyms['exclude'] || ["commercial invoice", "packing list", "invoice", "specification", "sales contract", "contract"]);
 
-            function isSynonym(cellValue, targetKey) {
-                if (!cellValue) return false;
-                const cleanCell = String(cellValue).replace(/\s+/g, '').toLowerCase();
-                const synonymsList = (invoiceSynonyms[targetKey] || []).map(s => s.replace(/\s+/g, '').toLowerCase());
-                return synonymsList.some(syn => syn !== "" && cleanCell.includes(syn));
-            }
+    function isSynonym(cellValue, targetKey) {
+        if (!cellValue) return false;
+        const cleanCell = String(cellValue).replace(/\s+/g, '').toLowerCase();
+        const synonymsList = (invoiceSynonyms[targetKey] || []).map(s => s.replace(/\s+/g, '').toLowerCase());
+        return synonymsList.some(syn => syn !== "" && cleanCell.includes(syn));
+    }
 
-            for (let file of fileInput.files) {
-                let fileErrors = [];
-                let itemsInFile = 0;
-                let fileParsedSuccessfully = false;
-                let sheetErrorsList = []; 
+    for (let file of fileInput.files) {
+        let fileErrors = [];
+        let itemsInFile = 0;
+        let fileParsedSuccessfully = false;
+        let sheetErrorsList = []; 
 
-                const b64Promise = new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => resolve(e.target.result);
-                    reader.readAsDataURL(file);
-                });
-                const originalBase64 = await b64Promise;
+        const b64Promise = new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.readAsDataURL(file);
+        });
+        const originalBase64 = await b64Promise;
 
-                const dataPromise = new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onload = (e) => resolve(new Uint8Array(e.target.result));
-                    reader.readAsArrayBuffer(file);
-                });
+        const dataPromise = new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(new Uint8Array(e.target.result));
+            reader.readAsArrayBuffer(file);
+        });
 
-                const arrayBuffer = await dataPromise;
-                let file_doc_no = 'UNKNOWN';
-                let file_supplier = 'UNKNOWN';
+        const arrayBuffer = await dataPromise;
+        let file_doc_no = 'UNKNOWN';
+        let file_supplier = 'UNKNOWN';
 
-                try {
-                    const workbook = XLSX.read(arrayBuffer, {type: 'array'});
-                    
-                    for (let sheetName of workbook.SheetNames) {
-                        const worksheet = workbook.Sheets[sheetName];
-                        const rows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
-                        if (!rows || rows.length === 0) continue;
+        try {
+            const workbook = XLSX.read(arrayBuffer, {type: 'array'});
+            
+            for (let sheetName of workbook.SheetNames) {
+                const worksheet = workbook.Sheets[sheetName];
+                const rows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+                if (!rows || rows.length === 0) continue;
 
-                        if (file_supplier === 'UNKNOWN') {
-                            for (let i = 0; i < Math.min(10, rows.length); i++) {
-                                let row = rows[i];
-                                if (!row) continue;
-                                for (let j = 0; j < row.length; j++) {
-                                    let cellVal = String(row[j] || "").toLowerCase();
-                                    if (markers.some(m => cellVal.includes(m.toLowerCase()))) {
-                                        for (let k = j + 1; k < row.length; k++) {
-                                            if (row[k] && String(row[k]).trim() !== '') {
-                                                file_supplier = String(row[k]).trim().replace(/^"|"$/g, ''); 
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            if (file_supplier === 'UNKNOWN') {
-                                for (let i = 0; i < Math.min(8, rows.length); i++) {
-                                    let row = rows[i] || [];
-                                    let text = String(row[0] || "").trim();
-                                    if (text && !excludes.some(ex => text.toLowerCase().includes(ex.toLowerCase()))) {
-                                        file_supplier = text.replace(/^"|"$/g, '');
+                if (file_supplier === 'UNKNOWN') {
+                    for (let i = 0; i < Math.min(10, rows.length); i++) {
+                        let row = rows[i];
+                        if (!row) continue;
+                        for (let j = 0; j < row.length; j++) {
+                            let cellVal = String(row[j] || "").toLowerCase();
+                            if (markers.some(m => cellVal.includes(m.toLowerCase()))) {
+                                for (let k = j + 1; k < row.length; k++) {
+                                    if (row[k] && String(row[k]).trim() !== '') {
+                                        file_supplier = String(row[k]).trim().replace(/^"|"$/g, ''); 
                                         break;
                                     }
                                 }
                             }
                         }
-
-                        if (file_doc_no === 'UNKNOWN') {
-                            for (let i = 0; i < Math.min(20, rows.length); i++) {
-                                let row = rows[i] || [];
-                                for (let j = 0; j < row.length; j++) {
-                                    if (isSynonym(row[j], 'invoice_no')) {
-                                        let val = String(row[j+1] || '').trim();
-                                        if (val && val !== 'UNKNOWN') file_doc_no = val;
-                                    }
-                                }
-                            }
-                        }
-
-                        // НОВОЕ: Если оригинальный номер не найден — ставим заглушку (Дата+Время)
-                        if (file_doc_no === 'UNKNOWN' || file_doc_no === '') {
-                            let now = new Date();
-                            let day = String(now.getDate()).padStart(2, '0');
-                            let month = String(now.getMonth() + 1).padStart(2, '0');
-                            let hours = String(now.getHours()).padStart(2, '0');
-                            let minutes = String(now.getMinutes()).padStart(2, '0');
-                            file_doc_no = `IN-${day}.${month}-${hours}${minutes}`;
-                        }
-
-                        let firstDataRowIdx = -1;
-                        for (let i = 0; i < Math.min(50, rows.length); i++) {
+                    }
+                    if (file_supplier === 'UNKNOWN') {
+                        for (let i = 0; i < Math.min(8, rows.length); i++) {
                             let row = rows[i] || [];
-                            if (row.length === 0) continue;
+                            let text = String(row[0] || "").trim();
+                            
+                            // --- ИСПРАВЛЕНИЕ 1: Защита поставщика от заголовков (SKU, ID и т.д.) ---
+                            const badSuppliers = ['sku', 'id', 'код', 'штрихкод', 'barcode', 'item', 'наименование', 'name', 'model', 'qty', 'price', 'кол', 'бренд', 'brand'];
+                            if (text && !excludes.some(ex => text.toLowerCase().includes(ex.toLowerCase())) && !badSuppliers.includes(text.toLowerCase())) {
+                                file_supplier = text.replace(/^"|"$/g, '');
+                                break;
+                            }
+                        }
+                    }
+                }
 
-                            let numCount = row.filter(c => {
-                                let val = String(c).trim().replace(/,/g, '');
-                                return val !== '' && !isNaN(Number(val));
-                            }).length;
+                if (file_doc_no === 'UNKNOWN') {
+                    for (let i = 0; i < Math.min(20, rows.length); i++) {
+                        let row = rows[i] || [];
+                        for (let j = 0; j < row.length; j++) {
+                            if (isSynonym(row[j], 'invoice_no')) {
+                                let val = String(row[j+1] || '').trim();
+                                if (val && val !== 'UNKNOWN') file_doc_no = val;
+                            }
+                        }
+                    }
+                }
 
-                            if (numCount >= 2) {
-                                let firstCol = String(row[0] || '').toUpperCase();
-                                if (!firstCol.includes('TOTAL')) {
-                                    firstDataRowIdx = i;
-                                    break;
-                                }
+                if (file_doc_no === 'UNKNOWN' || file_doc_no === '') {
+                    let now = new Date();
+                    let day = String(now.getDate()).padStart(2, '0');
+                    let month = String(now.getMonth() + 1).padStart(2, '0');
+                    let hours = String(now.getHours()).padStart(2, '0');
+                    let minutes = String(now.getMinutes()).padStart(2, '0');
+                    file_doc_no = `IN-${day}.${month}-${hours}${minutes}`;
+                }
+
+                let firstDataRowIdx = -1;
+                for (let i = 0; i < Math.min(50, rows.length); i++) {
+                    let row = rows[i] || [];
+                    if (row.length === 0) continue;
+
+                    let numCount = row.filter(c => {
+                        let val = String(c).trim().replace(/,/g, '');
+                        return val !== '' && !isNaN(Number(val));
+                    }).length;
+
+                    if (numCount >= 2) {
+                        let firstCol = String(row[0] || '').toUpperCase();
+                        if (!firstCol.includes('TOTAL')) {
+                            firstDataRowIdx = i;
+                            break;
+                        }
+                    }
+                }
+
+                if (firstDataRowIdx > 0) {
+                    let headerRowIdx = firstDataRowIdx - 1;
+                    
+                    // --- ИСПРАВЛЕНИЕ 2: Добавлено поле barcode: -1 в colMap ---
+                    let colMap = { code: -1, barcode: -1, brand: -1, desc: -1, qty: -1, price: -1, cbm: -1, weight: -1 };
+                    
+                    let headerRow = rows[headerRowIdx] || []; 
+                    
+                    let baseKeys = [];
+                    if (invoiceSynonyms && invoiceSynonyms['system_ignore_in_id']) {
+                        baseKeys = invoiceSynonyms['system_ignore_in_id'].map(s => s.toLowerCase().trim());
+                    }
+                    
+                    ['id', 'qty', 'price', 'cost', 'cbm', 'weight', 'barcode', 'exclude', 'supplier_keywords', 'invoice_no', 'contract_no'].forEach(k => {
+                        if (!baseKeys.includes(k)) baseKeys.push(k);
+                    });
+
+                    let activeCols = [];
+                    
+                    for (let j = 0; j < headerRow.length; j++) {
+                        let val = String(headerRow[j] || '').replace(/[\r\n]+/g, ' ').trim();
+                        
+                        if (val.toLowerCase().includes('total') || val.toLowerCase().includes('итого') || val.toLowerCase().includes('общий')) {
+                            continue; 
+                        }
+                        
+                        if (colMap.code === -1 && isSynonym(val, 'id')) colMap.code = j;
+                        // --- ИСПРАВЛЕНИЕ 2 (продолжение): Поиск колонки со штрихкодом ---
+                        if (colMap.barcode === -1 && isSynonym(val, 'barcode')) colMap.barcode = j; 
+                        if (colMap.qty === -1 && isSynonym(val, 'qty')) colMap.qty = j;
+                        if (colMap.price === -1 && isSynonym(val, 'price')) colMap.price = j;
+                        if (colMap.brand === -1 && isSynonym(val, 'brand')) colMap.brand = j;
+                        if (colMap.desc === -1 && isSynonym(val, 'name')) colMap.desc = j;
+                        if (colMap.cbm === -1 && isSynonym(val, 'cbm')) colMap.cbm = j;
+                        if (colMap.weight === -1 && isSynonym(val, 'weight')) colMap.weight = j;
+
+                        let isSystemColumn = false;
+                        for (let bk of baseKeys) {
+                            if (isSynonym(val, bk)) {
+                                isSystemColumn = true;
+                                break;
                             }
                         }
 
-                        if (firstDataRowIdx > 0) {
-                            let headerRowIdx = firstDataRowIdx - 1;
-                            let colMap = { code: -1, brand: -1, desc: -1, qty: -1, price: -1, cbm: -1, weight: -1 };
-                            
-                            let headerRow = rows[headerRowIdx] || []; // <-- ЭТУ СТРОКУ ОСТАВЛЯЕМ!
-                            
-                            // 1. Читаем системные исключения
-                            let baseKeys = [];
-                            if (invoiceSynonyms && invoiceSynonyms['system_ignore_in_id']) {
-                                baseKeys = invoiceSynonyms['system_ignore_in_id'].map(s => s.toLowerCase().trim());
-                            }
-                            // ЖЕСТКИЙ ПРЕДОХРАНИТЕЛЬ (на случай опечаток в Google Таблице)
-                            ['id', 'qty', 'price', 'cost', 'cbm', 'weight', 'barcode', 'exclude', 'supplier_keywords', 'invoice_no', 'contract_no'].forEach(k => {
-                                if (!baseKeys.includes(k)) baseKeys.push(k);
-                            });
+                        if (isSystemColumn) continue;
 
-                            // 2. ЗАМЕНЯЕМ varMap НА МАССИВ (чтобы размер не затирался моделью)
-                            let activeCols = [];
-                            
-                            for (let j = 0; j < headerRow.length; j++) {
-                                let val = String(headerRow[j] || '').replace(/[\r\n]+/g, ' ').trim();
+                        if (invoiceSynonyms) {
+                            for (let key in invoiceSynonyms) {
+                                let cleanKey = key.trim().toLowerCase();
                                 
-                                if (val.toLowerCase().includes('total') || val.toLowerCase().includes('итого') || val.toLowerCase().includes('общий')) {
-                                    continue; 
-                                }
+                                if (cleanKey === 'system_ignore_in_id') continue;
                                 
-                                if (colMap.code === -1 && isSynonym(val, 'id')) colMap.code = j;
-                                if (colMap.qty === -1 && isSynonym(val, 'qty')) colMap.qty = j;
-                                if (colMap.price === -1 && isSynonym(val, 'price')) colMap.price = j;
-                                if (colMap.brand === -1 && isSynonym(val, 'brand')) colMap.brand = j;
-                                if (colMap.desc === -1 && isSynonym(val, 'name')) colMap.desc = j;
-                                if (colMap.cbm === -1 && isSynonym(val, 'cbm')) colMap.cbm = j;
-                                if (colMap.weight === -1 && isSynonym(val, 'weight')) colMap.weight = j;
-
-                                // --- ГЛАВНАЯ ЗАЩИТА ОТ СОВПАДЕНИЙ (unitPRice != PR) ---
-                                // Проверяем, не является ли эта колонка системной (цена, количество, инвойс и т.д.)
-                                let isSystemColumn = false;
-                                for (let bk of baseKeys) {
-                                    if (isSynonym(val, bk)) {
-                                        isSystemColumn = true;
-                                        break;
-                                    }
-                                }
-
-                                // Если это Цена или Кол-во, мы намертво блокируем её. Она не попадет в генератор ID!
-                                if (isSystemColumn) continue;
-
-                                if (invoiceSynonyms) {
-                                    for (let key in invoiceSynonyms) {
-                                        let cleanKey = key.trim().toLowerCase();
-                                        
-                                        if (cleanKey === 'system_ignore_in_id') continue;
-                                        
-                                        if (!baseKeys.includes(cleanKey)) {
-                                            if (isSynonym(val, key)) {
-                                                activeCols.push({ key: cleanKey, colIdx: j });
-                                                break; // Нашли совпадение — выходим, чтобы колонка не привязалась к двум ключам сразу
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            if (colMap.code !== -1 && colMap.qty !== -1 && colMap.price !== -1) {
-                                fileParsedSuccessfully = true; 
-                                
-                                if (!invoiceGroups[file_doc_no]) {
-                                    invoiceGroups[file_doc_no] = { supplier: file_supplier, items: [], originalFiles: [] };
-                                }
-
-                                // --- ИСПРАВЛЕНИЕ 2: ПАМЯТЬ ДЛЯ ОБЪЕДИНЕННЫХ ЯЧЕЕК ---
-                                let lastCode = "UNKNOWN";
-                                let lastBrand = "";
-                                let lastDesc = "";
-                                let varMemory = {}; // НОВОЕ: Память для параметров (размер, вылет и тд)
-
-                                for (let i = firstDataRowIdx; i < rows.length; i++) {
-                                    const row = rows[i];
-                                    if (!row || row.length === 0) continue;
-                                    
-                                    let codeCell = String(row[colMap.code] || '').trim();
-                                    let qty = parseFloat(row[colMap.qty]);
-                                    let price = parseFloat(row[colMap.price]);
-                                    let brandStr = colMap.brand !== -1 ? String(row[colMap.brand] || '').trim() : '';
-                                    let descStr = colMap.desc !== -1 ? String(row[colMap.desc] || '').trim() : '';
-
-                                    // Логика "Протягивания" вниз
-                                    if (codeCell === "" && (!isNaN(qty) || !isNaN(price))) {
-                                        // Если код пустой, но есть цифры -> берем данные из памяти
-                                        codeCell = lastCode;
-                                        if (brandStr === "") brandStr = lastBrand;
-                                        if (descStr === "") descStr = lastDesc;
-                                    } else if (codeCell !== "") {
-                                        // Если код написан, проверяем не конец ли это таблицы
-                                        if (codeCell.toUpperCase().includes('TOTAL')) break; 
-                                        // Запоминаем для следующих пустых строк
-                                        lastCode = codeCell;
-                                        lastBrand = brandStr;
-                                        lastDesc = descStr;
-                                    } else {
-                                        // Если и код пустой, и цифр нет - значит таблица кончилась
+                                if (!baseKeys.includes(cleanKey)) {
+                                    if (isSynonym(val, key)) {
+                                        activeCols.push({ key: cleanKey, colIdx: j });
                                         break; 
                                     }
-                                    
-                                    if (!isNaN(qty) && !isNaN(price)) {
-                                        
-                                        // --- НАЧАЛО НОВОГО БЛОКА ОЧИСТКИ И МАТЕМАТИКИ ---
-                                        let rawCbm = colMap.cbm !== -1 ? (parseFloat((row[colMap.cbm] || '0').toString().replace(',', '.')) || 0) : 0;
-                                        let finalCbm = rawCbm;
-
-                                        if (colMap.cbm !== -1 && qty > 0) {
-                                            let leftVal = parseFloat((row[colMap.cbm - 1] || '0').toString().replace(',', '.')) || 0;
-                                            let rightVal = parseFloat((row[colMap.cbm + 1] || '0').toString().replace(',', '.')) || 0;
-                                            
-                                            if (leftVal > 0 && rawCbm > 0 && Math.abs((leftVal * qty) - rawCbm) < 0.2) {
-                                                finalCbm = leftVal; 
-                                            } else if (rightVal > 0 && rawCbm > 0 && Math.abs((rightVal * qty) - rawCbm) < 0.2) {
-                                                finalCbm = rightVal; 
-                                            } else if (rawCbm === 0) {
-                                                if (leftVal > 0 && leftVal < 1) finalCbm = leftVal;
-                                                else if (rightVal > 0 && rightVal < 1) finalCbm = rightVal;
-                                            }
-                                        }
-                                        
-                                        let finalWeight = colMap.weight !== -1 ? (parseFloat((row[colMap.weight] || '0').toString().replace(',', '.')) || 0) : 0;
-
-                                        // --- РАЗДЕЛЬНАЯ ГЕНЕРАЦИЯ ID И ИМЕНИ ---
-                                        let allowedForName = ['brand', 'name', 'size']; // Что разрешено показывать на кассе
-                                        let excludeFromId = ['brand']; // ОПТИМИЗАЦИЯ: Что НЕ нужно дублировать в ID
-                                        
-                                        let nameParts = [];
-                                        let idParts = [];
-
-                                        // Идем по нашему массиву найденных колонок
-                                        for (let col of activeCols) {
-                                            let colIdx = col.colIdx;
-                                            let key = col.key;
-                                            
-                                            let cellVal = String(row[colIdx] || '').trim();
-                                            let activeVal = "";
-                                            
-                                            // Память столбцов (привязка к номеру колонки)
-                                            if (cellVal !== '') {
-                                                varMemory[colIdx] = cellVal;
-                                                activeVal = cellVal;
-                                            } else if (varMemory[colIdx]) {
-                                                activeVal = varMemory[colIdx];
-                                            }
-                                            
-                                            if (activeVal !== '') {
-                                                // 1. Для короткого Имени на кассе
-                                                if (allowedForName.includes(key)) {
-                                                    nameParts.push(activeVal.toUpperCase());
-                                                }
-                                                
-                                                // 2. Для длинного ID (Если ключ НЕ в списке исключений, добавляем его!)
-                                                if (!excludeFromId.includes(key)) {
-                                                    let idVal = activeVal.toUpperCase().replace(/\*/g, 'X').replace(/\s+/g, '');
-                                                    // Ключ сортировки
-                                                    idParts.push({ sortKey: key.toUpperCase() + colIdx, val: idVal });
-                                                }
-                                            }
-                                        }
-
-                                        // 1. Собираем короткое ИМЯ
-                                        let finalName = nameParts.join(' ').trim();
-                                        if (finalName === "") finalName = codeCell;
-
-                                        // 2. Собираем длинный ID (Сортируем ключи - защита от перестановки колонок)
-                                        idParts.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-                                        let compositeId = codeCell;
-                                        for (let p of idParts) {
-                                            compositeId += "_" + p.val;
-                                        }
-                                        // ---------------------------------------------
-
-                                        const itemData = {
-                                            doc_no: file_doc_no, 
-                                            category: file_doc_no, // НОВОЕ: Единая категория, равная номеру партии
-                                            supplier: file_supplier, 
-                                            item_id: compositeId, 
-                                            item_name: finalName, 
-                                            qty: qty, 
-                                            cost: price,
-                                            cbm: finalCbm,
-                                            weight: finalWeight,
-                                            staff_id: currentUser ? currentUser.uid : 'Auto-Import' 
-                                        };
-                                        // --- КОНЕЦ НОВОГО БЛОКА ---
-
-                                        parsedInvoiceData.push(itemData);
-                                        invoiceGroups[file_doc_no].items.push(itemData);
-                                        itemsInFile++;
-                                    }
                                 }
-                            } else {
-                                let missing = [];
-                                if (colMap.code === -1) missing.push(translations[currentLang].word_code);
-                                if (colMap.qty === -1) missing.push(translations[currentLang].word_qty);
-                                if (colMap.price === -1) missing.push(translations[currentLang].word_price);
-                                sheetErrorsList.push(translations[currentLang].inc_err_sheet_missing.replace('{0}', sheetName).replace('{1}', headerRowIdx + 1) + missing.join(', '));
                             }
-                        } else {
-                            sheetErrorsList.push(translations[currentLang].inc_err_sheet_no_table.replace('{0}', sheetName));
-                        }
-                    } 
-                    
-                    if (invoiceGroups[file_doc_no] && fileParsedSuccessfully) {
-                        const alreadyAdded = invoiceGroups[file_doc_no].originalFiles.some(f => f.fileName === file.name);
-                        if (!alreadyAdded) {
-                            invoiceGroups[file_doc_no].originalFiles.push({
-                                fileName: file.name,
-                                fileBase64: originalBase64
-                            });
                         }
                     }
 
-                } catch (err) {
-                    console.error("Ошибка чтения файла: " + file.name, err);
-                    fileErrors.push(translations[currentLang].inc_file_corrupted);
-                }
+                    // --- ИСПРАВЛЕНИЕ 3: Проверка успешности (или код, или штрихкод найден) ---
+                    if ((colMap.code !== -1 || colMap.barcode !== -1) && colMap.qty !== -1 && colMap.price !== -1) {
+                        fileParsedSuccessfully = true; 
+                        
+                        if (!invoiceGroups[file_doc_no]) {
+                            invoiceGroups[file_doc_no] = { supplier: file_supplier, items: [], originalFiles: [] };
+                        }
 
-                if (file_doc_no === 'UNKNOWN') fileErrors.push(translations[currentLang].inc_err_no_doc);
-                if (file_supplier === 'UNKNOWN') fileErrors.push(translations[currentLang].inc_err_no_sup);
-                
-                if (!fileParsedSuccessfully) {
-                    fileErrors.push(sheetErrorsList.join('<br>'));
-                } else if (itemsInFile === 0) {
-                    fileErrors.push(translations[currentLang].inc_err_no_items);
-                }
+                        let lastCode = "UNKNOWN";
+                        let lastBrand = "";
+                        let lastDesc = "";
+                        let varMemory = {}; 
 
-                if (fileErrors.length > 0) {
-                    processingLogs.push(`<div style="color:var(--accent-red); font-size:12px; margin-bottom:4px; padding:6px; border-left:3px solid var(--accent-red); background:var(--bg-hover);">⚠️ <b>${file.name}</b>:<br>${fileErrors.join('<br>')}</div>`);
+                        for (let i = firstDataRowIdx; i < rows.length; i++) {
+                            const row = rows[i];
+                            if (!row || row.length === 0) continue;
+                            
+                            // --- ИСПРАВЛЕНИЕ 4: Умный захват артикула и штрихкода из строки ---
+                            let actualCodeIdx = colMap.code !== -1 ? colMap.code : colMap.barcode;
+                            let codeCell = actualCodeIdx !== -1 ? String(row[actualCodeIdx] || '').trim() : '';
+                            let rawBarcode = colMap.barcode !== -1 ? String(row[colMap.barcode] || '').trim() : codeCell;
+                            
+                            let qty = parseFloat(row[colMap.qty]);
+                            let price = parseFloat(row[colMap.price]);
+                            let brandStr = colMap.brand !== -1 ? String(row[colMap.brand] || '').trim() : '';
+                            let descStr = colMap.desc !== -1 ? String(row[colMap.desc] || '').trim() : '';
+
+                            if (codeCell === "" && (!isNaN(qty) || !isNaN(price))) {
+                                codeCell = lastCode;
+                                if (brandStr === "") brandStr = lastBrand;
+                                if (descStr === "") descStr = lastDesc;
+                            } else if (codeCell !== "") {
+                                if (codeCell.toUpperCase().includes('TOTAL')) break; 
+                                lastCode = codeCell;
+                                lastBrand = brandStr;
+                                lastDesc = descStr;
+                            } else {
+                                break; 
+                            }
+                            
+                            if (!isNaN(qty) && !isNaN(price)) {
+                                
+                                let rawCbm = colMap.cbm !== -1 ? (parseFloat((row[colMap.cbm] || '0').toString().replace(',', '.')) || 0) : 0;
+                                let finalCbm = rawCbm;
+
+                                if (colMap.cbm !== -1 && qty > 0) {
+                                    let leftVal = parseFloat((row[colMap.cbm - 1] || '0').toString().replace(',', '.')) || 0;
+                                    let rightVal = parseFloat((row[colMap.cbm + 1] || '0').toString().replace(',', '.')) || 0;
+                                    
+                                    if (leftVal > 0 && rawCbm > 0 && Math.abs((leftVal * qty) - rawCbm) < 0.2) {
+                                        finalCbm = leftVal; 
+                                    } else if (rightVal > 0 && rawCbm > 0 && Math.abs((rightVal * qty) - rawCbm) < 0.2) {
+                                        finalCbm = rightVal; 
+                                    } else if (rawCbm === 0) {
+                                        if (leftVal > 0 && leftVal < 1) finalCbm = leftVal;
+                                        else if (rightVal > 0 && rightVal < 1) finalCbm = rightVal;
+                                    }
+                                }
+                                
+                                let finalWeight = colMap.weight !== -1 ? (parseFloat((row[colMap.weight] || '0').toString().replace(',', '.')) || 0) : 0;
+
+                                let allowedForName = ['brand', 'name', 'size']; 
+                                let excludeFromId = ['brand']; 
+                                
+                                let nameParts = [];
+                                let idParts = [];
+
+                                for (let col of activeCols) {
+                                    let colIdx = col.colIdx;
+                                    let key = col.key;
+                                    
+                                    let cellVal = String(row[colIdx] || '').trim();
+                                    let activeVal = "";
+                                    
+                                    if (cellVal !== '') {
+                                        varMemory[colIdx] = cellVal;
+                                        activeVal = cellVal;
+                                    } else if (varMemory[colIdx]) {
+                                        activeVal = varMemory[colIdx];
+                                    }
+                                    
+                                    if (activeVal !== '') {
+                                        if (allowedForName.includes(key)) {
+                                            nameParts.push(activeVal.toUpperCase());
+                                        }
+                                        
+                                        if (!excludeFromId.includes(key)) {
+                                            let idVal = activeVal.toUpperCase().replace(/\*/g, 'X').replace(/\s+/g, '');
+                                            idParts.push({ sortKey: key.toUpperCase() + colIdx, val: idVal });
+                                        }
+                                    }
+                                }
+
+                                let finalName = nameParts.join(' ').trim();
+                                if (finalName === "") finalName = codeCell;
+
+                                idParts.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
+                                let compositeId = codeCell;
+                                for (let p of idParts) {
+                                    compositeId += "_" + p.val;
+                                }
+
+                                // --- ИСПРАВЛЕНИЕ 5: Добавлено поле barcode в итоговый объект отправки ---
+                                const itemData = {
+                                    doc_no: file_doc_no, 
+                                    category: file_doc_no, 
+                                    supplier: file_supplier, 
+                                    item_id: compositeId, 
+                                    barcode: rawBarcode, // <-- ДОБАВЛЕНО
+                                    item_name: finalName, 
+                                    qty: qty, 
+                                    cost: price,
+                                    cbm: finalCbm,
+                                    weight: finalWeight,
+                                    staff_id: currentUser ? currentUser.uid : 'Auto-Import' 
+                                };
+
+                                parsedInvoiceData.push(itemData);
+                                invoiceGroups[file_doc_no].items.push(itemData);
+                                itemsInFile++;
+                            }
+                        }
+                    } else {
+                        let missing = [];
+                        if (colMap.code === -1 && colMap.barcode === -1) missing.push(translations[currentLang].word_code);
+                        if (colMap.qty === -1) missing.push(translations[currentLang].word_qty);
+                        if (colMap.price === -1) missing.push(translations[currentLang].word_price);
+                        sheetErrorsList.push(translations[currentLang].inc_err_sheet_missing.replace('{0}', sheetName).replace('{1}', headerRowIdx + 1) + missing.join(', '));
+                    }
                 } else {
-                    processingLogs.push(`<div style="color:var(--accent-green); font-size:12px; margin-bottom:4px; padding:6px; border-left:3px solid var(--accent-green); background:var(--bg-hover);">✅ <b>${file.name}</b>: ${translations[currentLang].inc_success.replace('{0}', itemsInFile)}</div>`);
+                    sheetErrorsList.push(translations[currentLang].inc_err_sheet_no_table.replace('{0}', sheetName));
+                }
+            } 
+            
+            if (invoiceGroups[file_doc_no] && fileParsedSuccessfully) {
+                const alreadyAdded = invoiceGroups[file_doc_no].originalFiles.some(f => f.fileName === file.name);
+                if (!alreadyAdded) {
+                    invoiceGroups[file_doc_no].originalFiles.push({
+                        fileName: file.name,
+                        fileBase64: originalBase64
+                    });
                 }
             }
 
-            const debugContainer = document.getElementById('debug-container');
-            debugContainer.style.maxHeight = 'none'; 
-            debugContainer.style.overflowY = 'visible';
-            debugContainer.innerHTML = processingLogs.join('');
-            debugContainer.style.display = 'flex';
-
-            if (parsedInvoiceData.length === 0) {
-                document.getElementById('invoicePreviewArea').style.display = 'none';
-                return; 
-            }
-
-            const uniqueDocs = Object.keys(invoiceGroups).filter(k => k !== 'UNKNOWN');
-            const uniqueSuppliers = [...new Set(parsedInvoiceData.map(i => i.supplier))];
-
-            let docUiHtml = '';
-            if (uniqueDocs.length === 1) {
-                docUiHtml = `<input type="text" id="ui-doc-no" value="${uniqueDocs[0]}" style="background:var(--bg-hover); color:var(--accent-yellow); border:1px dashed var(--border-focus); padding:2px 6px; border-radius:3px; font-weight:bold; font-size:13px; width: 140px; outline:none;" title="Можно редактировать">`;
-            } else if (uniqueDocs.length > 1) {
-                docUiHtml = `<span style="color:var(--accent-yellow); font-weight:bold;">${uniqueDocs.join(', ')}</span>`;
-            } else {
-                docUiHtml = `<span style="color:var(--accent-red); font-weight:bold;">${translations[currentLang].inc_err_doc_format}</span>`;
-            }
-
-            document.getElementById('invoiceMetadata').innerHTML = `
-                <span style="color:var(--text-muted); font-weight:normal; font-size:13px;">${translations[currentLang].inc_lbl_sup}</span> 
-                <span style="color:var(--accent-yellow); font-weight:bold; font-size:14px; letter-spacing:0.5px;">${uniqueSuppliers.join(', ')}</span> 
-                
-                <span style="color:var(--border-light); margin:0 10px;">|</span> 
-                
-                <span style="color:var(--text-muted); font-weight:normal; font-size:13px;">${translations[currentLang].inc_lbl_doc}</span> 
-                ${docUiHtml} 
-                
-                <span style="color:var(--border-light); margin:0 10px;">|</span> 
-                
-                <span style="color:var(--text-muted); font-weight:normal; font-size:13px;">${translations[currentLang].inc_lbl_items}</span> 
-                <span style="color:var(--accent-yellow); font-weight:bold; font-size:14px;">${parsedInvoiceData.length}</span>
-            `;
-            
-            document.getElementById('invoiceTableBody').innerHTML = parsedInvoiceData.map(item => `
-                <tr style="border-bottom:1px solid var(--border-light); color:var(--text-main);">
-                    <td style="padding:5px;">${item.item_id}</td>
-                    <td style="padding:5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">
-                        ${item.item_name}
-                        ${uniqueDocs.length > 1 ? `<br><span style="font-size:9px; color:var(--text-muted);">[Инвойс: ${item.doc_no}]</span>` : ''}
-                    </td>
-                    <td style="padding:5px;">${item.qty}</td>
-                    <td style="padding:5px;">${item.cbm}</td>
-                    <td style="padding:5px;">${item.weight}</td>
-                    <td style="padding:5px;">${item.cost}</td>
-                </tr>`).join('');
-            
-            document.getElementById('invoicePreviewArea').style.display = 'flex';
-            document.getElementById('parseInvoiceBtn').style.display = 'none';
+        } catch (err) {
+            console.error("Ошибка чтения файла: " + file.name, err);
+            fileErrors.push(translations[currentLang].inc_file_corrupted);
         }
+
+        if (file_doc_no === 'UNKNOWN') fileErrors.push(translations[currentLang].inc_err_no_doc);
+        if (file_supplier === 'UNKNOWN') fileErrors.push(translations[currentLang].inc_err_no_sup);
+        
+        if (!fileParsedSuccessfully) {
+            fileErrors.push(sheetErrorsList.join('<br>'));
+        } else if (itemsInFile === 0) {
+            fileErrors.push(translations[currentLang].inc_err_no_items);
+        }
+
+        if (fileErrors.length > 0) {
+            processingLogs.push(`<div style="color:var(--accent-red); font-size:12px; margin-bottom:4px; padding:6px; border-left:3px solid var(--accent-red); background:var(--bg-hover);">⚠️ <b>${file.name}</b>:<br>${fileErrors.join('<br>')}</div>`);
+        } else {
+            processingLogs.push(`<div style="color:var(--accent-green); font-size:12px; margin-bottom:4px; padding:6px; border-left:3px solid var(--accent-green); background:var(--bg-hover);">✅ <b>${file.name}</b>: ${translations[currentLang].inc_success.replace('{0}', itemsInFile)}</div>`);
+        }
+    }
+
+    const debugContainer = document.getElementById('debug-container');
+    debugContainer.style.maxHeight = 'none'; 
+    debugContainer.style.overflowY = 'visible';
+    debugContainer.innerHTML = processingLogs.join('');
+    debugContainer.style.display = 'flex';
+
+    if (parsedInvoiceData.length === 0) {
+        document.getElementById('invoicePreviewArea').style.display = 'none';
+        return; 
+    }
+
+    const uniqueDocs = Object.keys(invoiceGroups).filter(k => k !== 'UNKNOWN');
+    const uniqueSuppliers = [...new Set(parsedInvoiceData.map(i => i.supplier))];
+
+    let docUiHtml = '';
+    if (uniqueDocs.length === 1) {
+        docUiHtml = `<input type="text" id="ui-doc-no" value="${uniqueDocs[0]}" style="background:var(--bg-hover); color:var(--accent-yellow); border:1px dashed var(--border-focus); padding:2px 6px; border-radius:3px; font-weight:bold; font-size:13px; width: 140px; outline:none;" title="Можно редактировать">`;
+    } else if (uniqueDocs.length > 1) {
+        docUiHtml = `<span style="color:var(--accent-yellow); font-weight:bold;">${uniqueDocs.join(', ')}</span>`;
+    } else {
+        docUiHtml = `<span style="color:var(--accent-red); font-weight:bold;">${translations[currentLang].inc_err_doc_format}</span>`;
+    }
+
+    document.getElementById('invoiceMetadata').innerHTML = `
+        <span style="color:var(--text-muted); font-weight:normal; font-size:13px;">${translations[currentLang].inc_lbl_sup}</span> 
+        <span style="color:var(--accent-yellow); font-weight:bold; font-size:14px; letter-spacing:0.5px;">${uniqueSuppliers.join(', ')}</span> 
+        
+        <span style="color:var(--border-light); margin:0 10px;">|</span> 
+        
+        <span style="color:var(--text-muted); font-weight:normal; font-size:13px;">${translations[currentLang].inc_lbl_doc}</span> 
+        ${docUiHtml} 
+        
+        <span style="color:var(--border-light); margin:0 10px;">|</span> 
+        
+        <span style="color:var(--text-muted); font-weight:normal; font-size:13px;">${translations[currentLang].inc_lbl_items}</span> 
+        <span style="color:var(--accent-yellow); font-weight:bold; font-size:14px;">${parsedInvoiceData.length}</span>
+    `;
+    
+    document.getElementById('invoiceTableBody').innerHTML = parsedInvoiceData.map(item => `
+        <tr style="border-bottom:1px solid var(--border-light); color:var(--text-main);">
+            <td style="padding:5px;">${item.item_id}</td>
+            <td style="padding:5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">
+                ${item.item_name}
+                ${uniqueDocs.length > 1 ? `<br><span style="font-size:9px; color:var(--text-muted);">[Инвойс: ${item.doc_no}]</span>` : ''}
+            </td>
+            <td style="padding:5px;">${item.qty}</td>
+            <td style="padding:5px;">${item.cbm}</td>
+            <td style="padding:5px;">${item.weight}</td>
+            <td style="padding:5px;">${item.cost}</td>
+        </tr>`).join('');
+    
+    document.getElementById('invoicePreviewArea').style.display = 'flex';
+    document.getElementById('parseInvoiceBtn').style.display = 'none';
+}
 
         async function sendInvoiceToBackend() {
             if (parsedInvoiceData.length === 0) return alert(translations[currentLang].inc_empty_cart);
