@@ -3593,13 +3593,14 @@ function setReportView(view) {
                             continue; 
                         }
                         
-                        if (colMap.code === -1 && isSynonym(val, 'id')) colMap.code = j;
-                        // --- ИСПРАВЛЕНИЕ 2 (продолжение): Поиск колонки со штрихкодом ---
-                        if (colMap.barcode === -1 && isSynonym(val, 'barcode')) colMap.barcode = j; 
-                        if (colMap.qty === -1 && isSynonym(val, 'qty')) colMap.qty = j;
-                        if (colMap.price === -1 && isSynonym(val, 'price')) colMap.price = j;
-                        if (colMap.brand === -1 && isSynonym(val, 'brand')) colMap.brand = j;
-                        if (colMap.desc === -1 && isSynonym(val, 'name')) colMap.desc = j;
+                        let v = val.toLowerCase();
+                        // Жесткий fallback: если словаря нет, скрипт всё равно узнает стандартные колонки
+                        if (colMap.code === -1 && (isSynonym(val, 'id') || v === 'код' || v === 'id' || v === 'артикул')) colMap.code = j;
+                        if (colMap.barcode === -1 && (isSynonym(val, 'barcode') || v === 'sku' || v === 'штрихкод' || v === 'barcode')) colMap.barcode = j; 
+                        if (colMap.qty === -1 && (isSynonym(val, 'qty') || v === 'кол' || v === 'кол-во' || v === 'qty' || v === 'количество')) colMap.qty = j;
+                        if (colMap.price === -1 && (isSynonym(val, 'price') || v === 'цена' || v === 'price')) colMap.price = j;
+                        if (colMap.brand === -1 && (isSynonym(val, 'brand') || v === 'бренд' || v === 'brand')) colMap.brand = j;
+                        if (colMap.desc === -1 && (isSynonym(val, 'name') || v === 'наименование' || v === 'название' || v === 'model')) colMap.desc = j;
                         if (colMap.cbm === -1 && isSynonym(val, 'cbm')) colMap.cbm = j;
                         if (colMap.weight === -1 && isSynonym(val, 'weight')) colMap.weight = j;
 
