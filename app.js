@@ -3724,31 +3724,42 @@ function setReportView(view) {
                                 }
 
                                 // Берем Бренд и Название (model) напрямую из найденных колонок
+                                // --- ИСПРАВЛЕНИЕ 1: Умная склейка названия (без задвоения) ---
                                 let finalNameParts = [];
-                                if (brandStr) finalNameParts.push(brandStr.toUpperCase());
-                                if (descStr) finalNameParts.push(descStr);
+                                let cleanDesc = descStr.trim();
+                                let cleanBrand = brandStr.trim();
+
+                                // Добавляем бренд только если его еще нет внутри названия
+                                if (cleanBrand && !cleanDesc.toUpperCase().includes(cleanBrand.toUpperCase())) {
+                                    finalNameParts.push(cleanBrand.toUpperCase());
+                                }
+                                if (cleanDesc) {
+                                    finalNameParts.push(cleanDesc);
+                                }
 
                                 let finalName = finalNameParts.join(' ').trim();
                                 if (finalName === "") finalName = codeCell;
 
+                                // ... (сортировка idParts остается без изменений) ...
                                 idParts.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
                                 let compositeId = codeCell;
                                 for (let p of idParts) {
                                     compositeId += "_" + p.val;
                                 }
 
-                                // --- ИСПРАВЛЕНИЕ 5: Добавлено поле barcode в итоговый объект отправки ---
+                                // --- ИСПРАВЛЕНИЕ 2: Разблокировка серверной логистики (cbm и weight) ---
                                 const itemData = {
                                     doc_no: file_doc_no, 
                                     category: file_doc_no, 
                                     supplier: file_supplier, 
                                     item_id: compositeId, 
-                                    barcode: rawBarcode, // <-- ДОБАВЛЕНО
+                                    barcode: rawBarcode, 
                                     item_name: finalName, 
                                     qty: qty, 
                                     cost: price,
-                                    cbm: finalCbm,
-                                    weight: finalWeight,
+                                    // Если 0, отправляем пустую строку. Это даст команду серверу найти данные в базе Logistics!
+                                    cbm: finalCbm === 0 ? "" : finalCbm,
+                                    weight: finalWeight === 0 ? "" : finalWeight,
                                     staff_id: currentUser ? currentUser.uid : 'Auto-Import' 
                                 };
 
