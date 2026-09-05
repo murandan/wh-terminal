@@ -404,14 +404,12 @@
             <div id="tab-import" style="display: block; width: 100%;">
                 
                 <div class="minimal-input-container" style="display: flex; gap: 10px;">
-        
-            <!-- Выбор валюты (Желтый текст, выделенный фон) -->
+                    <!-- Выбор валюты (без изменений) -->
                     <div class="currency-minimal-container" style="position: relative; width: 90px;">
                         <div class="currency-minimal-header" id="dropdownHeader" onclick="toggleDropdown()" style="font-size: 15px; padding: 12px; background: var(--bg-body, rgba(0,0,0,0.03)); border: 1px solid var(--border-main); border-radius: 4px; display: flex; justify-content: space-between; align-items: center; cursor: pointer;">
                             <span id="dropdownSelectedCode" style="color: var(--accent-yellow, #FFD700); font-weight: bold;">USD</span>
                             <span class="curr-arrow-mini" style="color: var(--text-muted); font-size: 10px;">▼</span>
                         </div>
-                        <!-- Выпадающий список (без изменений) -->
                         <div class="currency-minimal-list" id="dropdownList" style="position: absolute; top: calc(100% + 4px); left: 0; width: 100%; z-index: 9999; background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
                             <div class="currency-minimal-item" onclick="selectCurrency('KZT')">KZT</div>
                             <div class="currency-minimal-item selected" onclick="selectCurrency('USD')">USD</div>
@@ -422,7 +420,7 @@
                         <input type="hidden" id="invoiceCurrency" value="USD">
                     </div>
 
-                    <!-- Поле загрузки файла (Плотный фон для выделения в светлой теме) -->
+                    <!-- Поле загрузки файла (без изменений) -->
                     <div class="file-input-wrapper" style="flex: 1;">
                         <label for="invoiceFileInput" id="fileInputLabel" class="file-upload-label" style="padding: 12px; border: 1px solid var(--border-main) !important; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: var(--bg-body, rgba(0,0,0,0.03)); transition: background-color 0.2s;">
                             <div class="file-content" style="display: flex; gap: 8px; align-items: center;">
@@ -434,25 +432,37 @@
                     </div>
                 </div>
                 
-                <!-- Кнопка обработки -->
                 <button id="parseInvoiceBtn" onclick="processInvoiceFile()" style="background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); padding: 14px 15px; margin-top: 15px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px;" data-i18n="income_parse">ОБРАБОТАТЬ ФАЙЛ</button>
                 
                 <div id="debug-container" style="display: none; margin-top: 15px; flex-direction: column; overflow-y: auto; max-height: 40vh;"></div>
 
+                <!-- НОВЫЙ БЛОК: DATA MAPPER (Скрыт по умолчанию) -->
+                <div id="dataMapperArea" style="display: none; margin-top: 20px; flex-direction: column;">
+                    <div style="font-weight: bold; margin-bottom: 15px; color: var(--accent-yellow); font-size: 14px; text-align: center;" data-i18n="mapper_title">Настройка колонок</div>
+                    <!-- Сюда JavaScript будет динамически вставлять вертикальные блоки маппинга -->
+                    <div id="mapperRowsContainer" style="overflow-y: auto; max-height: 40vh; margin-bottom: 15px; padding-right: 5px;"></div>
+                    
+                    <button id="applyMappingBtn" onclick="applyUserMapping()" style="background: var(--bg-overlay); color: var(--text-main); border: 1px solid var(--border-light); padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px;" data-i18n="mapper_apply">ПРИМЕНИТЬ НАСТРОЙКИ</button>
+                </div>
+
+                <!-- БЛОК ПРЕДПРОСМОТРА И ФИНАЛИЗАЦИИ -->
                 <div id="invoicePreviewArea" style="display: none; margin-top: 20px; flex-direction: column; overflow: hidden; max-height: 45vh;">
-                    <!-- Увеличен шрифт метаданных -->
                     <div id="invoiceMetadata" style="margin-bottom: 10px; font-weight: bold; color: var(--accent-yellow); font-size: 14px; text-align: center;"></div>
+                    
+                    <!-- Кнопка возврата к маппингу, если пользователь заметил ошибку -->
+                    <button onclick="showMapperArea()" style="background: transparent; border: none; color: var(--text-muted); text-decoration: underline; cursor: pointer; font-size: 12px; margin-bottom: 10px; text-align: right;" data-i18n="mapper_edit">⚙️ Изменить привязку</button>
+
                     <div style="overflow-y: auto; border: 1px solid var(--border-light); margin-bottom: 15px; flex-grow: 1;">
-                        <!-- Увеличен базовый шрифт таблицы с 12px до 13px -->
                         <table style="width: 100%; border-collapse: collapse; font-size: 13px; color: var(--text-main);">
                             <thead style="background: var(--border-main); position: sticky; top: 0; z-index: 10;">
                                 <tr style="border-bottom: 1px solid var(--text-muted); text-align: left;">
                                     <th style="padding: 10px 8px;" data-i18n="income_code">Код</th>
                                     <th style="padding: 10px 8px;" data-i18n="income_name">Наименование</th>
-                                    <th style="padding: 10px 8px;" data-i18n="income_qty">Кол-во</th>
-                                    <th style="padding: 10px 8px;" data-i18n="income_cbm">Объем (CBM)</th>
-                                    <th style="padding: 10px 8px;" data-i18n="income_weight">Вес (кг)</th>
-                                    <th style="padding: 10px 8px;">
+                                    <!-- Числовые колонки выровнены по правому краю -->
+                                    <th style="padding: 10px 8px; text-align: right;" data-i18n="income_qty">Кол-во</th>
+                                    <th style="padding: 10px 8px; text-align: right;" data-i18n="income_cbm">Объем (CBM)</th>
+                                    <th style="padding: 10px 8px; text-align: right;" data-i18n="income_weight">Вес (кг)</th>
+                                    <th style="padding: 10px 8px; text-align: right;">
                                         <span data-i18n="income_price">Цена</span> (<span id="dynamicCurrencySpan" style="color: var(--accent-yellow);">USD</span>)
                                     </th>
                                 </tr>
@@ -462,7 +472,6 @@
                     </div>
                     
                     <div id="status-container" style="display: none; margin-bottom: 15px; padding: 10px; background: var(--bg-body); border: 1px solid var(--border-light); border-radius: 4px;">
-                        <!-- Увеличен шрифт статуса -->
                         <div style="display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px;">
                             <span id="status-text" style="color: var(--accent-green);">Подготовка...</span>
                             <span id="status-percent" style="color: var(--text-muted);">0%</span>
@@ -472,7 +481,6 @@
                         </div>
                     </div>
                     
-                    <!-- Увеличен шрифт финальной кнопки -->
                     <button id="sendInvoiceBtn" onclick="sendInvoiceToBackend()" style="background: var(--accent-blue); color: #ffffff; padding: 14px 20px; border: none; border-radius: 4px; width: 100%; cursor: pointer; font-weight: bold; font-size: 15px; flex-shrink: 0;" data-i18n="income_confirm">
                         ✅ ОПРИХОДОВАТЬ НА СКЛАД
                     </button>
