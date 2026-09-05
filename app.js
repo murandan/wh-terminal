@@ -3600,13 +3600,29 @@ function setReportView(view) {
             container.innerHTML = '';
 
             if (unmappedCols.length === 0) {
-                // Если всё идеально распозналось, сразу идем дальше
+                container.innerHTML = `<div style="text-align:center; color:var(--accent-green); padding:15px; font-size:13px; font-weight:bold;">✅ Все колонки успешно распознаны автоматически!<br><span style="color:var(--text-muted); font-weight:normal; font-size:12px;">Дополнительных неизвестных атрибутов в файле не найдено.</span></div>`;
                 applyUserMapping();
                 return;
             }
 
-            // Создаем строчки маппинга
+            // Достаем оригинальные строки для предпросмотра
+            const rows = tempInvoiceState.rows;
+            const startIdx = tempInvoiceState.firstDataRowIdx;
+
             unmappedCols.forEach(col => {
+                // Ищем 2 первые непустые ячейки в этой колонке для примера
+                let previews = [];
+                for (let i = startIdx; i < Math.min(startIdx + 20, rows.length); i++) {
+                    let val = String(rows[i][col.index] || '').trim();
+                    if (val !== '' && previews.length < 2) {
+                        previews.push(val);
+                    }
+                }
+                
+                let previewText = previews.length > 0 
+                    ? `Пример: ${previews.join(', ')}` 
+                    : `Пустая колонка`;
+
                 let optionsHtml = `
                     <option value="attribute" selected>➕ ${translations[currentLang].mapper_attr || 'Доп. атрибут (JSON)'}</option>
                     <option value="skip">❌ ${translations[currentLang].mapper_skip || 'Пропустить'}</option>
@@ -3623,7 +3639,10 @@ function setReportView(view) {
 
                 let rowHtml = `
                     <div class="mapper-row" data-col-index="${col.index}" data-col-name="${col.name}" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border-light);">
-                        <div style="flex: 1; font-weight: bold; color: var(--text-main); font-size: 13px;">${col.name}</div>
+                        <div style="flex: 1; padding-right: 10px;">
+                            <div style="font-weight: bold; color: var(--text-main); font-size: 13px; word-break: break-all;">${col.name}</div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px; font-style: italic;">${previewText}</div>
+                        </div>
                         <div style="flex: 1;">
                             <select class="mapper-select" style="width: 100%; padding: 8px; background: var(--bg-body); color: var(--text-main); border: 1px solid var(--border-main); border-radius: 4px; font-size: 13px; outline: none;">
                                 ${optionsHtml}
