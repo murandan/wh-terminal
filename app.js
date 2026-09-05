@@ -3455,104 +3455,90 @@ function setReportView(view) {
             }
         }
 
+        // Глобальное хранилище состояния (чтобы передать данные от Фазы 1 к Фазе 2)
+        let tempInvoiceState = null;
+
         async function processInvoiceFile() {
-    const fileInput = document.getElementById('invoiceFileInput');
-    if (!fileInput.files.length) return alert(translations[currentLang].inc_no_file);
+            const fileInput = document.getElementById('invoiceFileInput');
+            if (!fileInput.files.length) return alert(translations[currentLang].inc_no_file);
 
-    parsedInvoiceData = []; 
-    invoiceGroups = {}; 
-    let processingLogs = []; 
-
-    const markers = (invoiceSynonyms['supplier_keywords'] || ["the seller", "vendor", "supplier", "поставщик"]);
-    const excludes = (invoiceSynonyms['exclude'] || ["commercial invoice", "packing list", "invoice", "specification", "sales contract", "contract"]);
-
-    function isSynonym(cellValue, targetKey) {
-        if (!cellValue) return false;
-        const cleanCell = String(cellValue).replace(/\s+/g, '').toLowerCase();
-        const synonymsList = (invoiceSynonyms[targetKey] || []).map(s => s.replace(/\s+/g, '').toLowerCase());
-        return synonymsList.some(syn => syn !== "" && cleanCell.includes(syn));
-    }
-
-    for (let file of fileInput.files) {
-        let fileErrors = [];
-        let itemsInFile = 0;
-        let fileParsedSuccessfully = false;
-        let sheetErrorsList = []; 
-
-        const b64Promise = new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = (e) => resolve(e.target.result);
-            reader.readAsDataURL(file);
-        });
-        const originalBase64 = await b64Promise;
-
-        const dataPromise = new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = (e) => resolve(new Uint8Array(e.target.result));
-            reader.readAsArrayBuffer(file);
-        });
-
-        const arrayBuffer = await dataPromise;
-        let file_doc_no = 'UNKNOWN';
-        let file_supplier = 'UNKNOWN';
-
-        try {
-            const workbook = XLSX.read(arrayBuffer, {type: 'array'});
+            parsedInvoiceData = []; 
+            invoiceGroups = {}; 
             
-            for (let sheetName of workbook.SheetNames) {
-                const worksheet = workbook.Sheets[sheetName];
-                const rows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
-                if (!rows || rows.length === 0) continue;
+            // Берем только первый файл для Smart Flow (обычно накладные грузят по одной)
+            const file = fileInput.files[0];
+            let file_doc_no = 'UNKNOWN';
+            let file_supplier = 'UNKNOWN';
 
-                if (file_supplier === 'UNKNOWN') {
-                    for (let i = 0; i < Math.min(10, rows.length); i++) {
-                        let row = rows[i];
-                        if (!row) continue;
-                        for (let j = 0; j < row.length; j++) {
-                            let cellVal = String(row[j] || "").toLowerCase();
-                            if (markers.some(m => cellVal.includes(m.toLowerCase()))) {
-                                for (let k = j + 1; k < row.length; k++) {
-                                    if (row[k] && String(row[k]).trim() !== '') {
-                                        file_supplier = String(row[k]).trim().replace(/^"|"$/g, ''); 
-                                        break;
-                                    }
+            const b64Promise = new Promise(resolve => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.readAsDataURL(file);
+            });
+            const originalBase64 = await b64Promise;
+
+            const dataPromise = new Promise(resolve => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(new Uint8Array(e.target.result));
+                reader.readAsArrayBuffer(file);
+            });
+            const arrayBuffer = await dataPromise;
+
+            const markers = (invoiceSynonyms['supplier_keywords'] || ["the seller", "vendor", "supplier", "поставщик"]);
+            
+            function isSynonymLocal(cellValue, targetKey) {
+                if (!cellValue) return false;
+                const cleanCell = String(cellValue).replace(/\s+/g, '').toLowerCase();
+                const synonymsList = (invoiceSynonyms[targetKey] || []).map(s => s.replace(/\s+/g, '').toLowerCase());
+                return synonymsList.some(syn => syn !== "" && cleanCell.includes(syn));
+            }
+
+            try {
+                const workbook = XLSX.read(arrayBuffer, {type: 'array'});
+                // Ищем первый непустой лист
+                let rows = [];
+                let sheetName = '';
+                for (let sName of workbook.SheetNames) {
+                    let sRows = XLSX.utils.sheet_to_json(workbook.Sheets[sName], {header: 1});
+                    if (sRows && sRows.length > 0) {
+                        rows = sRows;
+                        sheetName = sName;
+                        break;
+                    }
+                }
+                if (rows.length === 0) throw new Error("Пустой файл");
+
+                // Поиск поставщика и номера документа (оставляем вашу логику)
+                for (let i = 0; i < Math.min(10, rows.length); i++) {
+                    let row = rows[i] || [];
+                    for (let j = 0; j < row.length; j++) {
+                        let cellVal = String(row[j] || "").toLowerCase();
+                        if (markers.some(m => cellVal.includes(m.toLowerCase()))) {
+                            for (let k = j + 1; k < row.length; k++) {
+                                if (row[k] && String(row[k]).trim() !== '') {
+                                    file_supplier = String(row[k]).trim().replace(/^"|"$/g, ''); 
+                                    break;
                                 }
                             }
                         }
-                    }
-                    // Если слово "поставщик" не найдено, берем значение из словаря
-                    if (file_supplier === 'UNKNOWN') {
-                        // Используем fallback ('Не указан') на случай, если ключ забудут добавить в словарь
-                        file_supplier = translations[currentLang].inc_sup_unknown || 'Не указан'; 
-                    }
-                }
-
-                if (file_doc_no === 'UNKNOWN') {
-                    for (let i = 0; i < Math.min(20, rows.length); i++) {
-                        let row = rows[i] || [];
-                        for (let j = 0; j < row.length; j++) {
-                            if (isSynonym(row[j], 'invoice_no')) {
-                                let val = String(row[j+1] || '').trim();
-                                if (val && val !== 'UNKNOWN') file_doc_no = val;
-                            }
+                        if (isSynonymLocal(row[j], 'invoice_no')) {
+                            let val = String(row[j+1] || '').trim();
+                            if (val && val !== 'UNKNOWN') file_doc_no = val;
                         }
                     }
                 }
 
+                if (file_supplier === 'UNKNOWN') file_supplier = translations[currentLang].inc_sup_unknown || 'Не указан'; 
                 if (file_doc_no === 'UNKNOWN' || file_doc_no === '') {
                     let now = new Date();
-                    let day = String(now.getDate()).padStart(2, '0');
-                    let month = String(now.getMonth() + 1).padStart(2, '0');
-                    let hours = String(now.getHours()).padStart(2, '0');
-                    let minutes = String(now.getMinutes()).padStart(2, '0');
-                    file_doc_no = `IN-${day}.${month}-${hours}${minutes}`;
+                    file_doc_no = `IN-${String(now.getDate()).padStart(2, '0')}.${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
                 }
 
+                // Поиск шапки таблицы
                 let firstDataRowIdx = -1;
                 for (let i = 0; i < Math.min(50, rows.length); i++) {
                     let row = rows[i] || [];
                     if (row.length === 0) continue;
-
                     let numCount = row.filter(c => {
                         let val = String(c).trim().replace(/,/g, '');
                         return val !== '' && !isNaN(Number(val));
@@ -3569,302 +3555,206 @@ function setReportView(view) {
 
                 if (firstDataRowIdx > 0) {
                     let headerRowIdx = firstDataRowIdx - 1;
-                    
-                    // --- ИСПРАВЛЕНИЕ 2: Добавлено поле barcode: -1 в colMap ---
-                    let colMap = { code: -1, barcode: -1, brand: -1, desc: -1, qty: -1, price: -1, cbm: -1, weight: -1 };
-                    
                     let headerRow = rows[headerRowIdx] || []; 
-                    
-                    let baseKeys = [];
-                    if (invoiceSynonyms && invoiceSynonyms['system_ignore_in_id']) {
-                        baseKeys = invoiceSynonyms['system_ignore_in_id'].map(s => s.toLowerCase().trim());
-                    }
-                    
-                    ['id', 'qty', 'price', 'cost', 'cbm', 'weight', 'barcode', 'exclude', 'supplier_keywords', 'invoice_no', 'contract_no'].forEach(k => {
-                        if (!baseKeys.includes(k)) baseKeys.push(k);
-                    });
+                    let colMap = { code: -1, barcode: -1, brand: -1, desc: -1, qty: -1, price: -1, cbm: -1, weight: -1 };
+                    let unmappedCols = []; // Сюда соберем всё, что система не узнала
 
-                    let activeCols = [];
-                    
                     for (let j = 0; j < headerRow.length; j++) {
                         let val = String(headerRow[j] || '').replace(/[\r\n]+/g, ' ').trim();
-                        
-                        if (val.toLowerCase().includes('total') || val.toLowerCase().includes('итого') || val.toLowerCase().includes('общий')) {
-                            continue; 
-                        }
+                        if (!val || val.toLowerCase().includes('total') || val.toLowerCase().includes('итого')) continue;
                         
                         let v = val.toLowerCase();
-                        // Жесткий fallback: если словаря нет, скрипт всё равно узнает стандартные колонки
-                        if (colMap.code === -1 && (isSynonym(val, 'id') || v === 'код' || v === 'id' || v === 'артикул')) colMap.code = j;
-                        if (colMap.barcode === -1 && (isSynonym(val, 'barcode') || v === 'sku' || v === 'штрихкод' || v === 'barcode')) colMap.barcode = j; 
-                        if (colMap.qty === -1 && (isSynonym(val, 'qty') || v === 'кол' || v === 'кол-во' || v === 'qty' || v === 'количество')) colMap.qty = j;
-                        if (colMap.price === -1 && (isSynonym(val, 'price') || v === 'цена' || v === 'price')) colMap.price = j;
-                        if (colMap.brand === -1 && (isSynonym(val, 'brand') || v === 'бренд' || v === 'brand')) colMap.brand = j;
-                        if (colMap.desc === -1 && (isSynonym(val, 'name') || v === 'наименование' || v === 'название' || v === 'model')) colMap.desc = j;
-                        if (colMap.cbm === -1 && isSynonym(val, 'cbm')) colMap.cbm = j;
-                        if (colMap.weight === -1 && isSynonym(val, 'weight')) colMap.weight = j;
+                        let isMapped = false;
 
-                        let isSystemColumn = false;
-                        for (let bk of baseKeys) {
-                            if (isSynonym(val, bk)) {
-                                isSystemColumn = true;
-                                break;
-                            }
-                        }
+                        if (colMap.code === -1 && (isSynonymLocal(val, 'id') || v === 'код' || v === 'id' || v === 'артикул')) { colMap.code = j; isMapped = true; }
+                        else if (colMap.barcode === -1 && (isSynonymLocal(val, 'barcode') || v === 'sku' || v === 'штрихкод' || v === 'barcode')) { colMap.barcode = j; isMapped = true; }
+                        else if (colMap.qty === -1 && (isSynonymLocal(val, 'qty') || v === 'кол' || v === 'кол-во' || v === 'qty' || v === 'количество')) { colMap.qty = j; isMapped = true; }
+                        else if (colMap.price === -1 && (isSynonymLocal(val, 'price') || v === 'цена' || v === 'price')) { colMap.price = j; isMapped = true; }
+                        else if (colMap.brand === -1 && (isSynonymLocal(val, 'brand') || v === 'бренд' || v === 'brand')) { colMap.brand = j; isMapped = true; }
+                        else if (colMap.desc === -1 && (isSynonymLocal(val, 'name') || v === 'наименование' || v === 'название' || v === 'model')) { colMap.desc = j; isMapped = true; }
+                        else if (colMap.cbm === -1 && isSynonymLocal(val, 'cbm')) { colMap.cbm = j; isMapped = true; }
+                        else if (colMap.weight === -1 && isSynonymLocal(val, 'weight')) { colMap.weight = j; isMapped = true; }
 
-                        if (isSystemColumn) continue;
-
-                        if (invoiceSynonyms) {
-                            for (let key in invoiceSynonyms) {
-                                let cleanKey = key.trim().toLowerCase();
-                                
-                                if (cleanKey === 'system_ignore_in_id') continue;
-                                
-                                if (!baseKeys.includes(cleanKey)) {
-                                    if (isSynonym(val, key)) {
-                                        activeCols.push({ key: cleanKey, colIdx: j });
-                                        break; 
-                                    }
-                                }
-                            }
+                        if (!isMapped) {
+                            unmappedCols.push({ index: j, name: val });
                         }
                     }
 
-                    // --- ИСПРАВЛЕНИЕ 3: Проверка успешности (или код, или штрихкод найден) ---
-                    if ((colMap.code !== -1 || colMap.barcode !== -1) && colMap.qty !== -1 && colMap.price !== -1) {
-                        fileParsedSuccessfully = true; 
-                        
-                        if (!invoiceGroups[file_doc_no]) {
-                            invoiceGroups[file_doc_no] = { supplier: file_supplier, items: [], originalFiles: [] };
-                        }
+                    // Сохраняем стейт для Фазы 2
+                    tempInvoiceState = { rows, firstDataRowIdx, headerRow, colMap, file_doc_no, file_supplier, originalBase64, fileName: file.name, unmappedCols };
 
-                        let lastCode = "UNKNOWN";
-                        let lastBrand = "";
-                        let lastDesc = "";
-                        let varMemory = {}; 
+                    // Генерируем UI Маппера
+                    generateMapperUI(unmappedCols, headerRow);
 
-                        for (let i = firstDataRowIdx; i < rows.length; i++) {
-                            const row = rows[i];
-                            if (!row || row.length === 0) continue;
-                            
-                            // --- ИСПРАВЛЕНИЕ 4: Умный захват артикула и штрихкода из строки ---
-                            let actualCodeIdx = colMap.code !== -1 ? colMap.code : colMap.barcode;
-                            let codeCell = actualCodeIdx !== -1 ? String(row[actualCodeIdx] || '').trim() : '';
-                            let rawBarcode = colMap.barcode !== -1 ? String(row[colMap.barcode] || '').trim() : codeCell;
-                            
-                            let qty = parseFloat(row[colMap.qty]);
-                            let price = parseFloat(row[colMap.price]);
-                            let brandStr = colMap.brand !== -1 ? String(row[colMap.brand] || '').trim() : '';
-                            let descStr = colMap.desc !== -1 ? String(row[colMap.desc] || '').trim() : '';
-
-                            if (codeCell === "" && (!isNaN(qty) || !isNaN(price))) {
-                                codeCell = lastCode;
-                                if (brandStr === "") brandStr = lastBrand;
-                                if (descStr === "") descStr = lastDesc;
-                            } else if (codeCell !== "") {
-                                if (codeCell.toUpperCase().includes('TOTAL')) break; 
-                                lastCode = codeCell;
-                                lastBrand = brandStr;
-                                lastDesc = descStr;
-                            } else {
-                                break; 
-                            }
-                            
-                            if (!isNaN(qty) && !isNaN(price)) {
-                                
-                                let rawCbm = colMap.cbm !== -1 ? (parseFloat((row[colMap.cbm] || '0').toString().replace(',', '.')) || 0) : 0;
-                                let finalCbm = rawCbm;
-
-                                if (colMap.cbm !== -1 && qty > 0) {
-                                    let leftVal = parseFloat((row[colMap.cbm - 1] || '0').toString().replace(',', '.')) || 0;
-                                    let rightVal = parseFloat((row[colMap.cbm + 1] || '0').toString().replace(',', '.')) || 0;
-                                    
-                                    if (leftVal > 0 && rawCbm > 0 && Math.abs((leftVal * qty) - rawCbm) < 0.2) {
-                                        finalCbm = leftVal; 
-                                    } else if (rightVal > 0 && rawCbm > 0 && Math.abs((rightVal * qty) - rawCbm) < 0.2) {
-                                        finalCbm = rightVal; 
-                                    } else if (rawCbm === 0) {
-                                        if (leftVal > 0 && leftVal < 1) finalCbm = leftVal;
-                                        else if (rightVal > 0 && rightVal < 1) finalCbm = rightVal;
-                                    }
-                                }
-                                
-                                let finalWeight = colMap.weight !== -1 ? (parseFloat((row[colMap.weight] || '0').toString().replace(',', '.')) || 0) : 0;
-
-                                let allowedForName = ['brand', 'name', 'size']; 
-                                let excludeFromId = ['brand']; 
-                                
-                                let nameParts = [];
-                                let idParts = [];
-
-                                for (let col of activeCols) {
-                                    let colIdx = col.colIdx;
-                                    let key = col.key;
-                                    
-                                    let cellVal = String(row[colIdx] || '').trim();
-                                    let activeVal = "";
-                                    
-                                    if (cellVal !== '') {
-                                        varMemory[colIdx] = cellVal;
-                                        activeVal = cellVal;
-                                    } else if (varMemory[colIdx]) {
-                                        activeVal = varMemory[colIdx];
-                                    }
-                                    
-                                    if (activeVal !== '') {
-                                        if (allowedForName.includes(key)) {
-                                            nameParts.push(activeVal.toUpperCase());
-                                        }
-                                        
-                                        if (!excludeFromId.includes(key)) {
-                                            let idVal = activeVal.toUpperCase().replace(/\*/g, 'X').replace(/\s+/g, '');
-                                            idParts.push({ sortKey: key.toUpperCase() + colIdx, val: idVal });
-                                        }
-                                    }
-                                }
-
-                                // Берем Бренд и Название (model) напрямую из найденных колонок
-                                // --- ИСПРАВЛЕНИЕ 1: Умная склейка названия (без задвоения) ---
-                                let finalNameParts = [];
-                                let cleanDesc = descStr.trim();
-                                let cleanBrand = brandStr.trim();
-
-                                // Добавляем бренд только если его еще нет внутри названия
-                                if (cleanBrand && !cleanDesc.toUpperCase().includes(cleanBrand.toUpperCase())) {
-                                    finalNameParts.push(cleanBrand.toUpperCase());
-                                }
-                                if (cleanDesc) {
-                                    finalNameParts.push(cleanDesc);
-                                }
-
-                                let finalName = finalNameParts.join(' ').trim();
-                                if (finalName === "") finalName = codeCell;
-
-                                // ... (сортировка idParts остается без изменений) ...
-                                idParts.sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-                                let compositeId = codeCell;
-                                for (let p of idParts) {
-                                    compositeId += "_" + p.val;
-                                }
-
-                                // --- ИСПРАВЛЕНИЕ 2: Разблокировка серверной логистики (cbm и weight) ---
-                                const itemData = {
-                                    doc_no: file_doc_no, 
-                                    category: file_doc_no, 
-                                    supplier: file_supplier, 
-                                    item_id: compositeId, 
-                                    barcode: rawBarcode, 
-                                    item_name: finalName, 
-                                    qty: qty, 
-                                    cost: price,
-                                    // Если 0, отправляем пустую строку. Это даст команду серверу найти данные в базе Logistics!
-                                    cbm: finalCbm === 0 ? "" : finalCbm,
-                                    weight: finalWeight === 0 ? "" : finalWeight,
-                                    staff_id: currentUser ? currentUser.uid : 'Auto-Import' 
-                                };
-
-                                parsedInvoiceData.push(itemData);
-                                invoiceGroups[file_doc_no].items.push(itemData);
-                                itemsInFile++;
-                            }
-                        }
-                    } else {
-                        let missing = [];
-                        if (colMap.code === -1 && colMap.barcode === -1) missing.push(translations[currentLang].word_code);
-                        if (colMap.qty === -1) missing.push(translations[currentLang].word_qty);
-                        if (colMap.price === -1) missing.push(translations[currentLang].word_price);
-                        sheetErrorsList.push(translations[currentLang].inc_err_sheet_missing.replace('{0}', sheetName).replace('{1}', headerRowIdx + 1) + missing.join(', '));
-                    }
                 } else {
-                    sheetErrorsList.push(translations[currentLang].inc_err_sheet_no_table.replace('{0}', sheetName));
+                    alert(translations[currentLang].inc_err_sheet_no_table);
                 }
-            } 
+            } catch (err) {
+                console.error(err);
+                alert(translations[currentLang].inc_file_corrupted);
+            }
+        }
+
+        function generateMapperUI(unmappedCols, headerRow) {
+            const container = document.getElementById('mapperRowsContainer');
+            container.innerHTML = '';
+
+            if (unmappedCols.length === 0) {
+                // Если всё идеально распозналось, сразу идем дальше
+                applyUserMapping();
+                return;
+            }
+
+            // Создаем строчки маппинга
+            unmappedCols.forEach(col => {
+                let optionsHtml = `
+                    <option value="attribute" selected>➕ ${translations[currentLang].mapper_attr || 'Доп. атрибут (JSON)'}</option>
+                    <option value="skip">❌ ${translations[currentLang].mapper_skip || 'Пропустить'}</option>
+                    <option disabled>──────────</option>
+                    <option value="code">Код / Артикул</option>
+                    <option value="barcode">Штрихкод</option>
+                    <option value="brand">Бренд</option>
+                    <option value="desc">Наименование</option>
+                    <option value="qty">Кол-во</option>
+                    <option value="price">Цена</option>
+                    <option value="cbm">Объем (CBM)</option>
+                    <option value="weight">Вес (кг)</option>
+                `;
+
+                let rowHtml = `
+                    <div class="mapper-row" data-col-index="${col.index}" data-col-name="${col.name}" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border-light);">
+                        <div style="flex: 1; font-weight: bold; color: var(--text-main); font-size: 13px;">${col.name}</div>
+                        <div style="flex: 1;">
+                            <select class="mapper-select" style="width: 100%; padding: 8px; background: var(--bg-body); color: var(--text-main); border: 1px solid var(--border-main); border-radius: 4px; font-size: 13px; outline: none;">
+                                ${optionsHtml}
+                            </select>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', rowHtml);
+            });
+
+            document.getElementById('parseInvoiceBtn').style.display = 'none';
+            document.getElementById('dataMapperArea').style.display = 'flex';
+            document.getElementById('invoicePreviewArea').style.display = 'none';
+        }
+
+        function applyUserMapping() {
+            if (!tempInvoiceState) return;
+            const { rows, firstDataRowIdx, file_doc_no, file_supplier, originalBase64, fileName } = tempInvoiceState;
+            let colMap = { ...tempInvoiceState.colMap };
+            let attributeCols = [];
+
+            // Читаем выбор пользователя из интерфейса Data Mapper
+            const mapperRows = document.querySelectorAll('.mapper-row');
+            mapperRows.forEach(row => {
+                const colIdx = parseInt(row.getAttribute('data-col-index'));
+                const colName = row.getAttribute('data-col-name');
+                const action = row.querySelector('.mapper-select').value;
+
+                if (action === 'attribute') {
+                    attributeCols.push({ index: colIdx, name: colName });
+                } else if (action !== 'skip') {
+                    colMap[action] = colIdx; // Перезаписываем системную колонку (например, если пользователь указал, что это Цена)
+                }
+            });
+
+            // Валидация
+            if ((colMap.code === -1 && colMap.barcode === -1) || colMap.qty === -1 || colMap.price === -1) {
+                return alert(translations[currentLang].inc_err_sheet_missing || 'Ошибка: Не указаны Код, Количество или Цена!');
+            }
+
+            parsedInvoiceData = [];
+            invoiceGroups[file_doc_no] = { supplier: file_supplier, items: [], originalFiles: [{ fileName, fileBase64: originalBase64 }] };
+
+            let lastCode = "UNKNOWN", lastBrand = "", lastDesc = "";
             
-            if (invoiceGroups[file_doc_no] && fileParsedSuccessfully) {
-                const alreadyAdded = invoiceGroups[file_doc_no].originalFiles.some(f => f.fileName === file.name);
-                if (!alreadyAdded) {
-                    invoiceGroups[file_doc_no].originalFiles.push({
-                        fileName: file.name,
-                        fileBase64: originalBase64
+            // ОСНОВНОЙ ЦИКЛ (Ваша оригинальная логика с добавлением JSON)
+            for (let i = firstDataRowIdx; i < rows.length; i++) {
+                const row = rows[i];
+                if (!row || row.length === 0) continue;
+
+                let actualCodeIdx = colMap.code !== -1 ? colMap.code : colMap.barcode;
+                let codeCell = actualCodeIdx !== -1 ? String(row[actualCodeIdx] || '').trim() : '';
+                let rawBarcode = colMap.barcode !== -1 ? String(row[colMap.barcode] || '').trim() : codeCell;
+                
+                let qty = parseFloat(row[colMap.qty]);
+                let price = parseFloat(row[colMap.price]);
+                let brandStr = colMap.brand !== -1 ? String(row[colMap.brand] || '').trim() : '';
+                let descStr = colMap.desc !== -1 ? String(row[colMap.desc] || '').trim() : '';
+
+                if (codeCell === "" && (!isNaN(qty) || !isNaN(price))) {
+                    codeCell = lastCode; brandStr = brandStr || lastBrand; descStr = descStr || lastDesc;
+                } else if (codeCell !== "") {
+                    if (codeCell.toUpperCase().includes('TOTAL')) break;
+                    lastCode = codeCell; lastBrand = brandStr; lastDesc = descStr;
+                } else {
+                    break; 
+                }
+
+                if (!isNaN(qty) && !isNaN(price)) {
+                    // Формирование имени (Оригинал)
+                    let finalNameParts = [];
+                    if (brandStr && !descStr.toUpperCase().includes(brandStr.toUpperCase())) finalNameParts.push(brandStr.toUpperCase());
+                    if (descStr) finalNameParts.push(descStr);
+                    let finalName = finalNameParts.join(' ').trim() || codeCell;
+
+                    // --- СБОР JSON-АТРИБУТОВ ---
+                    let attributesObj = {};
+                    attributeCols.forEach(attr => {
+                        let val = String(row[attr.index] || '').trim();
+                        if (val) attributesObj[attr.name] = val;
                     });
+                    let finalAttributes = Object.keys(attributesObj).length > 0 ? JSON.stringify(attributesObj) : "";
+
+                    const itemData = {
+                        doc_no: file_doc_no, category: file_doc_no, supplier: file_supplier,
+                        item_id: codeCell, barcode: rawBarcode, item_name: finalName,
+                        qty: qty, cost: price,
+                        cbm: colMap.cbm !== -1 ? (parseFloat(String(row[colMap.cbm]).replace(',', '.')) || "") : "",
+                        weight: colMap.weight !== -1 ? (parseFloat(String(row[colMap.weight]).replace(',', '.')) || "") : "",
+                        attributes: finalAttributes, // <--- Упакованный JSON
+                        staff_id: (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : 'Auto-Import'
+                    };
+
+                    parsedInvoiceData.push(itemData);
+                    invoiceGroups[file_doc_no].items.push(itemData);
                 }
             }
 
-        } catch (err) {
-            console.error("Ошибка чтения файла: " + file.name, err);
-            fileErrors.push(translations[currentLang].inc_file_corrupted);
+            // РЕНДЕР ИТОГОВОЙ ТАБЛИЦЫ С ФОРМАТИРОВАНИЕМ
+            document.getElementById('invoiceMetadata').innerHTML = `
+                <span style="color:var(--text-muted); font-size:13px;">${translations[currentLang].inc_lbl_sup}</span> 
+                <span style="color:var(--accent-yellow); font-weight:bold; font-size:14px;">${file_supplier}</span> 
+                <span style="color:var(--border-light); margin:0 10px;">|</span> 
+                <span style="color:var(--text-muted); font-size:13px;">${translations[currentLang].inc_lbl_doc}</span> 
+                <span style="color:var(--accent-yellow); font-weight:bold;">${file_doc_no}</span> 
+                <span style="color:var(--border-light); margin:0 10px;">|</span> 
+                <span style="color:var(--text-muted); font-size:13px;">${translations[currentLang].inc_lbl_items}</span> 
+                <span style="color:var(--accent-yellow); font-weight:bold; font-size:14px;">${parsedInvoiceData.length}</span>
+            `;
+            
+            document.getElementById('invoiceTableBody').innerHTML = parsedInvoiceData.map(item => `
+                <tr style="border-bottom:1px solid var(--border-light); color:var(--text-main);">
+                    <td style="padding:5px;">${item.item_id}</td>
+                    <td style="padding:5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">
+                        ${item.item_name}
+                        ${item.attributes ? `<br><span style="font-size:10px; color:var(--text-muted);">+ ${Object.keys(JSON.parse(item.attributes)).length} атрибутов</span>` : ''}
+                    </td>
+                    <td style="padding:5px; text-align:right;">${Number(item.qty).toLocaleString('ru-RU')}</td>
+                    <td style="padding:5px; text-align:right;">${item.cbm || '-'}</td>
+                    <td style="padding:5px; text-align:right;">${item.weight || '-'}</td>
+                    <td style="padding:5px; text-align:right; font-weight:bold;">${Number(item.cost).toLocaleString('ru-RU')}</td>
+                </tr>`).join('');
+            
+            document.getElementById('dataMapperArea').style.display = 'none';
+            document.getElementById('invoicePreviewArea').style.display = 'flex';
         }
 
-        if (file_doc_no === 'UNKNOWN') fileErrors.push(translations[currentLang].inc_err_no_doc);
-        // if (file_supplier === 'UNKNOWN') fileErrors.push(translations[currentLang].inc_err_no_sup);
-        
-        if (!fileParsedSuccessfully) {
-            fileErrors.push(sheetErrorsList.join('<br>'));
-        } else if (itemsInFile === 0) {
-            fileErrors.push(translations[currentLang].inc_err_no_items);
+        function showMapperArea() {
+            document.getElementById('dataMapperArea').style.display = 'flex';
+            document.getElementById('invoicePreviewArea').style.display = 'none';
         }
-
-        if (fileErrors.length > 0) {
-            processingLogs.push(`<div style="color:var(--accent-red); font-size:12px; margin-bottom:4px; padding:6px; border-left:3px solid var(--accent-red); background:var(--bg-hover);">⚠️ <b>${file.name}</b>:<br>${fileErrors.join('<br>')}</div>`);
-        } else {
-            processingLogs.push(`<div style="color:var(--accent-green); font-size:12px; margin-bottom:4px; padding:6px; border-left:3px solid var(--accent-green); background:var(--bg-hover);">✅ <b>${file.name}</b>: ${translations[currentLang].inc_success.replace('{0}', itemsInFile)}</div>`);
-        }
-    }
-
-    const debugContainer = document.getElementById('debug-container');
-    debugContainer.style.maxHeight = 'none'; 
-    debugContainer.style.overflowY = 'visible';
-    debugContainer.innerHTML = processingLogs.join('');
-    debugContainer.style.display = 'flex';
-
-    if (parsedInvoiceData.length === 0) {
-        document.getElementById('invoicePreviewArea').style.display = 'none';
-        return; 
-    }
-
-    const uniqueDocs = Object.keys(invoiceGroups).filter(k => k !== 'UNKNOWN');
-    const uniqueSuppliers = [...new Set(parsedInvoiceData.map(i => i.supplier))];
-
-    let docUiHtml = '';
-    if (uniqueDocs.length === 1) {
-        docUiHtml = `<input type="text" id="ui-doc-no" value="${uniqueDocs[0]}" style="background:var(--bg-hover); color:var(--accent-yellow); border:1px dashed var(--border-focus); padding:2px 6px; border-radius:3px; font-weight:bold; font-size:13px; width: 140px; outline:none;" title="Можно редактировать">`;
-    } else if (uniqueDocs.length > 1) {
-        docUiHtml = `<span style="color:var(--accent-yellow); font-weight:bold;">${uniqueDocs.join(', ')}</span>`;
-    } else {
-        docUiHtml = `<span style="color:var(--accent-red); font-weight:bold;">${translations[currentLang].inc_err_doc_format}</span>`;
-    }
-
-    document.getElementById('invoiceMetadata').innerHTML = `
-        <span style="color:var(--text-muted); font-weight:normal; font-size:13px;">${translations[currentLang].inc_lbl_sup}</span> 
-        <span style="color:var(--accent-yellow); font-weight:bold; font-size:14px; letter-spacing:0.5px;">${uniqueSuppliers.join(', ')}</span> 
-        
-        <span style="color:var(--border-light); margin:0 10px;">|</span> 
-        
-        <span style="color:var(--text-muted); font-weight:normal; font-size:13px;">${translations[currentLang].inc_lbl_doc}</span> 
-        ${docUiHtml} 
-        
-        <span style="color:var(--border-light); margin:0 10px;">|</span> 
-        
-        <span style="color:var(--text-muted); font-weight:normal; font-size:13px;">${translations[currentLang].inc_lbl_items}</span> 
-        <span style="color:var(--accent-yellow); font-weight:bold; font-size:14px;">${parsedInvoiceData.length}</span>
-    `;
-    
-    document.getElementById('invoiceTableBody').innerHTML = parsedInvoiceData.map(item => `
-        <tr style="border-bottom:1px solid var(--border-light); color:var(--text-main);">
-            <td style="padding:5px;">${item.item_id}</td>
-            <td style="padding:5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">
-                ${item.item_name}
-                ${uniqueDocs.length > 1 ? `<br><span style="font-size:9px; color:var(--text-muted);">[Инвойс: ${item.doc_no}]</span>` : ''}
-            </td>
-            <td style="padding:5px;">${item.qty}</td>
-            <td style="padding:5px;">${item.cbm}</td>
-            <td style="padding:5px;">${item.weight}</td>
-            <td style="padding:5px;">${item.cost}</td>
-        </tr>`).join('');
-    
-    document.getElementById('invoicePreviewArea').style.display = 'flex';
-    document.getElementById('parseInvoiceBtn').style.display = 'none';
-}
 
         async function sendInvoiceToBackend() {
             if (parsedInvoiceData.length === 0) return alert(translations[currentLang].inc_empty_cart);
