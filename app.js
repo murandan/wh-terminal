@@ -3603,7 +3603,6 @@ function setReportView(view) {
             const startIdx = tempInvoiceState.firstDataRowIdx;
             const colMap = tempInvoiceState.colMap; 
 
-            // Делаем обратный словарь: по индексу колонки узнаем системный ключ
             let indexToSystemKey = {};
             for (let key in colMap) {
                 if (colMap[key] !== -1) {
@@ -3611,27 +3610,25 @@ function setReportView(view) {
                 }
             }
 
-            // Перебираем ВСЕ заголовки из Excel
             headerRow.forEach((colName, index) => {
                 if (!colName || String(colName).trim() === '') return;
 
-                // Собираем примеры данных (первые 2 непустые ячейки)
+                // СОБИРАЕМ 3 ПРИМЕРА
                 let previews = [];
                 for (let i = startIdx; i < Math.min(startIdx + 20, rows.length); i++) {
                     let val = String(rows[i][index] || '').trim();
-                    if (val !== '' && previews.length < 2) {
+                    if (val !== '' && previews.length < 3) {
                         previews.push(val);
                     }
                 }
+                // УБРАЛИ СЛОВО "Пример:"
                 let previewText = previews.length > 0 
                     ? `${previews.join(', ')}...` 
                     : `<span style="opacity: 0.6;">Пустая колонка</span>`;
 
-                // Проверяем, распознала ли система эту колонку на этапе парсинга
                 let guessedKey = indexToSystemKey[index] || 'attribute';
                 let isRecognized = (guessedKey !== 'attribute');
 
-                // Формируем выпадающий список
                 const options = [
                     { val: 'attribute', label: `➕ ${translations[currentLang]?.mapper_attr || 'Доп. атрибут (JSON)'}` },
                     { val: 'skip', label: `❌ ${translations[currentLang]?.mapper_skip || 'Пропустить'}` },
@@ -3652,10 +3649,10 @@ function setReportView(view) {
                     return `<option value="${opt.val}" ${selected}>${opt.label}</option>`;
                 }).join('');
 
-                // Оформление: зеленый для распознанных, обычный для остальных
                 let labelColor = isRecognized ? 'var(--accent-green, #4caf50)' : 'var(--text-main)';
                 let titlePrefix = isRecognized ? '✓ ' : '';
 
+                // ДОБАВЛЕН onchange="updateMapperOptions()" для динамической блокировки
                 let rowHtml = `
                     <div class="mapper-row" data-col-index="${index}" data-col-name="${colName}" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border-light);">
                         <div style="flex: 1; padding-right: 10px;">
@@ -3663,7 +3660,7 @@ function setReportView(view) {
                             <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px; font-style: italic;">${previewText}</div>
                         </div>
                         <div style="flex: 1;">
-                            <select class="mapper-select" style="width: 100%; padding: 8px; background: var(--bg-body); color: var(--text-main); border: 1px solid var(--border-main); border-radius: 4px; font-size: 13px; outline: none;">
+                            <select class="mapper-select" onchange="updateMapperOptions()" style="width: 100%; padding: 8px; background: var(--bg-body); color: var(--text-main); border: 1px solid var(--border-main); border-radius: 4px; font-size: 13px; outline: none;">
                                 ${optionsHtml}
                             </select>
                         </div>
@@ -3672,10 +3669,12 @@ function setReportView(view) {
                 container.insertAdjacentHTML('beforeend', rowHtml);
             });
 
-            // Показываем Маппер (теперь всегда, чтобы кассир мог всё проверить)
             if (document.getElementById('parseInvoiceBtn')) document.getElementById('parseInvoiceBtn').style.display = 'none';
             document.getElementById('dataMapperArea').style.display = 'flex';
             document.getElementById('invoicePreviewArea').style.display = 'none';
+
+            // ЗАПУСКАЕМ СРАЗУ ПОСЛЕ ОТРИСОВКИ, чтобы заблокировать то, что система уже нашла
+            updateMapperOptions();
         }
 
         function applyUserMapping() {
@@ -3799,6 +3798,41 @@ function setReportView(view) {
             
             document.getElementById('dataMapperArea').style.display = 'none';
             document.getElementById('invoicePreviewArea').style.display = 'flex';
+        }
+
+        function updateMapperOptions() {
+            const allSelects = document.querySelectorAll('.mapper-select');
+            
+            // 1. Собираем все роли, которые сейчас выбраны (кроме атрибутов и пропуска)
+            let selectedRoles = [];
+            allSelects.forEach(select => {
+                let val = select.value;
+                if (val !== 'attribute' && val !== 'skip' && val !== 'disabled') {
+                    selectedRoles.push(val);
+                }
+            });
+
+            // 2. Проходим по всем спискам и блокируем/разблокируем опции
+            allSelects.forEach(select => {
+                let currentVal = select.value;
+                let options = select.querySelectorAll('option');
+                
+                options.forEach(opt => {
+                    // Пропускаем служебные пункты
+                    if (opt.value === 'attribute' || opt.value === 'skip' || opt.value === 'disabled') {
+                        return;
+                    }
+                    
+                    // Блокируем пункт, если он есть в массиве занятых ролей И он не выбран конкретно в этом списке
+                    if (selectedRoles.includes(opt.value) && opt.value !== currentVal) {
+                        opt.disabled = true;
+                        opt.style.color = 'var(--text-muted)'; // Делаем визуально серым
+                    } else {
+                        opt.disabled = false;
+                        opt.style.color = ''; // Возвращаем нормальный цвет
+                    }
+                });
+            });
         }
 
         function showMapperArea() {
