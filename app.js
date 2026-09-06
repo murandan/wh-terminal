@@ -3613,7 +3613,6 @@ function setReportView(view) {
             headerRow.forEach((colName, index) => {
                 if (!colName || String(colName).trim() === '') return;
 
-                // СОБИРАЕМ 3 ПРИМЕРА
                 let previews = [];
                 for (let i = startIdx; i < Math.min(startIdx + 20, rows.length); i++) {
                     let val = String(rows[i][index] || '').trim();
@@ -3621,16 +3620,18 @@ function setReportView(view) {
                         previews.push(val);
                     }
                 }
-                // УБРАЛИ СЛОВО "Пример:"
+                
+                // Выводим примеры каждый с новой строки
                 let previewText = previews.length > 0 
-                    ? `${previews.join(', ')}...` 
-                    : `<span style="opacity: 0.6;">Пустая колонка</span>`;
+                    ? previews.map(p => `<div style="margin-top:2px; color:var(--text-muted); font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">- ${p}</div>`).join('')
+                    : `<div style="opacity:0.6; font-size:11px; margin-top:2px;">Пустая колонка</div>`;
 
                 let guessedKey = indexToSystemKey[index] || 'attribute';
                 let isRecognized = (guessedKey !== 'attribute');
 
+                // Убрали (JSON) из названия
                 const options = [
-                    { val: 'attribute', label: `➕ ${translations[currentLang]?.mapper_attr || 'Доп. атрибут (JSON)'}` },
+                    { val: 'attribute', label: `➕ ${translations[currentLang]?.mapper_attr || 'Доп. атрибут'}` },
                     { val: 'skip', label: `❌ ${translations[currentLang]?.mapper_skip || 'Пропустить'}` },
                     { val: 'disabled', label: '──────────' },
                     { val: 'code', label: 'Код / Артикул' },
@@ -3652,15 +3653,15 @@ function setReportView(view) {
                 let labelColor = isRecognized ? 'var(--accent-green, #4caf50)' : 'var(--text-main)';
                 let titlePrefix = isRecognized ? '✓ ' : '';
 
-                // ДОБАВЛЕН onchange="updateMapperOptions()" для динамической блокировки
+                // Адаптивная верстка: flex: 0 0 60% (левая часть) и flex: 0 0 40% (правая часть)
                 let rowHtml = `
-                    <div class="mapper-row" data-col-index="${index}" data-col-name="${colName}" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border-light);">
-                        <div style="flex: 1; padding-right: 10px;">
-                            <div style="font-weight: bold; color: ${labelColor}; font-size: 13px; word-break: break-all;">${titlePrefix}${colName}</div>
-                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px; font-style: italic;">${previewText}</div>
+                    <div class="mapper-row" data-col-index="${index}" data-col-name="${colName}" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border-light);">
+                        <div style="flex: 0 0 60%; padding-right: 10px; overflow: hidden;">
+                            <div style="font-weight: bold; color: ${labelColor}; font-size: 13px; word-break: break-word;">${titlePrefix}${colName}</div>
+                            <div style="font-style: italic;">${previewText}</div>
                         </div>
-                        <div style="flex: 1;">
-                            <select class="mapper-select" onchange="updateMapperOptions()" style="width: 100%; padding: 8px; background: var(--bg-body); color: var(--text-main); border: 1px solid var(--border-main); border-radius: 4px; font-size: 13px; outline: none;">
+                        <div style="flex: 0 0 40%;">
+                            <select class="mapper-select" onchange="updateMapperOptions()" style="width: 100%; padding: 8px 4px; background: var(--bg-body); color: var(--text-main); border: 1px solid var(--border-main); border-radius: 4px; font-size: 12px; outline: none; text-overflow: ellipsis;">
                                 ${optionsHtml}
                             </select>
                         </div>
@@ -3673,7 +3674,6 @@ function setReportView(view) {
             document.getElementById('dataMapperArea').style.display = 'flex';
             document.getElementById('invoicePreviewArea').style.display = 'none';
 
-            // ЗАПУСКАЕМ СРАЗУ ПОСЛЕ ОТРИСОВКИ, чтобы заблокировать то, что система уже нашла
             updateMapperOptions();
         }
 

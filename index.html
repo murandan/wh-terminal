@@ -420,12 +420,15 @@
                         <input type="hidden" id="invoiceCurrency" value="USD">
                     </div>
 
-                    <!-- Поле загрузки файла (без изменений) -->
-                    <div class="file-input-wrapper" style="flex: 1;">
-                        <label for="invoiceFileInput" id="fileInputLabel" class="file-upload-label" style="padding: 12px; border: 1px solid var(--border-main) !important; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: var(--bg-body, rgba(0,0,0,0.03)); transition: background-color 0.2s;">
-                            <div class="file-content" style="display: flex; gap: 8px; align-items: center;">
-                                <span style="color: var(--text-muted); font-size: 16px;">📄</span>
-                                <span id="fileNameTextCompact" class="file-placeholder-text" style="font-size: 14px; color: var(--text-main);" data-i18n="file_select_excel">Нажмите для выбора Excel</span>
+                    <!-- Поле загрузки файла -->
+                    <div class="file-input-wrapper" style="flex: 1; max-width: 100%; overflow: hidden;">
+                        <label for="invoiceFileInput" id="fileInputLabel" class="file-upload-label" style="padding: 12px; border: 1px solid var(--border-main) !important; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; background: var(--bg-body, rgba(0,0,0,0.03)); transition: background-color 0.2s; max-width: 100%;">
+                            <div class="file-content" style="display: flex; gap: 8px; align-items: center; max-width: 100%; overflow: hidden;">
+                                <!-- Добавлен flex-shrink: 0, чтобы иконка не сплющивалась -->
+                                <span style="color: var(--text-muted); font-size: 16px; flex-shrink: 0;">📄</span>
+                                
+                                <!-- Добавлены свойства для горизонтального скролла текста без ползунка -->
+                                <span id="fileNameTextCompact" class="file-placeholder-text" style="font-size: 14px; color: var(--text-main); overflow-x: auto; white-space: nowrap; scrollbar-width: none; -webkit-overflow-scrolling: touch;" data-i18n="file_select_excel">Нажмите для выбора Excel</span>
                             </div>
                         </label>
                         <input type="file" id="invoiceFileInput" accept=".csv, .xls, .xlsx" style="display: none;" multiple onchange="updateFileNameCompactUI(this)">
