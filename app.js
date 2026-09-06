@@ -3937,6 +3937,8 @@ function setReportView(view) {
                     // НОВОЕ: Генерируем уникальный слепок содержимого инвойса
                     let fp = "FP_" + group.items.length + "шт_" + group.items.reduce((sum, i) => sum + (Number(i.qty) || 0), 0) + "кол_" + (group.items[0].item_name || "").replace(/\s/g, '').substring(0, 10);
 
+                    group.items.forEach(item => item.file_code = fp);
+
                     const response = await fetch(GATEWAY_URL, { // 1. Меняем адрес отправки на шлюз
     method: 'POST',
     body: JSON.stringify({ 
