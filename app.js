@@ -3605,12 +3605,10 @@ function setReportView(view) {
                 return;
             }
 
-            // Достаем оригинальные строки для предпросмотра
             const rows = tempInvoiceState.rows;
             const startIdx = tempInvoiceState.firstDataRowIdx;
 
             unmappedCols.forEach(col => {
-                // Ищем 2 первые непустые ячейки в этой колонке для примера
                 let previews = [];
                 for (let i = startIdx; i < Math.min(startIdx + 20, rows.length); i++) {
                     let val = String(rows[i][col.index] || '').trim();
@@ -3619,8 +3617,9 @@ function setReportView(view) {
                     }
                 }
                 
+                // --- ИЗМЕНЕНИЕ ЗДЕСЬ: добавлено многоточие после списка ---
                 let previewText = previews.length > 0 
-                    ? `Пример: ${previews.join(', ')}` 
+                    ? `Пример: ${previews.join(', ')}...` 
                     : `Пустая колонка`;
 
                 let optionsHtml = `
