@@ -3626,8 +3626,18 @@ function setReportView(view) {
                     ? previews.map(p => `<div style="margin-top:2px; color:var(--text-muted); font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">- ${p}</div>`).join('')
                     : `<div style="opacity:0.6; font-size:11px; margin-top:2px;">Пустая колонка</div>`;
 
-                let guessedKey = indexToSystemKey[index] || 'attribute';
-                let isRecognized = (guessedKey !== 'attribute');
+                // Проверяем, узнала ли система колонку по словарю (чтобы потом покрасить в зеленый)
+                let isRecognized = (indexToSystemKey[index] !== undefined);
+                let guessedKey = indexToSystemKey[index];
+
+                // Если система не узнала колонку: смотрим, есть ли в ней данные
+                if (!guessedKey) {
+                    if (previews.length === 0) {
+                        guessedKey = 'skip'; // Если пустая -> сразу ставим "Пропустить"
+                    } else {
+                        guessedKey = 'attribute'; // Если есть данные -> предлагаем сохранить в JSON
+                    }
+                }
 
                 // Убрали (JSON) из названия
                 const options = [
