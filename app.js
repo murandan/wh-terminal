@@ -3693,9 +3693,8 @@ function setReportView(view) {
             
             // СБРОС КАРТЫ: Начинаем с чистого листа, доверяем только интерфейсу
             let colMap = { code: -1, barcode: -1, brand: -1, desc: -1, qty: -1, price: -1, cbm: -1, weight: -1 };
-            let attributeCols = [];
+            let jsonCols = []; // Изменили название для логики: сюда пойдет всё для JSON
 
-            // ЧТЕНИЕ ВЫБОРА КАССИРА
             let hasDuplicates = false;
             const mapperRows = document.querySelectorAll('.mapper-row');
             mapperRows.forEach(row => {
@@ -3703,16 +3702,21 @@ function setReportView(view) {
                 const colName = row.getAttribute('data-col-name');
                 const action = row.querySelector('.mapper-select').value;
 
-                if (action === 'attribute') {
-                    attributeCols.push({ index: colIdx, name: colName });
-                } else if (action !== 'skip') {
-                    // Проверяем, не занята ли уже эта системная роль
-                    if (colMap[action] !== -1) {
-                        hasDuplicates = true; 
+                if (action !== 'skip') {
+                    // Если колонку не пропустили — она железно идет в JSON
+                    jsonCols.push({ index: colIdx, name: colName });
+                    
+                    // Если это еще и системная роль (не просто атрибут), то привязываем ее
+                    if (action !== 'attribute') {
+                        if (colMap[action] !== -1) hasDuplicates = true;
+                        colMap[action] = colIdx;
                     }
-                    colMap[action] = colIdx;
                 }
             });
+
+            if (hasDuplicates) {
+                return alert('Ошибка: Вы назначили одну и ту же роль сразу нескольким колонкам!');
+            }
 
             // Новая защита от дублей
             if (hasDuplicates) {
@@ -3758,11 +3762,11 @@ function setReportView(view) {
                     if (descStr) finalNameParts.push(descStr);
                     let finalName = finalNameParts.join(' ').trim() || codeCell;
 
-                    // Упаковка JSON
+                    // Упаковка JSON (теперь включает вообще все полезные колонки)
                     let attributesObj = {};
-                    attributeCols.forEach(attr => {
-                        let val = String(row[attr.index] || '').trim();
-                        if (val) attributesObj[attr.name] = val;
+                    jsonCols.forEach(col => {
+                        let val = String(row[col.index] || '').trim();
+                        if (val) attributesObj[col.name] = val;
                     });
                     let finalAttributes = Object.keys(attributesObj).length > 0 ? JSON.stringify(attributesObj) : "";
 
