@@ -238,7 +238,9 @@
                 mapper_skip: "Пропустить",
                 mapper_empty: "Пустая колонка",
                 mapper_err_dup: "Ошибка: Вы назначили одну и ту же роль сразу нескольким колонкам!",
-                
+                mapper_err_missing: "Ошибка: Обязательно укажите колонки «Кол-во» и «Цена»!",
+                mapper_title: "Настройка колонок",
+                mapper_btn_apply: "ПРИМЕНИТЬ НАСТРОЙКИ",
                 mapper_code: "Код / Артикул",
                 mapper_barcode: "Штрихкод",
                 mapper_brand: "Бренд",
@@ -487,7 +489,9 @@
                 mapper_skip: "Өткізіп жіберу",
                 mapper_empty: "Бос баған",
                 mapper_err_dup: "Қате: Сіз бір рөлді бірнеше бағанға тағайындадыңыз!",
-                
+                mapper_err_missing: "Қате: «Саны» және «Бағасы» бағандарын міндетті түрде көрсетіңіз!",
+                mapper_title: "Бағандарды баптау",
+                apper_btn_apply: "БАПТАУЛАРДЫ САҚТАУ",
                 mapper_code: "Код / Артикул",
                 mapper_barcode: "Штрихкод",
                 mapper_brand: "Бренд",
@@ -3740,9 +3744,9 @@ function setReportView(view) {
                 return alert(translations[currentLang]?.mapper_err_dup || 'Ошибка: Вы назначили одну и ту же роль сразу нескольким колонкам!');
             }
 
-            // ВАЛИДАЦИЯ
-            if ((colMap.code === -1 && colMap.barcode === -1) || colMap.qty === -1 || colMap.price === -1) {
-                return alert(translations[currentLang].inc_err_sheet_missing || 'Ошибка: Не указаны Код, Количество или Цена!');
+            // ВАЛИДАЦИЯ (теперь требуем только Количество и Цену)
+            if (colMap.qty === -1 || colMap.price === -1) {
+                return alert(translations[currentLang]?.mapper_err_missing || 'Ошибка: Обязательно укажите колонки «Кол-во» и «Цена»!');
             }
 
             parsedInvoiceData = [];
