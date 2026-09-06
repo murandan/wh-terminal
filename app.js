@@ -3599,47 +3599,67 @@ function setReportView(view) {
             const container = document.getElementById('mapperRowsContainer');
             container.innerHTML = '';
 
-            if (unmappedCols.length === 0) {
-                container.innerHTML = `<div style="text-align:center; color:var(--accent-green); padding:15px; font-size:13px; font-weight:bold;">✅ Все колонки успешно распознаны автоматически!<br><span style="color:var(--text-muted); font-weight:normal; font-size:12px;">Дополнительных неизвестных атрибутов в файле не найдено.</span></div>`;
-                applyUserMapping();
-                return;
-            }
-
             const rows = tempInvoiceState.rows;
             const startIdx = tempInvoiceState.firstDataRowIdx;
+            const colMap = tempInvoiceState.colMap; 
 
-            unmappedCols.forEach(col => {
+            // Делаем обратный словарь: по индексу колонки узнаем системный ключ
+            let indexToSystemKey = {};
+            for (let key in colMap) {
+                if (colMap[key] !== -1) {
+                    indexToSystemKey[colMap[key]] = key;
+                }
+            }
+
+            // Перебираем ВСЕ заголовки из Excel
+            headerRow.forEach((colName, index) => {
+                if (!colName || String(colName).trim() === '') return;
+
+                // Собираем примеры данных (первые 2 непустые ячейки)
                 let previews = [];
                 for (let i = startIdx; i < Math.min(startIdx + 20, rows.length); i++) {
-                    let val = String(rows[i][col.index] || '').trim();
+                    let val = String(rows[i][index] || '').trim();
                     if (val !== '' && previews.length < 2) {
                         previews.push(val);
                     }
                 }
-                
-                // --- ИЗМЕНЕНИЕ ЗДЕСЬ: добавлено многоточие после списка ---
                 let previewText = previews.length > 0 
                     ? `Пример: ${previews.join(', ')}...` 
                     : `Пустая колонка`;
 
-                let optionsHtml = `
-                    <option value="attribute" selected>➕ ${translations[currentLang].mapper_attr || 'Доп. атрибут (JSON)'}</option>
-                    <option value="skip">❌ ${translations[currentLang].mapper_skip || 'Пропустить'}</option>
-                    <option disabled>──────────</option>
-                    <option value="code">Код / Артикул</option>
-                    <option value="barcode">Штрихкод</option>
-                    <option value="brand">Бренд</option>
-                    <option value="desc">Наименование</option>
-                    <option value="qty">Кол-во</option>
-                    <option value="price">Цена</option>
-                    <option value="cbm">Объем (CBM)</option>
-                    <option value="weight">Вес (кг)</option>
-                `;
+                // Проверяем, распознала ли система эту колонку на этапе парсинга
+                let guessedKey = indexToSystemKey[index] || 'attribute';
+                let isRecognized = (guessedKey !== 'attribute');
+
+                // Формируем выпадающий список
+                const options = [
+                    { val: 'attribute', label: `➕ ${translations[currentLang]?.mapper_attr || 'Доп. атрибут (JSON)'}` },
+                    { val: 'skip', label: `❌ ${translations[currentLang]?.mapper_skip || 'Пропустить'}` },
+                    { val: 'disabled', label: '──────────' },
+                    { val: 'code', label: 'Код / Артикул' },
+                    { val: 'barcode', label: 'Штрихкод' },
+                    { val: 'brand', label: 'Бренд' },
+                    { val: 'desc', label: 'Наименование' },
+                    { val: 'qty', label: 'Кол-во' },
+                    { val: 'price', label: 'Цена' },
+                    { val: 'cbm', label: 'Объем (CBM)' },
+                    { val: 'weight', label: 'Вес (кг)' }
+                ];
+
+                let optionsHtml = options.map(opt => {
+                    if (opt.val === 'disabled') return `<option disabled>${opt.label}</option>`;
+                    let selected = (guessedKey === opt.val) ? 'selected' : '';
+                    return `<option value="${opt.val}" ${selected}>${opt.label}</option>`;
+                }).join('');
+
+                // Оформление: зеленый для распознанных, обычный для остальных
+                let labelColor = isRecognized ? 'var(--accent-green, #4caf50)' : 'var(--text-main)';
+                let titlePrefix = isRecognized ? '✓ ' : '';
 
                 let rowHtml = `
-                    <div class="mapper-row" data-col-index="${col.index}" data-col-name="${col.name}" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border-light);">
+                    <div class="mapper-row" data-col-index="${index}" data-col-name="${colName}" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid var(--border-light);">
                         <div style="flex: 1; padding-right: 10px;">
-                            <div style="font-weight: bold; color: var(--text-main); font-size: 13px; word-break: break-all;">${col.name}</div>
+                            <div style="font-weight: bold; color: ${labelColor}; font-size: 13px; word-break: break-all;">${titlePrefix}${colName}</div>
                             <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px; font-style: italic;">${previewText}</div>
                         </div>
                         <div style="flex: 1;">
@@ -3652,7 +3672,8 @@ function setReportView(view) {
                 container.insertAdjacentHTML('beforeend', rowHtml);
             });
 
-            document.getElementById('parseInvoiceBtn').style.display = 'none';
+            // Показываем Маппер (теперь всегда, чтобы кассир мог всё проверить)
+            if (document.getElementById('parseInvoiceBtn')) document.getElementById('parseInvoiceBtn').style.display = 'none';
             document.getElementById('dataMapperArea').style.display = 'flex';
             document.getElementById('invoicePreviewArea').style.display = 'none';
         }
@@ -3660,10 +3681,12 @@ function setReportView(view) {
         function applyUserMapping() {
             if (!tempInvoiceState) return;
             const { rows, firstDataRowIdx, file_doc_no, file_supplier, originalBase64, fileName } = tempInvoiceState;
-            let colMap = { ...tempInvoiceState.colMap };
+            
+            // СБРОС КАРТЫ: Начинаем с чистого листа, доверяем только интерфейсу
+            let colMap = { code: -1, barcode: -1, brand: -1, desc: -1, qty: -1, price: -1, cbm: -1, weight: -1 };
             let attributeCols = [];
 
-            // Читаем выбор пользователя из интерфейса Data Mapper
+            // ЧТЕНИЕ ВЫБОРА КАССИРА
             const mapperRows = document.querySelectorAll('.mapper-row');
             mapperRows.forEach(row => {
                 const colIdx = parseInt(row.getAttribute('data-col-index'));
@@ -3673,11 +3696,11 @@ function setReportView(view) {
                 if (action === 'attribute') {
                     attributeCols.push({ index: colIdx, name: colName });
                 } else if (action !== 'skip') {
-                    colMap[action] = colIdx; // Перезаписываем системную колонку (например, если пользователь указал, что это Цена)
+                    colMap[action] = colIdx;
                 }
             });
 
-            // Валидация
+            // ВАЛИДАЦИЯ
             if ((colMap.code === -1 && colMap.barcode === -1) || colMap.qty === -1 || colMap.price === -1) {
                 return alert(translations[currentLang].inc_err_sheet_missing || 'Ошибка: Не указаны Код, Количество или Цена!');
             }
@@ -3687,7 +3710,7 @@ function setReportView(view) {
 
             let lastCode = "UNKNOWN", lastBrand = "", lastDesc = "";
             
-            // ОСНОВНОЙ ЦИКЛ (Ваша оригинальная логика с добавлением JSON)
+            // ОСНОВНОЙ ЦИКЛ ПАРСИНГА
             for (let i = firstDataRowIdx; i < rows.length; i++) {
                 const row = rows[i];
                 if (!row || row.length === 0) continue;
@@ -3711,13 +3734,12 @@ function setReportView(view) {
                 }
 
                 if (!isNaN(qty) && !isNaN(price)) {
-                    // Формирование имени (Оригинал)
                     let finalNameParts = [];
                     if (brandStr && !descStr.toUpperCase().includes(brandStr.toUpperCase())) finalNameParts.push(brandStr.toUpperCase());
                     if (descStr) finalNameParts.push(descStr);
                     let finalName = finalNameParts.join(' ').trim() || codeCell;
 
-                    // --- СБОР JSON-АТРИБУТОВ ---
+                    // Упаковка JSON
                     let attributesObj = {};
                     attributeCols.forEach(attr => {
                         let val = String(row[attr.index] || '').trim();
@@ -3731,7 +3753,7 @@ function setReportView(view) {
                         qty: qty, cost: price,
                         cbm: colMap.cbm !== -1 ? (parseFloat(String(row[colMap.cbm]).replace(',', '.')) || "") : "",
                         weight: colMap.weight !== -1 ? (parseFloat(String(row[colMap.weight]).replace(',', '.')) || "") : "",
-                        attributes: finalAttributes, // <--- Упакованный JSON
+                        attributes: finalAttributes,
                         staff_id: (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : 'Auto-Import'
                     };
 
@@ -3740,7 +3762,7 @@ function setReportView(view) {
                 }
             }
 
-            // РЕНДЕР ИТОГОВОЙ ТАБЛИЦЫ С ФОРМАТИРОВАНИЕМ
+            // РЕНДЕР ИТОГОВОЙ ТАБЛИЦЫ
             document.getElementById('invoiceMetadata').innerHTML = `
                 <span style="color:var(--text-muted); font-size:13px;">${translations[currentLang].inc_lbl_sup}</span> 
                 <span style="color:var(--accent-yellow); font-weight:bold; font-size:14px;">${file_supplier}</span> 
