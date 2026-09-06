@@ -233,9 +233,20 @@
                 report_market_commission: "Комиссия маркета",
                 report_market_logistics: "Логистика",
                 report_market_net: "К выплате",
-
-                // Универсальные кнопки
-                swal_cancel: "ОТМЕНА"
+                swal_cancel: "ОТМЕНА",
+                mapper_attr: "Доп. атрибут",
+                mapper_skip: "Пропустить",
+                mapper_empty: "Пустая колонка",
+                mapper_err_dup: "Ошибка: Вы назначили одну и ту же роль сразу нескольким колонкам!",
+                
+                mapper_code: "Код / Артикул",
+                mapper_barcode: "Штрихкод",
+                mapper_brand: "Бренд",
+                mapper_desc: "Наименование",
+                mapper_qty: "Кол-во",
+                mapper_price: "Цена",
+                mapper_cbm: "Объем (CBM)",
+                mapper_weight: "Вес (кг)"
             },
             kz: {
                 btn_sale: "САТУ", btn_return: "ҚАЙТАРУ", search_placeholder: "ІЗДЕУ...",
@@ -471,9 +482,20 @@
                 report_market_commission: "Маркет комиссиясы",
                 report_market_logistics: "Логистика",
                 report_market_net: "Төлеуге",
-
-                // Әмбебап батырмалар
-                swal_cancel: "БАС ТАРТУ"
+                swal_cancel: "БАС ТАРТУ",
+                mapper_attr: "Қосымша атрибут",
+                mapper_skip: "Өткізіп жіберу",
+                mapper_empty: "Бос баған",
+                mapper_err_dup: "Қате: Сіз бір рөлді бірнеше бағанға тағайындадыңыз!",
+                
+                mapper_code: "Код / Артикул",
+                mapper_barcode: "Штрихкод",
+                mapper_brand: "Бренд",
+                mapper_desc: "Атауы",
+                mapper_qty: "Саны",
+                mapper_price: "Бағасы",
+                mapper_cbm: "Көлемі (CBM)",
+                mapper_weight: "Салмағы (кг)"
             }
         };
 
@@ -3624,7 +3646,7 @@ function setReportView(view) {
                 // Выводим примеры каждый с новой строки
                 let previewText = previews.length > 0 
                     ? previews.map(p => `<div style="margin-top:2px; color:var(--text-muted); font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">- ${p}</div>`).join('')
-                    : `<div style="opacity:0.6; font-size:11px; margin-top:2px;">Пустая колонка</div>`;
+                    : `<div style="opacity:0.6; font-size:11px; margin-top:2px;">${translations[currentLang]?.mapper_empty || 'Пустая колонка'}</div>`;
 
                 // Проверяем, узнала ли система колонку по словарю (чтобы потом покрасить в зеленый)
                 let isRecognized = (indexToSystemKey[index] !== undefined);
@@ -3644,14 +3666,14 @@ function setReportView(view) {
                     { val: 'attribute', label: `➕ ${translations[currentLang]?.mapper_attr || 'Доп. атрибут'}` },
                     { val: 'skip', label: `❌ ${translations[currentLang]?.mapper_skip || 'Пропустить'}` },
                     { val: 'disabled', label: '──────────' },
-                    { val: 'code', label: 'Код / Артикул' },
-                    { val: 'barcode', label: 'Штрихкод' },
-                    { val: 'brand', label: 'Бренд' },
-                    { val: 'desc', label: 'Наименование' },
-                    { val: 'qty', label: 'Кол-во' },
-                    { val: 'price', label: 'Цена' },
-                    { val: 'cbm', label: 'Объем (CBM)' },
-                    { val: 'weight', label: 'Вес (кг)' }
+                    { val: 'code', label: translations[currentLang]?.mapper_code || 'Код / Артикул' },
+                    { val: 'barcode', label: translations[currentLang]?.mapper_barcode || 'Штрихкод' },
+                    { val: 'brand', label: translations[currentLang]?.mapper_brand || 'Бренд' },
+                    { val: 'desc', label: translations[currentLang]?.mapper_desc || 'Наименование' },
+                    { val: 'qty', label: translations[currentLang]?.mapper_qty || 'Кол-во' },
+                    { val: 'price', label: translations[currentLang]?.mapper_price || 'Цена' },
+                    { val: 'cbm', label: translations[currentLang]?.mapper_cbm || 'Объем (CBM)' },
+                    { val: 'weight', label: translations[currentLang]?.mapper_weight || 'Вес (кг)' }
                 ];
 
                 let optionsHtml = options.map(opt => {
@@ -3715,12 +3737,7 @@ function setReportView(view) {
             });
 
             if (hasDuplicates) {
-                return alert('Ошибка: Вы назначили одну и ту же роль сразу нескольким колонкам!');
-            }
-
-            // Новая защита от дублей
-            if (hasDuplicates) {
-                return alert('Ошибка: Вы назначили одну и ту же роль (например, "Цена" или "Кол-во") сразу нескольким колонкам. Каждая системная роль может быть выбрана только один раз!');
+                return alert(translations[currentLang]?.mapper_err_dup || 'Ошибка: Вы назначили одну и ту же роль сразу нескольким колонкам!');
             }
 
             // ВАЛИДАЦИЯ
