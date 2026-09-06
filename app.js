@@ -3624,8 +3624,8 @@ function setReportView(view) {
                     }
                 }
                 let previewText = previews.length > 0 
-                    ? `Пример: ${previews.join(', ')}...` 
-                    : `Пустая колонка`;
+                    ? `${previews.join(', ')}...` 
+                    : `<span style="opacity: 0.6;">Пустая колонка</span>`;
 
                 // Проверяем, распознала ли система эту колонку на этапе парсинга
                 let guessedKey = indexToSystemKey[index] || 'attribute';
@@ -3687,6 +3687,7 @@ function setReportView(view) {
             let attributeCols = [];
 
             // ЧТЕНИЕ ВЫБОРА КАССИРА
+            let hasDuplicates = false;
             const mapperRows = document.querySelectorAll('.mapper-row');
             mapperRows.forEach(row => {
                 const colIdx = parseInt(row.getAttribute('data-col-index'));
@@ -3696,9 +3697,18 @@ function setReportView(view) {
                 if (action === 'attribute') {
                     attributeCols.push({ index: colIdx, name: colName });
                 } else if (action !== 'skip') {
+                    // Проверяем, не занята ли уже эта системная роль
+                    if (colMap[action] !== -1) {
+                        hasDuplicates = true; 
+                    }
                     colMap[action] = colIdx;
                 }
             });
+
+            // Новая защита от дублей
+            if (hasDuplicates) {
+                return alert('Ошибка: Вы назначили одну и ту же роль (например, "Цена" или "Кол-во") сразу нескольким колонкам. Каждая системная роль может быть выбрана только один раз!');
+            }
 
             // ВАЛИДАЦИЯ
             if ((colMap.code === -1 && colMap.barcode === -1) || colMap.qty === -1 || colMap.price === -1) {
