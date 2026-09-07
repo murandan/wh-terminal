@@ -3709,6 +3709,11 @@ function setReportView(view) {
             if (document.getElementById('parseInvoiceBtn')) document.getElementById('parseInvoiceBtn').style.display = 'none';
             document.getElementById('dataMapperArea').style.display = 'flex';
             document.getElementById('invoicePreviewArea').style.display = 'none';
+            setTimeout(() => {
+                if (typeof updateMapperOptions === 'function') {
+                    updateMapperOptions();
+                }
+            }, 50);
         }
 
             function updateMapperOptions() {
@@ -3739,7 +3744,7 @@ function setReportView(view) {
                     select.style.color = 'var(--text-main)'; 
                     
                     if (leftTitle) {
-                        leftTitle.style.color = 'var(--text-muted, #999)';
+                        leftTitle.style.color = '#e53935';
                         leftTitle.style.textDecoration = 'line-through';
                         leftTitle.innerText = origName; // Возвращаем чистое имя
                     }
