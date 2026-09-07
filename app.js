@@ -3709,7 +3709,7 @@ function setReportView(view) {
                     </div>
                 `;
                 container.insertAdjacentHTML('beforeend', rowHtml);
-            });
+            };
 
             if (document.getElementById('parseInvoiceBtn')) document.getElementById('parseInvoiceBtn').style.display = 'none';
             document.getElementById('dataMapperArea').style.display = 'flex';
@@ -3719,7 +3719,6 @@ function setReportView(view) {
                     updateMapperOptions();
                 }
             }, 50);
-        }
 
         function applyUserMapping() {
             if (!tempInvoiceState) return;
