@@ -3716,85 +3716,6 @@ function setReportView(view) {
             }, 50);
         }
 
-            function updateMapperOptions() {
-            const allSelects = document.querySelectorAll('.mapper-select');
-            
-            let selectedRoles = [];
-            allSelects.forEach(select => {
-                let val = select.value;
-                if (val !== 'attribute' && val !== 'skip' && val !== 'disabled') {
-                    selectedRoles.push(val);
-                }
-            });
-
-            allSelects.forEach(select => {
-                let currentVal = select.value;
-                select.style.fontWeight = 'bold';
-                select.style.transition = 'all 0.2s ease';
-                
-                // Находим левую колонку по новым классам
-                const row = select.closest('.mapper-row');
-                const leftTitle = row ? row.querySelector('.mapper-col-title') : null;
-                const origName = leftTitle ? leftTitle.getAttribute('data-orig-name') : '';
-
-                // --- БЛОК 1: ПРОПУСТИТЬ ---
-                if (currentVal === 'skip') {
-                    select.style.backgroundColor = 'rgba(244, 67, 54, 0.1)';
-                    select.style.borderColor = 'rgba(244, 67, 54, 0.4)';
-                    select.style.color = 'var(--text-main)'; 
-                    
-                    if (leftTitle) {
-                        leftTitle.style.color = '#e53935';
-                        leftTitle.style.textDecoration = 'line-through';
-                        leftTitle.innerText = origName; // Возвращаем чистое имя
-                    }
-                    
-                // --- БЛОК 2: ДОП. АТРИБУТ ---
-                } else if (currentVal === 'attribute') {
-                    select.style.backgroundColor = 'rgba(33, 150, 243, 0.15)';
-                    select.style.borderColor = 'rgba(33, 150, 243, 0.5)';
-                    select.style.color = 'var(--text-main)';
-                    
-                    if (leftTitle) {
-                        leftTitle.style.color = '#1976d2'; // Голубой
-                        leftTitle.style.textDecoration = 'none';
-                        leftTitle.innerText = origName; 
-                    }
-                    
-                // --- БЛОК 3: СИСТЕМНЫЕ КОЛОНКИ (Выбрано) ---
-                } else {
-                    select.style.backgroundColor = 'rgba(76, 175, 80, 0.15)';
-                    select.style.borderColor = 'rgba(76, 175, 80, 0.5)';
-                    select.style.color = 'var(--text-main)';
-                    
-                    if (leftTitle) {
-                        leftTitle.style.color = '#2e7d32'; // Зеленый
-                        leftTitle.style.textDecoration = 'none';
-                        leftTitle.innerText = '✅ ' + origName; // Добавляем галочку
-                    }
-                }
-
-                // --- ФИКС БЕЛОГО ТЕКСТА ВНУТРИ СПИСКА ---
-                let options = select.querySelectorAll('option');
-                options.forEach(opt => {
-                    if (opt.value === 'attribute' || opt.value === 'skip' || opt.value === 'disabled') {
-                        opt.style.backgroundColor = '';
-                        opt.style.color = '#222';
-                        return;
-                    }
-                    if (selectedRoles.includes(opt.value) && opt.value !== currentVal) {
-                        opt.disabled = true;
-                        opt.style.backgroundColor = '#ecf0f1';
-                        opt.style.color = '#95a5a6';
-                    } else {
-                        opt.disabled = false;
-                        opt.style.backgroundColor = ''; 
-                        opt.style.color = '#222';
-                    }
-                });
-            });
-        }
-
         function applyUserMapping() {
             if (!tempInvoiceState) return;
             const { rows, firstDataRowIdx, file_doc_no, file_supplier, originalBase64, fileName } = tempInvoiceState;
@@ -3945,8 +3866,7 @@ function setReportView(view) {
                 if (row) {
                     // Берем оригинальное имя прямо из атрибута строки
                     origName = row.getAttribute('data-col-name') || '';
-                    // Находим заголовок по структуре: первый div левого блока
-                    // row.children[0] - это блок на 60%, его children[0] - это сам текст заголовка
+                    // Находим заголовок по структуре
                     if (row.children[0] && row.children[0].children[0]) {
                         leftTitle = row.children[0].children[0];
                     }
@@ -3959,7 +3879,7 @@ function setReportView(view) {
                     select.style.color = 'var(--text-main)'; 
                     
                     if (leftTitle) {
-                        leftTitle.style.color = 'var(--text-muted, #999)';
+                        leftTitle.style.color = '#d32f2f'; // Ярко-красный
                         leftTitle.style.textDecoration = 'line-through';
                         leftTitle.innerText = origName; 
                     }
@@ -5436,48 +5356,28 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-window.switchIncomeTab = function(tabName) {
-    const tabImport = document.getElementById('tab-import'); 
-    const tabNew = document.getElementById('tab-new-product');
+function switchIncomeTab(tabName) {
     const btnImport = document.getElementById('tab-btn-import');
     const btnNew = document.getElementById('tab-btn-new');
-
-    if (!tabImport || !tabNew || !btnImport || !btnNew) return;
-
-    // АКТИВНАЯ вкладка: голубой контур, легкий фон, приглушенный текст
-    const activeBg = 'var(--bg-overlay, rgba(0,0,0,0.05))';
-    const activeColor = 'var(--text-main)'; // Приглушенный базовый текст, не чисто белый
-    const activeBorder = '1px solid var(--accent-blue, #2196F3)'; // Голубой контур
-
-    // НЕАКТИВНАЯ вкладка: прозрачный фон, контрастный текст для читаемости
-    const inactiveBg = 'transparent';
-    const inactiveColor = 'var(--text-muted, #777777)'; 
-    const inactiveBorder = '1px solid var(--border-main)';
+    const tabImport = document.getElementById('tab-import');
+    const tabNew = document.getElementById('tab-new-product');
 
     if (tabName === 'import') {
         tabImport.style.display = 'block';
         tabNew.style.display = 'none';
-
-        btnImport.style.background = activeBg;
-        btnImport.style.color = activeColor;
-        btnImport.style.border = activeBorder;
-
-        btnNew.style.background = inactiveBg;
-        btnNew.style.color = inactiveColor;
-        btnNew.style.border = inactiveBorder;
+        
+        // Меняем классы
+        btnImport.className = 'modal-tab active';
+        btnNew.className = 'modal-tab inactive';
     } else {
         tabImport.style.display = 'none';
         tabNew.style.display = 'block';
-
-        btnNew.style.background = activeBg;
-        btnNew.style.color = activeColor;
-        btnNew.style.border = activeBorder;
-
-        btnImport.style.background = inactiveBg;
-        btnImport.style.color = inactiveColor;
-        btnImport.style.border = inactiveBorder;
+        
+        // Меняем классы
+        btnImport.className = 'modal-tab inactive';
+        btnNew.className = 'modal-tab active';
     }
-};
+}
 
 // Функция открытия/закрытия списка (с вращением стрелки)
 window.toggleNtCategoryDropdown = function(event) {

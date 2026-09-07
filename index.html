@@ -396,8 +396,8 @@
 
             <!-- ПЕРЕКЛЮЧАТЕЛЬ ВКЛАДОК -->
             <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-shrink: 0;">
-                <button id="tab-btn-import" onclick="switchIncomeTab('import')" style="flex: 1; padding: 14px; font-size: 14px; background: var(--bg-overlay); color: var(--text-main); border: 1px solid var(--border-light); border-radius: 6px; font-weight: bold; cursor: pointer;" data-i18n="tab_import">ИМПОРТ EXCEL</button>
-                <button id="tab-btn-new" onclick="switchIncomeTab('new')" style="flex: 1; padding: 14px; font-size: 14px; background: transparent; color: var(--text-muted); border: 1px solid var(--border-main); border-radius: 6px; font-weight: bold; cursor: pointer;" data-i18n="tab_new">НОВЫЙ ТОВАР</button>
+                <button id="tab-btn-import" onclick="switchIncomeTab('import')" class="modal-tab active" data-i18n="tab_import">ИМПОРТ EXCEL</button>
+                <button id="tab-btn-new" onclick="switchIncomeTab('new')" class="modal-tab inactive" data-i18n="tab_new">НОВЫЙ ТОВАР</button>
             </div>
 
             <!-- ВКЛАДКА 1: ОРИГИНАЛЬНЫЙ ИМПОРТ -->
@@ -435,7 +435,7 @@
                     </div>
                 </div>
                 
-                <button id="parseInvoiceBtn" onclick="processInvoiceFile()" style="background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); padding: 14px 15px; margin-top: 15px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px;" data-i18n="income_parse">ОБРАБОТАТЬ ФАЙЛ</button>
+                <button id="parseInvoiceBtn" onclick="processInvoiceFile()" class="btn-primary green" style="margin-top: 15px;" data-i18n="income_parse">ОБРАБОТАТЬ ФАЙЛ</button>
                 
                 <div id="debug-container" style="display: none; margin-top: 15px; flex-direction: column; overflow-y: auto; max-height: 40vh;"></div>
 
@@ -445,7 +445,7 @@
                     <!-- Сюда JavaScript будет динамически вставлять вертикальные блоки маппинга -->
                     <div id="mapperRowsContainer" style="overflow-y: auto; max-height: 40vh; margin-bottom: 15px; padding-right: 5px;"></div>
                     
-                    <button id="applyMappingBtn" onclick="applyUserMapping()" style="background: var(--bg-overlay); color: var(--text-main); border: 1px solid var(--border-light); padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px;" data-i18n="mapper_btn_apply">ПРИМЕНИТЬ НАСТРОЙКИ</button>
+                    <button id="applyMappingBtn" onclick="applyUserMapping()" class="btn-primary" data-i18n="mapper_btn_apply">ПРИМЕНИТЬ НАСТРОЙКИ</button>
                 </div>
 
                 <!-- БЛОК ПРЕДПРОСМОТРА И ФИНАЛИЗАЦИИ -->
@@ -484,9 +484,7 @@
                         </div>
                     </div>
                     
-                    <button id="sendInvoiceBtn" onclick="sendInvoiceToBackend()" style="background: var(--accent-blue); color: #ffffff; padding: 14px 20px; border: none; border-radius: 4px; width: 100%; cursor: pointer; font-weight: bold; font-size: 15px; flex-shrink: 0;" data-i18n="income_confirm">
-                        ✅ ОПРИХОДОВАТЬ НА СКЛАД
-                    </button>
+                    <button id="sendInvoiceBtn" onclick="sendInvoiceToBackend()" class="btn-primary blue" data-i18n="income_confirm">✅ ОПРИХОДОВАТЬ НА СКЛАД</button>
                 </div>
             </div>
 
@@ -560,9 +558,7 @@
             </div>
 
             <!-- Кнопка сохранения -->
-                    <button id="saveNewProductBtn" onclick="saveNewProduct()" style="background: var(--bg-success-dim); color: var(--accent-green); border: 1px solid var(--accent-green); padding: 14px 15px; margin-top: 15px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px;" data-i18n="income_confirm">
-            ✅ ОПРИХОДОВАТЬ НА СКЛАД
-        </button>
+            <button id="saveNewProductBtn" onclick="saveNewProduct()" class="btn-primary green" style="margin-top: 15px;" data-i18n="income_confirm">✅ ОПРИХОДОВАТЬ НА СКЛАД</button>
             
         </div>
             
