@@ -386,7 +386,7 @@
 
     <!-- Прием Нового товара -->
     <div id="income-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-overlay); z-index: 10000; justify-content: center; align-items: flex-start; padding-top: 4vh; backdrop-filter: blur(3px);">
-        <div style="background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 8px; width: 95%; max-width: 600px; padding: 20px; color: var(--text-main); max-height: 80vh; display: flex; flex-direction: column; position: relative;">
+        <div style="background: var(--bg-modal); border: 1px solid var(--border-light); border-radius: 8px; width: 95%; max-width: 600px; padding: 20px; color: var(--text-main); max-height: 80vh; display: flex; flex-direction: column; position: relative; overflow-x: hidden; box-sizing: border-box;">
             
             <button onclick="toggleIncomeModule()" style="position: absolute; right: 15px; top: 15px; background: transparent; border: none; color: #ff4d4d; font-size: 20px; cursor: pointer; font-weight: bold;">✕</button>
             
@@ -455,7 +455,7 @@
                     <!-- Кнопка возврата к маппингу, если пользователь заметил ошибку -->
                     <button onclick="showMapperArea()" style="background: transparent; border: none; color: var(--text-muted); text-decoration: underline; cursor: pointer; font-size: 12px; margin-bottom: 10px; text-align: right;" data-i18n="mapper_edit">⚙️ Изменить привязку</button>
 
-                    <div style="overflow-y: auto; border: 1px solid var(--border-light); margin-bottom: 15px; flex-grow: 1;">
+                    <div style="overflow: auto; border: 1px solid var(--border-light); margin-bottom: 15px; flex-grow: 1; width: 100%; box-sizing: border-box;">
                         <table style="width: 100%; border-collapse: collapse; font-size: 13px; color: var(--text-main);">
                             <thead style="background: var(--border-main); position: sticky; top: 0; z-index: 10;">
                                 <tr style="border-bottom: 1px solid var(--text-muted); text-align: left;">
