@@ -3676,8 +3676,8 @@ function setReportView(view) {
                     { val: 'barcode', label: translations[currentLang]?.mapper_barcode || 'Штрихкод' },
                     { val: 'brand', label: translations[currentLang]?.mapper_brand || 'Бренд' },
                     { val: 'desc', label: translations[currentLang]?.mapper_desc || 'Наименование' },
-                    { val: 'qty', label: translations[currentLang]?.mapper_qty || 'Кол-во' },
-                    { val: 'price', label: translations[currentLang]?.mapper_price || 'Цена' },
+                    { val: 'qty', label: `❗️ ${translations[currentLang]?.mapper_qty || 'Кол-во'}` },
+                    { val: 'price', label: `❗️ ${translations[currentLang]?.mapper_price || 'Цена'}` },
                     { val: 'cbm', label: translations[currentLang]?.mapper_cbm || 'Объем (CBM)' },
                     { val: 'weight', label: translations[currentLang]?.mapper_weight || 'Вес (кг)' }
                 ];
