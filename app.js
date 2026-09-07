@@ -3693,7 +3693,7 @@ function setReportView(view) {
                 let rowHtml = `
                     <div class="mapper-row" data-col-index="${index}" data-col-name="${colName}" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border-light);">
                         <div style="flex: 0 0 60%; padding-right: 10px; overflow: hidden;">
-                            <div style="font-weight: bold; color: ${labelColor}; font-size: 13px; word-break: break-word;">${titlePrefix}${colName}</div>
+                            <div class="mapper-col-title" data-orig-name="${colName}" style="font-weight: bold; font-size: 13px; word-break: break-word; transition: all 0.2s ease;">${colName}</div>
                             <div style="font-style: italic;">${previewText}</div>
                         </div>
                         <div style="flex: 0 0 40%;">
@@ -3709,8 +3709,85 @@ function setReportView(view) {
             if (document.getElementById('parseInvoiceBtn')) document.getElementById('parseInvoiceBtn').style.display = 'none';
             document.getElementById('dataMapperArea').style.display = 'flex';
             document.getElementById('invoicePreviewArea').style.display = 'none';
+        }
 
-            updateMapperOptions();
+            function updateMapperOptions() {
+            const allSelects = document.querySelectorAll('.mapper-select');
+            
+            let selectedRoles = [];
+            allSelects.forEach(select => {
+                let val = select.value;
+                if (val !== 'attribute' && val !== 'skip' && val !== 'disabled') {
+                    selectedRoles.push(val);
+                }
+            });
+
+            allSelects.forEach(select => {
+                let currentVal = select.value;
+                select.style.fontWeight = 'bold';
+                select.style.transition = 'all 0.2s ease';
+                
+                // Находим левую колонку по новым классам
+                const row = select.closest('.mapper-row');
+                const leftTitle = row ? row.querySelector('.mapper-col-title') : null;
+                const origName = leftTitle ? leftTitle.getAttribute('data-orig-name') : '';
+
+                // --- БЛОК 1: ПРОПУСТИТЬ ---
+                if (currentVal === 'skip') {
+                    select.style.backgroundColor = 'rgba(244, 67, 54, 0.1)';
+                    select.style.borderColor = 'rgba(244, 67, 54, 0.4)';
+                    select.style.color = 'var(--text-main)'; 
+                    
+                    if (leftTitle) {
+                        leftTitle.style.color = 'var(--text-muted, #999)';
+                        leftTitle.style.textDecoration = 'line-through';
+                        leftTitle.innerText = origName; // Возвращаем чистое имя
+                    }
+                    
+                // --- БЛОК 2: ДОП. АТРИБУТ ---
+                } else if (currentVal === 'attribute') {
+                    select.style.backgroundColor = 'rgba(33, 150, 243, 0.15)';
+                    select.style.borderColor = 'rgba(33, 150, 243, 0.5)';
+                    select.style.color = 'var(--text-main)';
+                    
+                    if (leftTitle) {
+                        leftTitle.style.color = '#1976d2'; // Голубой
+                        leftTitle.style.textDecoration = 'none';
+                        leftTitle.innerText = origName; 
+                    }
+                    
+                // --- БЛОК 3: СИСТЕМНЫЕ КОЛОНКИ (Выбрано) ---
+                } else {
+                    select.style.backgroundColor = 'rgba(76, 175, 80, 0.15)';
+                    select.style.borderColor = 'rgba(76, 175, 80, 0.5)';
+                    select.style.color = 'var(--text-main)';
+                    
+                    if (leftTitle) {
+                        leftTitle.style.color = '#2e7d32'; // Зеленый
+                        leftTitle.style.textDecoration = 'none';
+                        leftTitle.innerText = '✅ ' + origName; // Добавляем галочку
+                    }
+                }
+
+                // --- ФИКС БЕЛОГО ТЕКСТА ВНУТРИ СПИСКА ---
+                let options = select.querySelectorAll('option');
+                options.forEach(opt => {
+                    if (opt.value === 'attribute' || opt.value === 'skip' || opt.value === 'disabled') {
+                        opt.style.backgroundColor = '';
+                        opt.style.color = '#222';
+                        return;
+                    }
+                    if (selectedRoles.includes(opt.value) && opt.value !== currentVal) {
+                        opt.disabled = true;
+                        opt.style.backgroundColor = '#ecf0f1';
+                        opt.style.color = '#95a5a6';
+                    } else {
+                        opt.disabled = false;
+                        opt.style.backgroundColor = ''; 
+                        opt.style.color = '#222';
+                    }
+                });
+            });
         }
 
         function applyUserMapping() {
