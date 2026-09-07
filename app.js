@@ -3685,6 +3685,9 @@ function setReportView(view) {
                 let optionsHtml = options.map(opt => {
                     if (opt.val === 'disabled') return `<option disabled>${opt.label}</option>`;
                     let selected = (guessedKey === opt.val) ? 'selected' : '';
+                    // Добавили data-label, чтобы скрипт помнил чистое имя без значков
+                    return `<option value="${opt.val}" ${selected} data-label="${opt.label}">${opt.label}</option>`;
+                }).join('');
                     return `<option value="${opt.val}" ${selected}>${opt.label}</option>`;
                 }).join('');
 
@@ -3911,14 +3914,26 @@ function setReportView(view) {
                     }
                 }
 
-                // --- ФИКС БЕЛОГО ТЕКСТА ВНУТРИ СПИСКА ---
+                // --- ФИКС БЕЛОГО ТЕКСТА И ВЫДЕЛЕНИЕ ОБЯЗАТЕЛЬНЫХ ---
                 let options = select.querySelectorAll('option');
                 options.forEach(opt => {
+                    // Берем чистое имя из атрибута
+                    let origLabel = opt.getAttribute('data-label') || opt.innerText;
+
                     if (opt.value === 'attribute' || opt.value === 'skip' || opt.value === 'disabled') {
                         opt.style.backgroundColor = '';
                         opt.style.color = '#222';
+                        opt.innerText = origLabel; 
                         return;
                     }
+
+                    // МАГИЯ ЗДЕСЬ: Если это Цена или Кол-во, и они еще не выбраны
+                    if ((opt.value === 'qty' || opt.value === 'price') && !selectedRoles.includes(opt.value) && opt.value !== currentVal) {
+                        opt.innerText = '❗️ ' + origLabel; // Добавляем восклицательный знак
+                    } else {
+                        opt.innerText = origLabel; // Возвращаем обычный вид, если выбрано
+                    }
+
                     if (selectedRoles.includes(opt.value) && opt.value !== currentVal) {
                         opt.disabled = true;
                         opt.style.backgroundColor = '#ecf0f1';
