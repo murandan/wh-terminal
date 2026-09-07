@@ -3847,47 +3847,51 @@ function setReportView(view) {
                 }
             });
 
-            // 2. Проходим по всем спискам: красим селекты и блокируем занятые опции
+            // 2. Проходим по всем спискам
             allSelects.forEach(select => {
                 let currentVal = select.value;
                 
-                // --- ВИЗУАЛЬНОЕ ВЫДЕЛЕНИЕ (UI/UX) ---
                 select.style.fontWeight = 'bold';
-                select.style.transition = 'all 0.2s ease'; // Плавная смена цвета при клике
+                select.style.transition = 'all 0.2s ease';
                 
+                // --- ЦВЕТА САМОГО БЛОКА (ЗАКРЫТЫЙ СПИСОК) ---
                 if (currentVal === 'skip') {
-                    // ❌ ПРОПУСТИТЬ: Прозрачный фон, серый текст (чтобы не отвлекал)
-                    select.style.backgroundColor = 'transparent';
-                    select.style.borderColor = 'var(--border-light, #ddd)';
-                    select.style.color = 'var(--text-muted, #888)';
+                    // ❌ ПРОПУСТИТЬ: Красноватый оттенок
+                    select.style.backgroundColor = 'rgba(244, 67, 54, 0.1)';
+                    select.style.borderColor = 'rgba(244, 67, 54, 0.4)';
+                    select.style.color = '#c62828'; // Темно-красный для читаемости
                     
                 } else if (currentVal === 'attribute') {
-                    // ➕ ДОП. АТРИБУТ: Нежно-синий полупрозрачный фон
-                    select.style.backgroundColor = 'rgba(33, 150, 243, 0.1)';
-                    select.style.borderColor = 'rgba(33, 150, 243, 0.4)';
-                    select.style.color = 'var(--text-main, #1976d2)'; // Оставляем контрастным
+                    select.style.backgroundColor = 'rgba(33, 150, 243, 0.15)';
+                    select.style.borderColor = 'rgba(33, 150, 243, 0.5)';
+                    select.style.color = 'var(--text-main, #1976d2)';
                     
                 } else {
-                    // ✓ ВЫБРАННАЯ ШАПКА: Нежно-зеленый полупрозрачный фон
-                    select.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
-                    select.style.borderColor = 'rgba(76, 175, 80, 0.4)';
-                    select.style.color = 'var(--text-main, #2e7d32)'; // Оставляем контрастным
+                    select.style.backgroundColor = 'rgba(76, 175, 80, 0.15)';
+                    select.style.borderColor = 'rgba(76, 175, 80, 0.5)';
+                    select.style.color = 'var(--text-main, #2e7d32)';
                 }
 
-                // --- ЛОГИКА БЛОКИРОВКИ ДУБЛИКАТОВ ---
+                // --- ЦВЕТА ПУНКТОВ ВНУТРИ (ОТКРЫТЫЙ СПИСОК) ---
                 let options = select.querySelectorAll('option');
                 options.forEach(opt => {
-                    // Пропускаем служебные пункты
+                    // Базовые пункты оставляем без изменений
                     if (opt.value === 'attribute' || opt.value === 'skip' || opt.value === 'disabled') {
+                        opt.style.backgroundColor = '';
+                        opt.style.color = '';
                         return;
                     }
                     
-                    // Блокируем пункт, если он есть в массиве занятых ролей И он не выбран здесь
+                    // Если роль занята другим столбцом
                     if (selectedRoles.includes(opt.value) && opt.value !== currentVal) {
                         opt.disabled = true;
-                        opt.style.color = 'var(--text-muted, #999)';
+                        // Исправлено: Фон для занятых и жесткий цвет для обхода бага темной темы
+                        opt.style.backgroundColor = '#ecf0f1'; // Затеняем фон
+                        opt.style.color = '#95a5a6'; // Ставим жесткий цвет, который не побелеет
                     } else {
+                        // Если роль свободна
                         opt.disabled = false;
+                        opt.style.backgroundColor = ''; 
                         opt.style.color = ''; 
                     }
                 });
