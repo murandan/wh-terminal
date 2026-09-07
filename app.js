@@ -3697,7 +3697,7 @@ function setReportView(view) {
                             <div style="font-style: italic;">${previewText}</div>
                         </div>
                         <div style="flex: 0 0 40%;">
-                            <select class="mapper-select" onchange="updateMapperOptions()" style="width: 100%; padding: 8px 4px; background: var(--bg-body); color: var(--text-main); border: 1px solid var(--border-main); border-radius: 4px; font-size: 12px; outline: none; text-overflow: ellipsis;">
+                            <select class="mapper-select" onchange="updateMapperOptions()" style="width: 100%; padding: 12px 8px; min-height: 44px; background: var(--bg-body); color: var(--text-main); border: 1px solid var(--border-main); border-radius: 6px; font-size: 14px; outline: none; text-overflow: ellipsis;">
                                 ${optionsHtml}
                             </select>
                         </div>
