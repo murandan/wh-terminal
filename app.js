@@ -3847,24 +3847,48 @@ function setReportView(view) {
                 }
             });
 
-            // 2. Проходим по всем спискам и блокируем/разблокируем опции
+            // 2. Проходим по всем спискам: красим селекты и блокируем занятые опции
             allSelects.forEach(select => {
                 let currentVal = select.value;
-                let options = select.querySelectorAll('option');
                 
+                // --- ВИЗУАЛЬНОЕ ВЫДЕЛЕНИЕ (UI/UX) ---
+                select.style.fontWeight = 'bold';
+                select.style.transition = 'all 0.2s ease'; // Плавная смена цвета при клике
+                
+                if (currentVal === 'skip') {
+                    // ❌ ПРОПУСТИТЬ: Прозрачный фон, серый текст (чтобы не отвлекал)
+                    select.style.backgroundColor = 'transparent';
+                    select.style.borderColor = 'var(--border-light, #ddd)';
+                    select.style.color = 'var(--text-muted, #888)';
+                    
+                } else if (currentVal === 'attribute') {
+                    // ➕ ДОП. АТРИБУТ: Нежно-синий полупрозрачный фон
+                    select.style.backgroundColor = 'rgba(33, 150, 243, 0.1)';
+                    select.style.borderColor = 'rgba(33, 150, 243, 0.4)';
+                    select.style.color = 'var(--text-main, #1976d2)'; // Оставляем контрастным
+                    
+                } else {
+                    // ✓ ВЫБРАННАЯ ШАПКА: Нежно-зеленый полупрозрачный фон
+                    select.style.backgroundColor = 'rgba(76, 175, 80, 0.1)';
+                    select.style.borderColor = 'rgba(76, 175, 80, 0.4)';
+                    select.style.color = 'var(--text-main, #2e7d32)'; // Оставляем контрастным
+                }
+
+                // --- ЛОГИКА БЛОКИРОВКИ ДУБЛИКАТОВ ---
+                let options = select.querySelectorAll('option');
                 options.forEach(opt => {
                     // Пропускаем служебные пункты
                     if (opt.value === 'attribute' || opt.value === 'skip' || opt.value === 'disabled') {
                         return;
                     }
                     
-                    // Блокируем пункт, если он есть в массиве занятых ролей И он не выбран конкретно в этом списке
+                    // Блокируем пункт, если он есть в массиве занятых ролей И он не выбран здесь
                     if (selectedRoles.includes(opt.value) && opt.value !== currentVal) {
                         opt.disabled = true;
-                        opt.style.color = 'var(--text-muted)'; // Делаем визуально серым
+                        opt.style.color = 'var(--text-muted, #999)';
                     } else {
                         opt.disabled = false;
-                        opt.style.color = ''; // Возвращаем нормальный цвет
+                        opt.style.color = ''; 
                     }
                 });
             });
