@@ -401,7 +401,7 @@
             </div>
 
             <!-- ВКЛАДКА 1: ОРИГИНАЛЬНЫЙ ИМПОРТ -->
-            <div id="tab-import" style="display: block; width: 100%;">
+            <div id="tab-import" style="display: block; width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box;">
                 
                 <div class="minimal-input-container" style="display: flex; gap: 10px;">
                     <!-- Выбор валюты (без изменений) -->
@@ -449,13 +449,13 @@
                 </div>
 
                 <!-- БЛОК ПРЕДПРОСМОТРА И ФИНАЛИЗАЦИИ -->
-                <div id="invoicePreviewArea" style="display: none; margin-top: 20px; flex-direction: column; overflow: hidden; max-height: 45vh;">
+                <div id="invoicePreviewArea" style="display: none; margin-top: 20px; flex-direction: column; overflow: hidden; max-height: 45vh; width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box;">
                     <div id="invoiceMetadata" style="margin-bottom: 10px; font-weight: bold; color: var(--accent-yellow); font-size: 14px; text-align: center;"></div>
                     
                     <!-- Кнопка возврата к маппингу, если пользователь заметил ошибку -->
                     <button onclick="showMapperArea()" style="background: transparent; border: none; color: var(--text-muted); text-decoration: underline; cursor: pointer; font-size: 12px; margin-bottom: 10px; text-align: right;" data-i18n="mapper_edit">⚙️ Изменить привязку</button>
 
-                    <div style="overflow: auto; border: 1px solid var(--border-light); margin-bottom: 15px; flex-grow: 1; width: 100%; box-sizing: border-box;">
+                    <div style="overflow: auto; border: 1px solid var(--border-light); margin-bottom: 15px; flex-grow: 1; width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; -webkit-overflow-scrolling: touch;">
                         <table style="width: 100%; border-collapse: collapse; font-size: 13px; color: var(--text-main);">
                             <thead style="background: var(--border-main); position: sticky; top: 0; z-index: 10;">
                                 <tr style="border-bottom: 1px solid var(--text-muted); text-align: left;">
