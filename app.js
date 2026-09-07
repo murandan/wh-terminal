@@ -3761,7 +3761,7 @@ function setReportView(view) {
 
                 let actualCodeIdx = colMap.code !== -1 ? colMap.code : colMap.barcode;
                 let codeCell = actualCodeIdx !== -1 ? String(row[actualCodeIdx] || '').trim() : '';
-                let rawBarcode = colMap.barcode !== -1 ? String(row[colMap.barcode] || '').trim() : codeCell;
+                let rawBarcode = colMap.barcode !== -1 ? String(row[colMap.barcode] || '').trim() : ''; // <-- Убрали codeCell в конце
                 
                 let qty = parseFloat(row[colMap.qty]);
                 let price = parseFloat(row[colMap.price]);
