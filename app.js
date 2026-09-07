@@ -165,7 +165,7 @@
                 tab_import: "ИМПОРТ EXCEL",
                 tab_new: "НОВЫЙ ТОВАР",
                 file_select_excel: "Нажмите для выбора Excel",
-                update_available: "Доступна новая версия системы",
+                update_available: "🚀 Доступна новая версия системы",
                 update_btn: "Обновить кассу",
                 auth_checking: "Проверка доступа...",
                 auth_connecting: "Соединение с сервером",
@@ -240,7 +240,6 @@
                 mapper_err_dup: "Ошибка: Вы назначили одну и ту же роль сразу нескольким колонкам!",
                 mapper_err_missing: "Ошибка: Обязательно укажите колонки «Кол-во» и «Цена»!",
                 mapper_title: "Настройка колонок",
-                mapper_edit: "⚙️ Изменить привязку",
                 mapper_btn_apply: "ПРИМЕНИТЬ НАСТРОЙКИ",
                 mapper_code: "Код / Артикул",
                 mapper_barcode: "Штрихкод",
@@ -417,7 +416,7 @@
                 tab_import: "EXCEL ИМПОРТТАУ",
                 tab_new: "ЖАҢА ТАУАР",
                 file_select_excel: "Excel файлын таңдау үшін басыңыз",
-                update_available: "Жүйенің жаңа нұсқасы қолжетімді",
+                update_available: "🚀 Жүйенің жаңа нұсқасы қолжетімді",
                 update_btn: "Кассаны жаңарту",
                 auth_checking: "Қол жеткізуді тексеру...",
                 auth_connecting: "Сервермен байланыс",
@@ -492,7 +491,6 @@
                 mapper_err_dup: "Қате: Сіз бір рөлді бірнеше бағанға тағайындадыңыз!",
                 mapper_err_missing: "Қате: «Саны» және «Бағасы» бағандарын міндетті түрде көрсетіңіз!",
                 mapper_title: "Бағандарды баптау",
-                mapper_edit: "⚙️ Баптауды өзгерту",
                 mapper_btn_apply: "БАПТАУЛАРДЫ САҚТАУ",
                 mapper_code: "Код / Артикул",
                 mapper_barcode: "Штрихкод",
@@ -3685,9 +3683,6 @@ function setReportView(view) {
                 let optionsHtml = options.map(opt => {
                     if (opt.val === 'disabled') return `<option disabled>${opt.label}</option>`;
                     let selected = (guessedKey === opt.val) ? 'selected' : '';
-                    // Добавили data-label, чтобы скрипт помнил чистое имя без значков
-                    return `<option value="${opt.val}" ${selected} data-label="${opt.label}">${opt.label}</option>`;
-                }).join('');
                     return `<option value="${opt.val}" ${selected}>${opt.label}</option>`;
                 }).join('');
 
@@ -3696,20 +3691,20 @@ function setReportView(view) {
 
                 // Адаптивная верстка: flex: 0 0 60% (левая часть) и flex: 0 0 40% (правая часть)
                 let rowHtml = `
-                    <div class="mapper-row" data-col-index="${index}" data-col-name="${colName}" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border-light); width: 100%; box-sizing: border-box;">
-                        <div style="flex: 1; min-width: 0; padding-right: 10px; overflow: hidden;">
+                    <div class="mapper-row" data-col-index="${index}" data-col-name="${colName}" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border-light);">
+                        <div style="flex: 0 0 60%; padding-right: 10px; overflow: hidden;">
                             <div class="mapper-col-title" data-orig-name="${colName}" style="font-weight: bold; font-size: 13px; word-break: break-word; transition: all 0.2s ease;">${colName}</div>
                             <div style="font-style: italic;">${previewText}</div>
                         </div>
-                        <div style="flex: 0 0 45%; min-width: 0;">
-                            <select class="mapper-select" onchange="updateMapperOptions()" style="width: 100%; max-width: 100%; padding: 12px 8px; min-height: 44px; background: var(--bg-body); color: var(--text-main); border: 1px solid var(--border-main); border-radius: 6px; font-size: 14px; outline: none; text-overflow: ellipsis;">
+                        <div style="flex: 0 0 40%;">
+                            <select class="mapper-select" onchange="updateMapperOptions()" style="width: 100%; padding: 8px 4px; background: var(--bg-body); color: var(--text-main); border: 1px solid var(--border-main); border-radius: 4px; font-size: 12px; outline: none; text-overflow: ellipsis;">
                                 ${optionsHtml}
                             </select>
                         </div>
                     </div>
                 `;
                 container.insertAdjacentHTML('beforeend', rowHtml);
-            };
+            });
 
             if (document.getElementById('parseInvoiceBtn')) document.getElementById('parseInvoiceBtn').style.display = 'none';
             document.getElementById('dataMapperArea').style.display = 'flex';
@@ -3719,6 +3714,7 @@ function setReportView(view) {
                     updateMapperOptions();
                 }
             }, 50);
+        }
 
         function applyUserMapping() {
             if (!tempInvoiceState) return;
@@ -3913,26 +3909,14 @@ function setReportView(view) {
                     }
                 }
 
-                // --- ФИКС БЕЛОГО ТЕКСТА И ВЫДЕЛЕНИЕ ОБЯЗАТЕЛЬНЫХ ---
+                // --- ФИКС БЕЛОГО ТЕКСТА ВНУТРИ СПИСКА ---
                 let options = select.querySelectorAll('option');
                 options.forEach(opt => {
-                    // Берем чистое имя из атрибута
-                    let origLabel = opt.getAttribute('data-label') || opt.innerText;
-
                     if (opt.value === 'attribute' || opt.value === 'skip' || opt.value === 'disabled') {
                         opt.style.backgroundColor = '';
                         opt.style.color = '#222';
-                        opt.innerText = origLabel; 
                         return;
                     }
-
-                    // МАГИЯ ЗДЕСЬ: Если это Цена или Кол-во, и они еще не выбраны
-                    if ((opt.value === 'qty' || opt.value === 'price') && !selectedRoles.includes(opt.value) && opt.value !== currentVal) {
-                        opt.innerText = '❗️ ' + origLabel; // Добавляем восклицательный знак
-                    } else {
-                        opt.innerText = origLabel; // Возвращаем обычный вид, если выбрано
-                    }
-
                     if (selectedRoles.includes(opt.value) && opt.value !== currentVal) {
                         opt.disabled = true;
                         opt.style.backgroundColor = '#ecf0f1';
