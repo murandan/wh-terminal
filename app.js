@@ -3931,21 +3931,32 @@ function setReportView(view) {
                 select.style.fontWeight = 'bold';
                 select.style.transition = 'all 0.2s ease';
                 
-                // Находим левую колонку (Ищем ближайший элемент с классом mapper-col-title)
-                // Ищем родительскую строку, а в ней заголовок
-                const row = select.closest('div'); // Если у строки есть свой класс, лучше написать closest('.mapper-row')
-                const leftTitle = row ? row.querySelector('.mapper-col-title') : null;
+                // --- БРОНЕБОЙНЫЙ ПОИСК ЛЕВОЙ КОЛОНКИ ---
+                // Ищем родительскую строку (div с классом mapper-row)
+                const row = select.closest('.mapper-row');
+                let leftTitle = null;
+                let origName = '';
+
+                if (row) {
+                    // Берем оригинальное имя прямо из атрибута строки
+                    origName = row.getAttribute('data-col-name') || '';
+                    // Находим заголовок по структуре: первый div левого блока
+                    // row.children[0] - это блок на 60%, его children[0] - это сам текст заголовка
+                    if (row.children[0] && row.children[0].children[0]) {
+                        leftTitle = row.children[0].children[0];
+                    }
+                }
 
                 // --- БЛОК 1: ПРОПУСТИТЬ ---
                 if (currentVal === 'skip') {
                     select.style.backgroundColor = 'rgba(244, 67, 54, 0.1)';
                     select.style.borderColor = 'rgba(244, 67, 54, 0.4)';
-                    select.style.color = 'var(--text-main)'; // Адаптивный черный (или белый в темной теме)
+                    select.style.color = 'var(--text-main)'; 
                     
                     if (leftTitle) {
-                        leftTitle.style.color = 'var(--text-muted, #999)'; // Делаем бледным
-                        leftTitle.style.textDecoration = 'line-through'; // Зачеркиваем
-                        leftTitle.innerText = leftTitle.innerText.replace('✅ ', ''); // Убираем галочку, если была
+                        leftTitle.style.color = 'var(--text-muted, #999)';
+                        leftTitle.style.textDecoration = 'line-through';
+                        leftTitle.innerText = origName; 
                     }
                     
                 // --- БЛОК 2: ДОП. АТРИБУТ ---
@@ -3956,8 +3967,8 @@ function setReportView(view) {
                     
                     if (leftTitle) {
                         leftTitle.style.color = '#1976d2'; // Голубой
-                        leftTitle.style.textDecoration = 'none'; // Без зачеркивания
-                        leftTitle.innerText = leftTitle.innerText.replace('✅ ', '');
+                        leftTitle.style.textDecoration = 'none';
+                        leftTitle.innerText = origName; 
                     }
                     
                 // --- БЛОК 3: СИСТЕМНЫЕ КОЛОНКИ (Выбрано) ---
@@ -3969,10 +3980,7 @@ function setReportView(view) {
                     if (leftTitle) {
                         leftTitle.style.color = '#2e7d32'; // Ярко-зеленый
                         leftTitle.style.textDecoration = 'none';
-                        // Добавляем галочку, только если её еще нет
-                        if (!leftTitle.innerText.includes('✅')) {
-                            leftTitle.innerText = '✅ ' + leftTitle.innerText;
-                        }
+                        leftTitle.innerText = '✅ ' + origName; 
                     }
                 }
 
@@ -3981,18 +3989,17 @@ function setReportView(view) {
                 options.forEach(opt => {
                     if (opt.value === 'attribute' || opt.value === 'skip' || opt.value === 'disabled') {
                         opt.style.backgroundColor = '';
-                        opt.style.color = '#222'; // Жесткий темный цвет
+                        opt.style.color = '#222';
                         return;
                     }
-                    
                     if (selectedRoles.includes(opt.value) && opt.value !== currentVal) {
                         opt.disabled = true;
                         opt.style.backgroundColor = '#ecf0f1';
-                        opt.style.color = '#95a5a6'; // Серый для заблокированных
+                        opt.style.color = '#95a5a6';
                     } else {
                         opt.disabled = false;
                         opt.style.backgroundColor = ''; 
-                        opt.style.color = '#222'; // Жесткий темный цвет для доступных
+                        opt.style.color = '#222';
                     }
                 });
             });
