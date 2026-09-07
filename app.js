@@ -3838,7 +3838,7 @@ function setReportView(view) {
         function updateMapperOptions() {
             const allSelects = document.querySelectorAll('.mapper-select');
             
-            // 1. Собираем все роли, которые сейчас выбраны (кроме атрибутов и пропуска)
+            // 1. Собираем все занятые роли
             let selectedRoles = [];
             allSelects.forEach(select => {
                 let val = select.value;
@@ -3847,52 +3847,75 @@ function setReportView(view) {
                 }
             });
 
-            // 2. Проходим по всем спискам
+            // 2. Проходим по всем спискам и меняем UI
             allSelects.forEach(select => {
                 let currentVal = select.value;
                 
                 select.style.fontWeight = 'bold';
                 select.style.transition = 'all 0.2s ease';
                 
-                // --- ЦВЕТА САМОГО БЛОКА (ЗАКРЫТЫЙ СПИСОК) ---
+                // Находим левую колонку (Ищем ближайший элемент с классом mapper-col-title)
+                // Ищем родительскую строку, а в ней заголовок
+                const row = select.closest('div'); // Если у строки есть свой класс, лучше написать closest('.mapper-row')
+                const leftTitle = row ? row.querySelector('.mapper-col-title') : null;
+
+                // --- БЛОК 1: ПРОПУСТИТЬ ---
                 if (currentVal === 'skip') {
-                    // ❌ ПРОПУСТИТЬ: Красноватый оттенок
                     select.style.backgroundColor = 'rgba(244, 67, 54, 0.1)';
                     select.style.borderColor = 'rgba(244, 67, 54, 0.4)';
-                    select.style.color = '#c62828'; // Темно-красный для читаемости
+                    select.style.color = 'var(--text-main)'; // Адаптивный черный (или белый в темной теме)
                     
+                    if (leftTitle) {
+                        leftTitle.style.color = 'var(--text-muted, #999)'; // Делаем бледным
+                        leftTitle.style.textDecoration = 'line-through'; // Зачеркиваем
+                        leftTitle.innerText = leftTitle.innerText.replace('✅ ', ''); // Убираем галочку, если была
+                    }
+                    
+                // --- БЛОК 2: ДОП. АТРИБУТ ---
                 } else if (currentVal === 'attribute') {
                     select.style.backgroundColor = 'rgba(33, 150, 243, 0.15)';
                     select.style.borderColor = 'rgba(33, 150, 243, 0.5)';
-                    select.style.color = 'var(--text-main, #1976d2)';
+                    select.style.color = 'var(--text-main)';
                     
+                    if (leftTitle) {
+                        leftTitle.style.color = '#1976d2'; // Голубой
+                        leftTitle.style.textDecoration = 'none'; // Без зачеркивания
+                        leftTitle.innerText = leftTitle.innerText.replace('✅ ', '');
+                    }
+                    
+                // --- БЛОК 3: СИСТЕМНЫЕ КОЛОНКИ (Выбрано) ---
                 } else {
                     select.style.backgroundColor = 'rgba(76, 175, 80, 0.15)';
                     select.style.borderColor = 'rgba(76, 175, 80, 0.5)';
-                    select.style.color = 'var(--text-main, #2e7d32)';
+                    select.style.color = 'var(--text-main)';
+                    
+                    if (leftTitle) {
+                        leftTitle.style.color = '#2e7d32'; // Ярко-зеленый
+                        leftTitle.style.textDecoration = 'none';
+                        // Добавляем галочку, только если её еще нет
+                        if (!leftTitle.innerText.includes('✅')) {
+                            leftTitle.innerText = '✅ ' + leftTitle.innerText;
+                        }
+                    }
                 }
 
-                // --- ЦВЕТА ПУНКТОВ ВНУТРИ (ОТКРЫТЫЙ СПИСОК) ---
+                // --- ФИКС БЕЛОГО ТЕКСТА ВНУТРИ СПИСКА ---
                 let options = select.querySelectorAll('option');
                 options.forEach(opt => {
-                    // Базовые пункты оставляем без изменений
                     if (opt.value === 'attribute' || opt.value === 'skip' || opt.value === 'disabled') {
                         opt.style.backgroundColor = '';
-                        opt.style.color = '';
+                        opt.style.color = '#222'; // Жесткий темный цвет
                         return;
                     }
                     
-                    // Если роль занята другим столбцом
                     if (selectedRoles.includes(opt.value) && opt.value !== currentVal) {
                         opt.disabled = true;
-                        // Исправлено: Фон для занятых и жесткий цвет для обхода бага темной темы
-                        opt.style.backgroundColor = '#ecf0f1'; // Затеняем фон
-                        opt.style.color = '#95a5a6'; // Ставим жесткий цвет, который не побелеет
+                        opt.style.backgroundColor = '#ecf0f1';
+                        opt.style.color = '#95a5a6'; // Серый для заблокированных
                     } else {
-                        // Если роль свободна
                         opt.disabled = false;
                         opt.style.backgroundColor = ''; 
-                        opt.style.color = ''; 
+                        opt.style.color = '#222'; // Жесткий темный цвет для доступных
                     }
                 });
             });
